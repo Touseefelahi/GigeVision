@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29613.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GigeVision.Core", "GigeVision.Core\GigeVision.Core.csproj", "{9B36820D-781A-47FA-AEDB-20AC7433225D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GigeVision.CoreTests", "GigeVision.CoreTests\GigeVision.CoreTests.csproj", "{C3533B0D-55FD-4438-9894-F5D98D7DA0D3}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{9B36820D-781A-47FA-AEDB-20AC7433225D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9B36820D-781A-47FA-AEDB-20AC7433225D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9B36820D-781A-47FA-AEDB-20AC7433225D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9B36820D-781A-47FA-AEDB-20AC7433225D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C3533B0D-55FD-4438-9894-F5D98D7DA0D3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C3533B0D-55FD-4438-9894-F5D98D7DA0D3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C3533B0D-55FD-4438-9894-F5D98D7DA0D3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C3533B0D-55FD-4438-9894-F5D98D7DA0D3}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C6692468-3D71-4CF6-BBB2-3E938FFB2E6F}
+	EndGlobalSection
+EndGlobal
