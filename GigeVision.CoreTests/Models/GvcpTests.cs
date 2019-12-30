@@ -10,11 +10,11 @@ namespace GigeVision.Core.Models.Tests
     public class GvcpTests
     {
         private readonly Gvcp gvcp;
-        private readonly string ipCamera = "192.168.10.217";
+        private readonly string ipCamera = "192.168.10.196";
 
         public GvcpTests()
         {
-            gvcp = new Gvcp() { CameraIp = "192.168.10.217" };
+            gvcp = new Gvcp() { CameraIp = "192.168.10.196" };
         }
 
         [TestMethod()]

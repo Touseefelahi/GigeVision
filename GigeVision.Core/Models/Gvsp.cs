@@ -150,18 +150,25 @@ namespace GigeVision.Core.Models
 
         public async Task<bool> SetResolutionAsync(uint width, uint height)
         {
-            await Gvcp.TakeControl().ConfigureAwait(false);
-            var registers = new string[2];
-            registers[0] = Gvcp.RegistersDictionary[nameof(RegisterName.WidthReg)];
-            registers[1] = Gvcp.RegistersDictionary[nameof(RegisterName.HeightReg)];
-            //var valueToWrite = new uint[] { width, height };
-            //var status = (await Gvcp.WriteRegisterAsync(registers, valueToWrite).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS;
-            var status = (await Gvcp.WriteRegisterAsync(registers[0], width).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS;
-            if (status) Width = width;
-            status = (await Gvcp.WriteRegisterAsync(registers[1], height).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS;
-            if (status) Height = height;
-            await Gvcp.LeaveControl().ConfigureAwait(false);
-            return status;
+            try
+            {
+                await Gvcp.TakeControl().ConfigureAwait(false);
+                var registers = new string[2];
+                registers[0] = Gvcp.RegistersDictionary[nameof(RegisterName.WidthReg)];
+                registers[1] = Gvcp.RegistersDictionary[nameof(RegisterName.HeightReg)];
+                //var valueToWrite = new uint[] { width, height };
+                //var status = (await Gvcp.WriteRegisterAsync(registers, valueToWrite).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS;
+                var status = (await Gvcp.WriteRegisterAsync(registers[0], width).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS;
+                if (status) Width = width;
+                status = (await Gvcp.WriteRegisterAsync(registers[1], height).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS;
+                if (status) Height = height;
+                await Gvcp.LeaveControl().ConfigureAwait(false);
+                return status;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
 
         public async Task<bool> SetResolutionAsync(int width, int height)
@@ -176,7 +183,10 @@ namespace GigeVision.Core.Models
 
         public async Task<bool> SetOffsetAsync(uint offsetX, uint offsetY)
         {
-            await Gvcp.TakeControl().ConfigureAwait(false);
+            if (!IsStreaming)
+            {
+                await Gvcp.TakeControl().ConfigureAwait(false);
+            }
             var registers = new string[2];
             registers[0] = Gvcp.RegistersDictionary[nameof(RegisterName.OffsetXReg)];
             registers[1] = Gvcp.RegistersDictionary[nameof(RegisterName.OffsetYReg)];
@@ -186,7 +196,10 @@ namespace GigeVision.Core.Models
             if (status) OffsetX = offsetX;
             status = (await Gvcp.WriteRegisterAsync(registers[1], offsetY).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS;
             if (status) OffsetY = offsetY;
-            await Gvcp.LeaveControl().ConfigureAwait(false);
+            if (!IsStreaming)
+            {
+                await Gvcp.LeaveControl().ConfigureAwait(false);
+            }
             return status;
         }
 

@@ -9,5 +9,15 @@
         OffsetXReg,
         OffsetYReg,
         PixelFormatReg,
+        ZoomInStartReg,
+        ZoomOutStartReg,
+        ZoomInStopReg,
+        ZoomOutStopReg,
+        ZoomStopReg,
+        FocusNearStartReg,
+        FocusFarStartReg,
+        FocusNearStopReg,
+        FocusFarStopReg,
+        FocusStopReg,
     }
 }

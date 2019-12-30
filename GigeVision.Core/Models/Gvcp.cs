@@ -45,11 +45,29 @@ namespace GigeVision.Core.Models
             {
                 if (ValidateIp(value))
                 {
-                    cameraIP = value;
-                    ControlSocket = new UdpClient(cameraIP, PortGvcp);
-                    ControlSocket.Client.ReceiveTimeout = 1000;
-                    ControlSocket.Client.SendTimeout = 500;
-                    // Todo PortControl= ControlSocket.Client.LocalEndPoint.
+                    if (value != cameraIP)
+                    {
+                        cameraIP = value;
+                        try
+                        {
+                            try
+                            {
+                                ControlSocket.Client.Close();
+                                ControlSocket.Close();
+                            }
+                            catch (Exception)
+                            {
+                            }
+
+                            ControlSocket = new UdpClient(cameraIP, PortGvcp);
+                            ControlSocket.Client.ReceiveTimeout = 1000;
+                            ControlSocket.Client.SendTimeout = 500;
+                        }
+                        catch (Exception)
+                        {
+                            throw;
+                        }
+                    }
                 }
             }
         }
@@ -282,9 +300,15 @@ namespace GigeVision.Core.Models
             {
                 foreach (XmlNode childNode in nodeList)
                 {
-                    string registerName = childNode.Attributes["Name"].Value;
-                    string registerAddress = (childNode.SelectSingleNode(namespacePrefix + "Address", xmlNamespaceManager).InnerText.Remove(0, 2));
-                    RegistersDictionary.Add(registerName, registerAddress);
+                    try
+                    {
+                        string registerName = childNode.Attributes["Name"].Value;
+                        string registerAddress = (childNode.SelectSingleNode(namespacePrefix + "Address", xmlNamespaceManager).InnerText.Remove(0, 2));
+                        RegistersDictionary.Add(registerName, registerAddress);
+                    }
+                    catch (Exception)
+                    {
+                    }
                 }
             }
 
