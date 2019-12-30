@@ -9,9 +9,9 @@ namespace GigeVision.Core.Models
         public readonly byte GvcpHeader = 0x42;
         public readonly byte flag = 0x01;
 
-        public GvcpCommand(byte[] adress, GvcpCommandType type, uint valueToWrite = 0, ushort requestID = 0)
+        public GvcpCommand(byte[] adress, GvcpCommandType type, uint value = 0, ushort requestID = 0)
         {
-            GenerateCommand(adress, type, requestID, valueToWrite);
+            GenerateCommand(adress, type, requestID, value);
         }
 
         public GvcpCommand(byte[] adress, GvcpCommandType type, uint[] valuesToWrite, ushort requestID = 0)

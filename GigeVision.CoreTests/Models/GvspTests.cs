@@ -28,7 +28,7 @@ namespace GigeVision.Core.Models.Tests
         public async Task StartStreamAsyncTest()
         {
             gvsp.FrameReady += FrameReady;
-            await gvsp.StartStreamAsync().ConfigureAwait(false);
+            // await gvsp.StartStreamAsync().ConfigureAwait(false);
             await Task.Delay(5000).ConfigureAwait(false);
             await gvsp.StopStream().ConfigureAwait(false);
         }
@@ -42,7 +42,7 @@ namespace GigeVision.Core.Models.Tests
         {
             gvcp = new Gvcp() { };
             var devices = await gvcp.GetAllGigeDevicesInNetworkAsnyc();
-            gvcp.CameraIp = devices[0].IP;
+            gvcp.CameraIp = "192.168.10.196";
             gvsp = new Gvsp(gvcp);
         }
     }

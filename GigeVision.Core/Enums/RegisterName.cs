@@ -4,20 +4,29 @@
     {
         AcquisitionStartReg,
         AcquisitionStopReg,
+
         WidthReg,
         HeightReg,
+
         OffsetXReg,
         OffsetYReg,
+
         PixelFormatReg,
-        ZoomInStartReg,
-        ZoomOutStartReg,
-        ZoomInStopReg,
-        ZoomOutStopReg,
+
+        ZoomInReg,
+        ZoomTeleFullReg,
+
+        ZoomOutReg,
+        ZoomWideFullReg,
+
         ZoomStopReg,
-        FocusNearStartReg,
-        FocusFarStartReg,
-        FocusNearStopReg,
-        FocusFarStopReg,
+
+        FocusNearReg,
+        FocusFarReg,
         FocusStopReg,
+
+        IrisOpenReg,
+        IrisCloseReg,
+        IrisStopReg
     }
 }

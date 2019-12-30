@@ -14,7 +14,12 @@ namespace GigeVision.Core.Interfaces
         uint Height { get; set; }
         uint OffsetX { get; set; }
         uint OffsetY { get; set; }
+        uint ZoomValue { get; set; }
         PixelFormat PixelFormat { get; set; }
+        bool HasZoomControl { get; set; }
+        bool HasFocusControl { get; set; }
+        bool HasIrisControl { get; set; }
+        bool HasFixedZoomValue { get; set; }
 
         /// <summary>
         /// This method will get current PC IP and Gets the Camera ip from Gvcp
@@ -33,5 +38,7 @@ namespace GigeVision.Core.Interfaces
         Task<bool> SetOffsetAsync(int offsetX, int offsetY);
 
         Task<bool> SetOffsetAsync(uint offsetX, uint offsetY);
+
+        Task<bool> MotorControl(LensCommand command, uint value = 0);
     }
 }
