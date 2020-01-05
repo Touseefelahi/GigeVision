@@ -15,11 +15,13 @@ namespace GigeVision.Core.Interfaces
         uint OffsetX { get; set; }
         uint OffsetY { get; set; }
         uint ZoomValue { get; set; }
+        uint FocusValue { get; set; }
         PixelFormat PixelFormat { get; set; }
         bool HasZoomControl { get; set; }
         bool HasFocusControl { get; set; }
         bool HasIrisControl { get; set; }
         bool HasFixedZoomValue { get; set; }
+        bool HasFixedFocusValue { get; set; }
 
         /// <summary>
         /// This method will get current PC IP and Gets the Camera ip from Gvcp

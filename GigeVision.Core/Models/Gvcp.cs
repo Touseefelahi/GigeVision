@@ -572,7 +572,7 @@ namespace GigeVision.Core.Models
 
         public async Task<GvcpReply> WriteRegisterAsync(UdpClient socket, string[] registerAddress, uint[] valuesToWrite)
         {
-            GvcpCommand gvcpCommand = new GvcpCommand(Converter.RegisterStringsToByteArray(registerAddress), GvcpCommandType.Write, valuesToWrite, gvcpRequestID++);
+            GvcpCommand gvcpCommand = new GvcpCommand(registerAddress, valuesToWrite, gvcpRequestID++);
             return await WriteRegister(socket, gvcpCommand).ConfigureAwait(false);
         }
 
@@ -619,7 +619,7 @@ namespace GigeVision.Core.Models
             socket.Client.ReceiveTimeout = 1000;
             if (await GetControlAsync(socket).ConfigureAwait(false))
             {
-                GvcpCommand gvcpCommand = new GvcpCommand(Converter.RegisterStringsToByteArray(registerAddress), GvcpCommandType.Write, valuesToWrite, gvcpRequestID++);
+                GvcpCommand gvcpCommand = new GvcpCommand(registerAddress, valuesToWrite, gvcpRequestID++);
                 return await WriteRegister(socket, gvcpCommand).ConfigureAwait(false);
             }
             else
@@ -657,7 +657,7 @@ namespace GigeVision.Core.Models
 
         public async Task<GvcpReply> WriteRegisterAsync(string[] registerAddress, uint[] valueToWrite)
         {
-            GvcpCommand gvcpCommand = new GvcpCommand(Converter.RegisterStringsToByteArray(registerAddress), GvcpCommandType.Write, valueToWrite, gvcpRequestID++);
+            GvcpCommand gvcpCommand = new GvcpCommand(registerAddress, valueToWrite, gvcpRequestID++);
             return await WriteRegister(ControlSocket, gvcpCommand).ConfigureAwait(false);
         }
 

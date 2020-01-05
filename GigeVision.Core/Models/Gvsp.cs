@@ -24,6 +24,7 @@ namespace GigeVision.Core.Models
         private Dictionary<LensCommand, string> lensControl;
 
         private uint zoomValue;
+        private uint focusValue;
 
         public Gvsp(IGvcp gvcp)
         {
@@ -99,6 +100,7 @@ namespace GigeVision.Core.Models
         public bool HasFocusControl { get; set; }
         public bool HasIrisControl { get; set; }
         public bool HasFixedZoomValue { get; set; }
+        public bool HasFixedFocusValue { get; set; }
 
         public uint ZoomValue
         {
@@ -107,6 +109,16 @@ namespace GigeVision.Core.Models
             {
                 zoomValue = value;
                 OnPropertyChanged(nameof(ZoomValue));
+            }
+        }
+
+        public uint FocusValue
+        {
+            get => focusValue;
+            set
+            {
+                focusValue = value;
+                OnPropertyChanged(nameof(FocusValue));
             }
         }
 
@@ -173,12 +185,8 @@ namespace GigeVision.Core.Models
                 var registers = new string[2];
                 registers[0] = Gvcp.RegistersDictionary[nameof(RegisterName.WidthReg)];
                 registers[1] = Gvcp.RegistersDictionary[nameof(RegisterName.HeightReg)];
-                //var valueToWrite = new uint[] { width, height };
-                //var status = (await Gvcp.WriteRegisterAsync(registers, valueToWrite).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS;
-                var status = (await Gvcp.WriteRegisterAsync(registers[0], width).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS;
-                if (status) Width = width;
-                status = (await Gvcp.WriteRegisterAsync(registers[1], height).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS;
-                if (status) Height = height;
+                var valueToWrite = new uint[] { width, height };
+                var status = (await Gvcp.WriteRegisterAsync(registers, valueToWrite).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS;
                 await Gvcp.LeaveControl().ConfigureAwait(false);
                 return status;
             }
@@ -207,12 +215,8 @@ namespace GigeVision.Core.Models
             var registers = new string[2];
             registers[0] = Gvcp.RegistersDictionary[nameof(RegisterName.OffsetXReg)];
             registers[1] = Gvcp.RegistersDictionary[nameof(RegisterName.OffsetYReg)];
-            //var valueToWrite = new uint[] { width, height };
-            //var status = (await Gvcp.WriteRegisterAsync(registers, valueToWrite).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS;
-            var status = (await Gvcp.WriteRegisterAsync(registers[0], offsetX).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS;
-            if (status) OffsetX = offsetX;
-            status = (await Gvcp.WriteRegisterAsync(registers[1], offsetY).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS;
-            if (status) OffsetY = offsetY;
+            var valueToWrite = new uint[] { offsetX, offsetY };
+            var status = (await Gvcp.WriteRegisterAsync(registers, valueToWrite).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS;
             if (!IsStreaming)
             {
                 await Gvcp.LeaveControl().ConfigureAwait(false);
@@ -224,6 +228,17 @@ namespace GigeVision.Core.Models
         {
             if (lensControl.ContainsKey(command))
             {
+                if (lensControl.ContainsKey(LensCommand.FocusAuto))
+                {
+                    switch (command)
+                    {
+                        case LensCommand.FocusFar:
+                        case LensCommand.FocusNear:
+                            await Gvcp.WriteRegisterAsync(lensControl[LensCommand.FocusAuto], 0).ConfigureAwait(false);
+                            break;
+                    }
+                }
+                var status = (await Gvcp.WriteRegisterAsync(lensControl[command], value).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS;
                 if (lensControl.ContainsKey(LensCommand.FocusAuto))
                 {
                     switch (command)
@@ -240,20 +255,20 @@ namespace GigeVision.Core.Models
                             }
                             break;
 
-                        case LensCommand.FocusFar:
-                        case LensCommand.FocusNear:
-                            await Gvcp.WriteRegisterAsync(lensControl[LensCommand.FocusAuto], 0).ConfigureAwait(false);
+                        case LensCommand.FocusStop:
+                        case LensCommand.FocusValue:
+                            if (lensControl.ContainsKey(LensCommand.FocusValue))
+                            {
+                                var focusValue = await Gvcp.ReadRegisterAsync(lensControl[LensCommand.FocusValue]).ConfigureAwait(false);
+                                if (focusValue.Status == GvcpStatus.GEV_STATUS_SUCCESS)
+                                {
+                                    FocusValue = focusValue.RegisterValue;
+                                }
+                            }
                             break;
                     }
                 }
-                if (command == LensCommand.ZoomValue)
-                {
-                    if ((await Gvcp.WriteRegisterAsync(lensControl[command], value).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS)
-                    {
-                        ZoomValue = value;
-                    }
-                }
-                return (await Gvcp.WriteRegisterAsync(lensControl[command], value).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS;
+                return status;
             }
             return false;
         }
@@ -366,6 +381,14 @@ namespace GigeVision.Core.Models
                 {
                     HasFocusControl = true;
                     lensControl.Add(LensCommand.FocusStop, registerAddress);
+                }
+
+                take = new string[] { "FocusReg" };
+                registerAddress = CheckForRegister(take, skip);
+                if (!string.IsNullOrEmpty(registerAddress))
+                {
+                    HasFixedFocusValue = true;
+                    lensControl.Add(LensCommand.FocusValue, registerAddress);
                 }
 
                 take = new string[] { "FocusAuto" };

@@ -14,9 +14,14 @@ namespace GigeVision.Core.Models
             GenerateCommand(adress, type, requestID, value);
         }
 
-        public GvcpCommand(byte[] adress, GvcpCommandType type, uint[] valuesToWrite, ushort requestID = 0)
+        public GvcpCommand(string[] address, uint[] valuesToWrite, ushort requestID = 0)
         {
-            GenerateCommand(adress, type, requestID, valuesToWrite: valuesToWrite);
+            GenerateCommand(address, valuesToWrite: valuesToWrite, requestID);
+        }
+
+        public GvcpCommand(string[] address, ushort requestID = 0)
+        {
+            GenerateCommand(address, requestID);
         }
 
         public GvcpCommand(GvcpCommandType command)
@@ -40,7 +45,7 @@ namespace GigeVision.Core.Models
 
         public byte[] Address { get; set; }
 
-        public void GenerateCommand(byte[] adress, GvcpCommandType type, ushort requestID, uint valueToWrite = 0, uint[] valuesToWrite = null)
+        public void GenerateCommand(byte[] adress, GvcpCommandType type, ushort requestID, uint valueToWrite = 0)
         {
             Random random = new Random();
             Address = adress;
@@ -68,8 +73,37 @@ namespace GigeVision.Core.Models
                     break;
 
                 case GvcpCommandType.Write:
-                    GenerateWriteCommand(requestID, valueToWrite, valuesToWrite);
+                    GenerateWriteCommand(requestID, valueToWrite);
                     break;
+            }
+        }
+
+        private void GenerateCommand(string[] addressess, ushort requestID)
+        {
+            var commandHeader = GenerateCommandHeader(GvcpCommandType.Read, addressess.Length, requestID);
+            CommandBytes = new byte[8 + (addressess.Length * 4)];
+            Array.Copy(commandHeader, 0, CommandBytes, 0, commandHeader.Length);
+            var registerBytes = Converter.RegisterStringsToByteArray(addressess);
+            Array.Copy(registerBytes, 0, CommandBytes, commandHeader.Length, registerBytes.Length);
+        }
+
+        private void GenerateCommand(string[] addressess, uint[] valuesToWrite, ushort requestID)
+        {
+            if (addressess.Length != valuesToWrite.Length) throw new Exception("Length missmatch between address and values to write");
+            var commandHeader = GenerateCommandHeader(GvcpCommandType.Write, addressess.Length, requestID);
+
+            int index = 0;
+            CommandBytes = new byte[8 + (addressess.Length * 4 * 2)];
+            Array.Copy(commandHeader, 0, CommandBytes, 0, commandHeader.Length);
+            foreach (var address in addressess)
+            {
+                var addressBytes = Converter.RegisterStringToByteArray(address);
+                var bytesValue = BitConverter.GetBytes(valuesToWrite[index]);
+                Array.Reverse(bytesValue);
+
+                Array.Copy(addressBytes, 0, CommandBytes, 8 + (8 * index), 4);
+                Array.Copy(bytesValue, 0, CommandBytes, 12 + (8 * index), 4);
+                index++;
             }
         }
 
@@ -89,7 +123,7 @@ namespace GigeVision.Core.Models
             Address.CopyTo(CommandBytes, bytes.Length);
         }
 
-        private void GenerateWriteCommand(ushort requestID, uint valueToWrite, uint[] valuesToWrite)
+        private void GenerateWriteCommand(ushort requestID, uint valueToWrite)
         {
             ushort packetLength = (ushort)(Address.Length * 2);
             var bytes2 = new byte[]
@@ -103,24 +137,30 @@ namespace GigeVision.Core.Models
             CommandBytes = new byte[bytes2.Length + (Address.Length * 2)];
             bytes2.CopyTo(CommandBytes, 0);
             Address.CopyTo(CommandBytes, bytes2.Length);
-            if (valuesToWrite == null) //Use Single values
+
+            var bytes = BitConverter.GetBytes(valueToWrite);
+            Array.Reverse(bytes);
+            bytes.CopyTo(CommandBytes, CommandBytes.Length - 4);
+        }
+
+        private byte[] GenerateCommandHeader(GvcpCommandType type, int valuesToReadOrWrite = 1, uint requestID = 0)
+        {
+            Random random = new Random();
+            Type = type;
+            if (requestID == 0)
             {
-                var bytes = BitConverter.GetBytes(valueToWrite);
-                Array.Reverse(bytes);
-                bytes.CopyTo(CommandBytes, CommandBytes.Length - 4);
+                requestID = (ushort)random.Next(1, 60000);
             }
-            else //Use multiple values
-            {
-                var firstValueAddress = 8 + ((CommandBytes.Length - 8) / 2);
-                var countIndex = 0;
-                foreach (var singleValue in valuesToWrite)
-                {
-                    var bytes = BitConverter.GetBytes(singleValue);
-                    Array.Reverse(bytes);
-                    bytes.CopyTo(CommandBytes, firstValueAddress + (countIndex * 4));
-                    countIndex++;
-                }
-            }
+
+            ushort packetLength = (ushort)(8 + (4 * (type == GvcpCommandType.Write ? 2 : 1)));
+            return new byte[]
+                        {
+                          GvcpHeader,
+                          flag,
+                          (byte)(((short)Type & 0xFF00) >> 8), (byte)Type,
+                          (byte)((packetLength & 0xFF00) >> 8), (byte)packetLength,
+                          (byte)((requestID & 0xFF00) >> 8), (byte)requestID,
+                        };
         }
     }
 }

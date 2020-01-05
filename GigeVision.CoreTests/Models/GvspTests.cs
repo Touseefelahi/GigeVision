@@ -33,6 +33,13 @@ namespace GigeVision.Core.Models.Tests
             await gvsp.StopStream().ConfigureAwait(false);
         }
 
+        [TestMethod()]
+        public async Task SetOffsetAsyncTest()
+        {
+            await gvsp.Gvcp.ReadAllRegisterAddressFromCameraAsync();
+            Assert.IsTrue(await gvsp.SetOffsetAsync(20, 30));
+        }
+
         private void FrameReady(object sender, byte[] e)
         {
             throw new NotImplementedException();

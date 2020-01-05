@@ -23,5 +23,6 @@ namespace GigeVision.Core.Enums
         IrisStop,
         IrisSpeed,
         IrisAuto,
+        FocusValue,
     }
 }
