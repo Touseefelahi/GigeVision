@@ -1,9 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using GigeVision.Core.Models;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace GigeVision.Core.Models.Tests
@@ -19,7 +16,11 @@ namespace GigeVision.Core.Models.Tests
             Setup();
             while (true)
             {
-                if (gvsp != null) break;
+                if (gvsp != null)
+                {
+                    break;
+                }
+
                 Task.Delay(100);
             }
         }
@@ -28,7 +29,7 @@ namespace GigeVision.Core.Models.Tests
         public async Task StartStreamAsyncTest()
         {
             gvsp.FrameReady += FrameReady;
-            // await gvsp.StartStreamAsync().ConfigureAwait(false);
+            await gvsp.StartStreamAsync().ConfigureAwait(false);
             await Task.Delay(5000).ConfigureAwait(false);
             await gvsp.StopStream().ConfigureAwait(false);
         }
@@ -37,7 +38,7 @@ namespace GigeVision.Core.Models.Tests
         public async Task SetOffsetAsyncTest()
         {
             await gvsp.Gvcp.ReadAllRegisterAddressFromCameraAsync();
-            Assert.IsTrue(await gvsp.SetOffsetAsync(20, 30));
+            Assert.IsTrue(await gvsp.SetOffsetAsync(0, 0));
         }
 
         private void FrameReady(object sender, byte[] e)
@@ -48,7 +49,7 @@ namespace GigeVision.Core.Models.Tests
         private async void Setup()
         {
             gvcp = new Gvcp() { };
-            var devices = await gvcp.GetAllGigeDevicesInNetworkAsnyc();
+            List<CameraInformation> devices = await gvcp.GetAllGigeDevicesInNetworkAsnyc();
             gvcp.CameraIp = "192.168.10.196";
             gvsp = new Gvsp(gvcp);
         }

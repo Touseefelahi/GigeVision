@@ -286,32 +286,22 @@ namespace GigeVision.Core.Models
             await Gvcp.ReadAllRegisterAddressFromCameraAsync().ConfigureAwait(false);
             try
             {
-                var reply = await Gvcp.ReadRegisterAsync(Gvcp.RegistersDictionary[nameof(RegisterName.WidthReg)]).ConfigureAwait(false);
-                if (reply.Status == GvcpStatus.GEV_STATUS_SUCCESS)
+                var registersToRead = new string[]
                 {
-                    Width = reply.RegisterValue;
-                }
-                reply = await Gvcp.ReadRegisterAsync(Gvcp.RegistersDictionary[nameof(RegisterName.HeightReg)]).ConfigureAwait(false);
-                if (reply.Status == GvcpStatus.GEV_STATUS_SUCCESS)
+                    Gvcp.RegistersDictionary[nameof(RegisterName.WidthReg)],
+                    Gvcp.RegistersDictionary[nameof(RegisterName.HeightReg)],
+                    Gvcp.RegistersDictionary[nameof(RegisterName.OffsetXReg)],
+                    Gvcp.RegistersDictionary[nameof(RegisterName.OffsetYReg)],
+                    Gvcp.RegistersDictionary[nameof(RegisterName.PixelFormatReg)],
+                };
+                var reply2 = await Gvcp.ReadRegisterAsync(registersToRead);
+                if (reply2.Status == GvcpStatus.GEV_STATUS_SUCCESS)
                 {
-                    Height = reply.RegisterValue;
-                }
-
-                reply = await Gvcp.ReadRegisterAsync(Gvcp.RegistersDictionary[nameof(RegisterName.OffsetXReg)]).ConfigureAwait(false);
-                if (reply.Status == GvcpStatus.GEV_STATUS_SUCCESS)
-                {
-                    OffsetX = reply.RegisterValue;
-                }
-
-                reply = await Gvcp.ReadRegisterAsync(Gvcp.RegistersDictionary[nameof(RegisterName.OffsetYReg)]).ConfigureAwait(false);
-                if (reply.Status == GvcpStatus.GEV_STATUS_SUCCESS)
-                {
-                    OffsetY = reply.RegisterValue;
-                }
-                reply = await Gvcp.ReadRegisterAsync(Gvcp.RegistersDictionary[nameof(RegisterName.PixelFormatReg)]).ConfigureAwait(false);
-                if (reply.Status == GvcpStatus.GEV_STATUS_SUCCESS)
-                {
-                    PixelFormat = (PixelFormat)reply.RegisterValue;
+                    Width = reply2.RegisterValues[0];
+                    Height = reply2.RegisterValues[1];
+                    OffsetX = reply2.RegisterValues[2];
+                    OffsetY = reply2.RegisterValues[3];
+                    PixelFormat = (PixelFormat)reply2.RegisterValues[4];
                 }
             }
             catch (Exception ex)
@@ -330,102 +320,71 @@ namespace GigeVision.Core.Models
                 lensControl = new Dictionary<LensCommand, string>();
                 var take = new string[] { "ZoomIn", "ZoomTele" };
                 var skip = new string[] { "Step", "Speed", "Limit", "Digital" };
-                var registerAddress = CheckForRegister(take, skip);
-                if (!string.IsNullOrEmpty(registerAddress))
-                {
-                    HasZoomControl = true;
-                    lensControl.Add(LensCommand.ZoomIn, registerAddress);
-                }
-                take = new string[] { "ZoomOut", "ZoomWide" };
-                registerAddress = CheckForRegister(take, skip);
-                if (!string.IsNullOrEmpty(registerAddress))
-                {
-                    HasZoomControl = true;
-                    lensControl.Add(LensCommand.ZoomOut, registerAddress);
-                }
+                AddLensRegister(take, skip, LensCommand.ZoomIn);
 
-                take = new string[] { "ZoomStop" };
-                registerAddress = CheckForRegister(take, skip);
-                if (!string.IsNullOrEmpty(registerAddress))
+                take = new string[] { "ZoomOut", "ZoomWide" };
+                if (AddLensRegister(take, skip, LensCommand.ZoomOut))
                 {
-                    HasFocusControl = true;
-                    lensControl.Add(LensCommand.ZoomStop, registerAddress);
+                    HasZoomControl = true;
                 }
+                take = new string[] { "ZoomStop" };
+                AddLensRegister(take, skip, LensCommand.ZoomStop);
 
                 take = new string[] { "ZoomReg" };
-                registerAddress = CheckForRegister(take, skip);
-                if (!string.IsNullOrEmpty(registerAddress))
+                if (AddLensRegister(take, skip, LensCommand.ZoomValue))
                 {
-                    lensControl.Add(LensCommand.ZoomValue, registerAddress);
+                    HasFixedZoomValue = true;
                 }
 
                 take = new string[] { "FocusFar" };
-                registerAddress = CheckForRegister(take, skip);
-                if (!string.IsNullOrEmpty(registerAddress))
+                if (AddLensRegister(take, skip, LensCommand.FocusFar))
                 {
                     HasFocusControl = true;
-                    lensControl.Add(LensCommand.FocusFar, registerAddress);
                 }
 
                 take = new string[] { "FocusNear" };
-                registerAddress = CheckForRegister(take, skip);
-                if (!string.IsNullOrEmpty(registerAddress))
+                if (AddLensRegister(take, skip, LensCommand.FocusNear))
                 {
                     HasFocusControl = true;
-                    lensControl.Add(LensCommand.FocusNear, registerAddress);
                 }
 
                 take = new string[] { "FocusStop" };
-                registerAddress = CheckForRegister(take, skip);
-                if (!string.IsNullOrEmpty(registerAddress))
+                if (AddLensRegister(take, skip, LensCommand.FocusStop))
                 {
                     HasFocusControl = true;
-                    lensControl.Add(LensCommand.FocusStop, registerAddress);
                 }
 
                 take = new string[] { "FocusReg" };
-                registerAddress = CheckForRegister(take, skip);
-                if (!string.IsNullOrEmpty(registerAddress))
+                if (AddLensRegister(take, skip, LensCommand.FocusNear))
                 {
                     HasFixedFocusValue = true;
-                    lensControl.Add(LensCommand.FocusValue, registerAddress);
                 }
 
                 take = new string[] { "FocusAuto" };
-                registerAddress = CheckForRegister(take, skip);
-                if (!string.IsNullOrEmpty(registerAddress))
-                {
-                    lensControl.Add(LensCommand.FocusAuto, registerAddress);
-                }
+                AddLensRegister(take, skip, LensCommand.FocusAuto);
 
                 take = new string[] { "IrisOpen" };
-                registerAddress = CheckForRegister(take, skip);
-                if (!string.IsNullOrEmpty(registerAddress))
+                if (AddLensRegister(take, skip, LensCommand.IrisOpen))
                 {
                     HasIrisControl = true;
-                    lensControl.Add(LensCommand.IrisOpen, registerAddress);
                 }
 
                 take = new string[] { "IrisClose" };
-                registerAddress = CheckForRegister(take, skip);
-                if (!string.IsNullOrEmpty(registerAddress))
+                if (AddLensRegister(take, skip, LensCommand.IrisClose))
                 {
                     HasIrisControl = true;
-                    lensControl.Add(LensCommand.IrisClose, registerAddress);
                 }
 
                 take = new string[] { "IrisStop" };
-                registerAddress = CheckForRegister(take, skip);
-                if (!string.IsNullOrEmpty(registerAddress))
+                if (AddLensRegister(take, skip, LensCommand.IrisStop))
                 {
-                    lensControl.Add(LensCommand.IrisStop, registerAddress);
+                    HasIrisControl = true;
                 }
 
                 take = new string[] { "AutoIris" };
-                registerAddress = CheckForRegister(take, skip);
-                if (!string.IsNullOrEmpty(registerAddress))
+                if (AddLensRegister(take, skip, LensCommand.IrisAuto))
                 {
-                    lensControl.Add(LensCommand.IrisAuto, registerAddress);
+                    HasIrisControl = true;
                 }
             }
             catch (Exception ex)
@@ -433,7 +392,7 @@ namespace GigeVision.Core.Models
             }
         }
 
-        private string CheckForRegister(string[] lookFor, string[] skipThese)
+        private bool AddLensRegister(string[] lookFor, string[] skipThese, LensCommand lensCommand)
         {
             List<string> totalKeys = new List<string>();
             foreach (var item in lookFor)
@@ -457,11 +416,16 @@ namespace GigeVision.Core.Models
                 }
                 if (totalKeys.Count > 0)
                 {
-                    return Gvcp.RegistersDictionary[totalKeys.FirstOrDefault()];
+                    ;
+                    if (!string.IsNullOrEmpty(Gvcp.RegistersDictionary[totalKeys.FirstOrDefault()]))
+                    {
+                        HasZoomControl = true;
+                        lensControl.Add(lensCommand, Gvcp.RegistersDictionary[totalKeys.FirstOrDefault()]);
+                        return true;
+                    }
                 }
             }
-
-            return null;
+            return false;
         }
 
         private async void DecodePacketsAsync()
