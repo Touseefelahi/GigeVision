@@ -9,15 +9,15 @@ namespace GigeVision.Core
     {
 #if DEBUG
 #if WIN32
-        private const string libraryPath = "lib\\StreamRxCpp.dll";
+        private const string libraryPath = "lib\\runtimes\\win-x86\\native\\StreamRxCpp.dll";
 #else
-        private const string libraryPath = "lib\\StreamRxCpp.dll";
+        private const string libraryPath = "lib\\runtimes\\win-x64\\native\\StreamRxCpp.dll";
 #endif
 #else
 #if WIN32
-        private const string libraryPath = "lib\\StreamRxCpp.dll";
+        private const string libraryPath = "lib\\runtimes\\win-x86\\native\\StreamRxCpp.dll";
 #else
-        private const string libraryPath = "lib\\StreamRxCpp.dll";
+        private const string libraryPath = "lib\\runtimes\\win-x64\\native\\StreamRxCpp.dll";
 #endif
 #endif
 
