@@ -62,6 +62,7 @@ namespace GigeVision.Core.Models
                             ControlSocket = new UdpClient(cameraIP, PortGvcp);
                             ControlSocket.Client.ReceiveTimeout = 1000;
                             ControlSocket.Client.SendTimeout = 500;
+                            CameraIpChanged?.Invoke(null, null);
                         }
                         catch (Exception)
                         {
@@ -83,6 +84,8 @@ namespace GigeVision.Core.Models
         /// It can be for any thing, to update fps to check devices
         /// </summary>
         public EventHandler ElapsedOneSecond { get; set; }
+
+        public EventHandler CameraIpChanged { get; set; }
 
         #region Status Commands
 

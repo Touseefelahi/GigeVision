@@ -21,12 +21,8 @@ namespace Receiver
 	unsigned long globalCounterInvalid = 0, globalCounterValid = 0, numberOfMissedPackets;
 
 	extern "C" typedef void(__stdcall* ProgressCallback)(int);
-	extern "C" __declspec(dllexport) bool Start(long port, unsigned char** imageDataAddress, long width, long height, long packetLengthToSet, ProgressCallback progressCallback);
+	extern "C" __declspec(dllexport) bool Start(long port, unsigned char** imageDataAddress, long width, long height, long bytesPerPixel, ProgressCallback frameReady);
 	extern "C" __declspec(dllexport) bool Stop();
-	extern "C" __declspec(dllexport) bool IsFrameReady();
-	extern "C" __declspec(dllexport) bool UpdateFrame();
 	extern "C" __declspec(dllexport) unsigned long GetCurrentInvalidFrameCounter();
 	extern "C" __declspec(dllexport) unsigned long GetCurrentValidFrameCounter();
-	extern "C" __declspec(dllexport) void FrameIncoming(ProgressCallback progressCallback);
-	void ReceiveStreamContinous();
 }

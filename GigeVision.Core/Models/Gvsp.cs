@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -13,27 +14,25 @@ namespace GigeVision.Core.Models
 {
     public class Gvsp : BaseNotifyPropertyChanged, IGvsp
     {
-        private int Port = 5454;
-
-        private UdpClient SocketRx;
-
-        private IPEndPoint endPoint;
-
-        private uint width, height, offsetX, offsetY;
-
-        private Dictionary<LensCommand, string> lensControl;
+        private int Port = 5556;
+        private uint width, height, offsetX, offsetY, bytesPerPixel;
 
         private uint zoomValue;
         private uint focusValue;
+        private IntPtr intPtr;
+        private byte[] rawBytes = Array.Empty<byte>();
+
+        private bool isStreaming;
 
         public Gvsp(IGvcp gvcp)
         {
             Gvcp = gvcp;
             Task.Run(async () => await ReadParameters().ConfigureAwait(false));
-            lensControl = new Dictionary<LensCommand, string>();
+            MotorController = new MotorControl();
+            Gvcp.CameraIpChanged += CameraIpChanged;
         }
 
-        public bool IsStreaming { get; set; }
+        public bool IsStreaming { get => isStreaming; set { isStreaming = value; OnPropertyChanged(nameof(IsStreaming)); } }
 
         public IGvcp Gvcp { get; private set; }
 
@@ -96,11 +95,6 @@ namespace GigeVision.Core.Models
         }
 
         public PixelFormat PixelFormat { get; set; }
-        public bool HasZoomControl { get; set; }
-        public bool HasFocusControl { get; set; }
-        public bool HasIrisControl { get; set; }
-        public bool HasFixedZoomValue { get; set; }
-        public bool HasFixedFocusValue { get; set; }
 
         public uint ZoomValue
         {
@@ -121,6 +115,8 @@ namespace GigeVision.Core.Models
                 OnPropertyChanged(nameof(FocusValue));
             }
         }
+
+        public MotorControl MotorController { get; set; }
 
         public async Task<bool> StartStreamAsync(string rxIP = null, int port = 0)
         {
@@ -144,11 +140,14 @@ namespace GigeVision.Core.Models
             {
                 Port = new Random().Next(5000, 6000);
             }
+            Port = 5557;
             if (Gvcp.RegistersDictionary.ContainsKey(nameof(RegisterName.AcquisitionStartReg)))
             {
                 if (await Gvcp.TakeControl(true).ConfigureAwait(false))
                 {
-                    SetupRxSocket(); IsStreaming = true; Decode();
+                    StartRxCppThread();
+                    IsStreaming = true;
+
                     if ((await Gvcp.WriteRegisterAsync(GvcpRegister.SCPHostPort, (uint)Port).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS)
                     {
                         await Gvcp.WriteRegisterAsync(GvcpRegister.SCDA, Converter.IpToNumber(rxIP)).ConfigureAwait(false);
@@ -160,19 +159,9 @@ namespace GigeVision.Core.Models
             return true;
         }
 
-        public void Decode()
-        {
-            Thread threadDecode = new Thread(DecodePacketsAsync)
-            {
-                Priority = ThreadPriority.Highest,
-                Name = "Decode Packets Thread",
-                IsBackground = true
-            };
-            threadDecode.Start();
-        }
-
         public async Task<bool> StopStream()
         {
+            CvInterop.Stop();
             await Gvcp.WriteRegisterAsync(GvcpRegister.SCDA, 0).ConfigureAwait(false);
             return await Gvcp.LeaveControl().ConfigureAwait(false);
         }
@@ -187,6 +176,13 @@ namespace GigeVision.Core.Models
                 registers[1] = Gvcp.RegistersDictionary[nameof(RegisterName.HeightReg)];
                 var valueToWrite = new uint[] { width, height };
                 var status = (await Gvcp.WriteRegisterAsync(registers, valueToWrite).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS;
+                var reply = await Gvcp.ReadRegisterAsync(registers).ConfigureAwait(false);
+                if (reply.Status == GvcpStatus.GEV_STATUS_SUCCESS)
+                {
+                    Width = reply.RegisterValues[0];
+                    Height = reply.RegisterValues[1];
+                }
+
                 await Gvcp.LeaveControl().ConfigureAwait(false);
                 return status;
             }
@@ -217,6 +213,12 @@ namespace GigeVision.Core.Models
             registers[1] = Gvcp.RegistersDictionary[nameof(RegisterName.OffsetYReg)];
             var valueToWrite = new uint[] { offsetX, offsetY };
             var status = (await Gvcp.WriteRegisterAsync(registers, valueToWrite).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS;
+            var reply = await Gvcp.ReadRegisterAsync(registers).ConfigureAwait(false);
+            if (reply.Status == GvcpStatus.GEV_STATUS_SUCCESS)
+            {
+                OffsetX = reply.RegisterValues[0];
+                OffsetY = reply.RegisterValues[1];
+            }
             if (!IsStreaming)
             {
                 await Gvcp.LeaveControl().ConfigureAwait(false);
@@ -226,92 +228,66 @@ namespace GigeVision.Core.Models
 
         public async Task<bool> MotorControl(LensCommand command, uint value = 1)
         {
-            if (lensControl.ContainsKey(command))
-            {
-                if (lensControl.ContainsKey(LensCommand.FocusAuto))
-                {
-                    switch (command)
-                    {
-                        case LensCommand.FocusFar:
-                        case LensCommand.FocusNear:
-                            await Gvcp.WriteRegisterAsync(lensControl[LensCommand.FocusAuto], 0).ConfigureAwait(false);
-                            break;
-                    }
-                }
-                var status = (await Gvcp.WriteRegisterAsync(lensControl[command], value).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS;
-                if (lensControl.ContainsKey(LensCommand.FocusAuto))
-                {
-                    switch (command)
-                    {
-                        case LensCommand.ZoomStop:
-                            await Gvcp.WriteRegisterAsync(lensControl[LensCommand.FocusAuto], 3).ConfigureAwait(false);
-                            if (lensControl.ContainsKey(LensCommand.ZoomValue))
-                            {
-                                var zoomValue = await Gvcp.ReadRegisterAsync(lensControl[LensCommand.ZoomValue]).ConfigureAwait(false);
-                                if (zoomValue.Status == GvcpStatus.GEV_STATUS_SUCCESS)
-                                {
-                                    ZoomValue = zoomValue.RegisterValue;
-                                }
-                            }
-                            break;
-
-                        case LensCommand.FocusStop:
-                        case LensCommand.FocusValue:
-                            if (lensControl.ContainsKey(LensCommand.FocusValue))
-                            {
-                                var focusValue = await Gvcp.ReadRegisterAsync(lensControl[LensCommand.FocusValue]).ConfigureAwait(false);
-                                if (focusValue.Status == GvcpStatus.GEV_STATUS_SUCCESS)
-                                {
-                                    FocusValue = focusValue.RegisterValue;
-                                }
-                            }
-                            break;
-                    }
-                }
-                return status;
-            }
-            return false;
+            return await MotorController.SendMotorCommand(Gvcp, command, value).ConfigureAwait(false);
         }
 
-        private async void SetZoomValueAsync()
+        public async Task<bool> ReadRegisters()
         {
-            if (lensControl.ContainsKey(LensCommand.ZoomValue))
-            {
-                await Gvcp.WriteRegisterAsync(lensControl[LensCommand.ZoomValue], zoomValue).ConfigureAwait(false);
-            }
+            return await ReadParameters().ConfigureAwait(false);
         }
 
-        private async Task ReadParameters()
+        private async void CameraIpChanged(object sender, EventArgs e)
+        {
+            await ReadParameters().ConfigureAwait(false);
+        }
+
+        private void StartRxCppThread()
+        {
+            Thread threadDecode = new Thread(RxCpp)
+            {
+                Priority = ThreadPriority.Highest,
+                Name = "Decode Cpp Packets Thread",
+                IsBackground = true
+            };
+            threadDecode.Start();
+        }
+
+        private void RxCpp()
+        {
+            intPtr = new IntPtr();
+            CvInterop.Start(Port, out intPtr, (int)Width, (int)Height, (int)bytesPerPixel, RawFrameReady);
+        }
+
+        private void RawFrameReady(int value)
+        {
+            Marshal.Copy(intPtr, rawBytes, 0, rawBytes.Length);
+            FrameReady?.Invoke(null, rawBytes);
+        }
+
+        private async Task<bool> ReadParameters()
         {
             await Gvcp.ReadAllRegisterAddressFromCameraAsync().ConfigureAwait(false);
+            if (Gvcp.RegistersDictionary.Count == 0) return false;
             try
             {
-                var reply = await Gvcp.ReadRegisterAsync(Gvcp.RegistersDictionary[nameof(RegisterName.WidthReg)]).ConfigureAwait(false);
-                if (reply.Status == GvcpStatus.GEV_STATUS_SUCCESS)
+                var registersToRead = new string[]
                 {
-                    Width = reply.RegisterValue;
-                }
-                reply = await Gvcp.ReadRegisterAsync(Gvcp.RegistersDictionary[nameof(RegisterName.HeightReg)]).ConfigureAwait(false);
-                if (reply.Status == GvcpStatus.GEV_STATUS_SUCCESS)
+                    Gvcp.RegistersDictionary[nameof(RegisterName.WidthReg)],
+                    Gvcp.RegistersDictionary[nameof(RegisterName.HeightReg)],
+                    Gvcp.RegistersDictionary[nameof(RegisterName.OffsetXReg)],
+                    Gvcp.RegistersDictionary[nameof(RegisterName.OffsetYReg)],
+                    Gvcp.RegistersDictionary[nameof(RegisterName.PixelFormatReg)],
+                };
+                var reply2 = await Gvcp.ReadRegisterAsync(registersToRead);
+                if (reply2.Status == GvcpStatus.GEV_STATUS_SUCCESS)
                 {
-                    Height = reply.RegisterValue;
-                }
-
-                reply = await Gvcp.ReadRegisterAsync(Gvcp.RegistersDictionary[nameof(RegisterName.OffsetXReg)]).ConfigureAwait(false);
-                if (reply.Status == GvcpStatus.GEV_STATUS_SUCCESS)
-                {
-                    OffsetX = reply.RegisterValue;
-                }
-
-                reply = await Gvcp.ReadRegisterAsync(Gvcp.RegistersDictionary[nameof(RegisterName.OffsetYReg)]).ConfigureAwait(false);
-                if (reply.Status == GvcpStatus.GEV_STATUS_SUCCESS)
-                {
-                    OffsetY = reply.RegisterValue;
-                }
-                reply = await Gvcp.ReadRegisterAsync(Gvcp.RegistersDictionary[nameof(RegisterName.PixelFormatReg)]).ConfigureAwait(false);
-                if (reply.Status == GvcpStatus.GEV_STATUS_SUCCESS)
-                {
-                    PixelFormat = (PixelFormat)reply.RegisterValue;
+                    Width = reply2.RegisterValues[0];
+                    Height = reply2.RegisterValues[1];
+                    OffsetX = reply2.RegisterValues[2];
+                    OffsetY = reply2.RegisterValues[3];
+                    PixelFormat = (PixelFormat)reply2.RegisterValues[4];
+                    bytesPerPixel = (uint)(reply2.Reply[reply2.Reply.Count - 3] / 8);
+                    rawBytes = new byte[Width * Height * (int)bytesPerPixel];
                 }
             }
             catch (Exception ex)
@@ -319,232 +295,9 @@ namespace GigeVision.Core.Models
             }
             if (Gvcp.RegistersDictionary.Count > 0)
             {
-                CheckMotorControl();
+                MotorController.CheckMotorControl(Gvcp.RegistersDictionary);
             }
-        }
-
-        private void CheckMotorControl()
-        {
-            try
-            {
-                lensControl = new Dictionary<LensCommand, string>();
-                var take = new string[] { "ZoomIn", "ZoomTele" };
-                var skip = new string[] { "Step", "Speed", "Limit", "Digital" };
-                var registerAddress = CheckForRegister(take, skip);
-                if (!string.IsNullOrEmpty(registerAddress))
-                {
-                    HasZoomControl = true;
-                    lensControl.Add(LensCommand.ZoomIn, registerAddress);
-                }
-                take = new string[] { "ZoomOut", "ZoomWide" };
-                registerAddress = CheckForRegister(take, skip);
-                if (!string.IsNullOrEmpty(registerAddress))
-                {
-                    HasZoomControl = true;
-                    lensControl.Add(LensCommand.ZoomOut, registerAddress);
-                }
-
-                take = new string[] { "ZoomStop" };
-                registerAddress = CheckForRegister(take, skip);
-                if (!string.IsNullOrEmpty(registerAddress))
-                {
-                    HasFocusControl = true;
-                    lensControl.Add(LensCommand.ZoomStop, registerAddress);
-                }
-
-                take = new string[] { "ZoomReg" };
-                registerAddress = CheckForRegister(take, skip);
-                if (!string.IsNullOrEmpty(registerAddress))
-                {
-                    lensControl.Add(LensCommand.ZoomValue, registerAddress);
-                }
-
-                take = new string[] { "FocusFar" };
-                registerAddress = CheckForRegister(take, skip);
-                if (!string.IsNullOrEmpty(registerAddress))
-                {
-                    HasFocusControl = true;
-                    lensControl.Add(LensCommand.FocusFar, registerAddress);
-                }
-
-                take = new string[] { "FocusNear" };
-                registerAddress = CheckForRegister(take, skip);
-                if (!string.IsNullOrEmpty(registerAddress))
-                {
-                    HasFocusControl = true;
-                    lensControl.Add(LensCommand.FocusNear, registerAddress);
-                }
-
-                take = new string[] { "FocusStop" };
-                registerAddress = CheckForRegister(take, skip);
-                if (!string.IsNullOrEmpty(registerAddress))
-                {
-                    HasFocusControl = true;
-                    lensControl.Add(LensCommand.FocusStop, registerAddress);
-                }
-
-                take = new string[] { "FocusReg" };
-                registerAddress = CheckForRegister(take, skip);
-                if (!string.IsNullOrEmpty(registerAddress))
-                {
-                    HasFixedFocusValue = true;
-                    lensControl.Add(LensCommand.FocusValue, registerAddress);
-                }
-
-                take = new string[] { "FocusAuto" };
-                registerAddress = CheckForRegister(take, skip);
-                if (!string.IsNullOrEmpty(registerAddress))
-                {
-                    lensControl.Add(LensCommand.FocusAuto, registerAddress);
-                }
-
-                take = new string[] { "IrisOpen" };
-                registerAddress = CheckForRegister(take, skip);
-                if (!string.IsNullOrEmpty(registerAddress))
-                {
-                    HasIrisControl = true;
-                    lensControl.Add(LensCommand.IrisOpen, registerAddress);
-                }
-
-                take = new string[] { "IrisClose" };
-                registerAddress = CheckForRegister(take, skip);
-                if (!string.IsNullOrEmpty(registerAddress))
-                {
-                    HasIrisControl = true;
-                    lensControl.Add(LensCommand.IrisClose, registerAddress);
-                }
-
-                take = new string[] { "IrisStop" };
-                registerAddress = CheckForRegister(take, skip);
-                if (!string.IsNullOrEmpty(registerAddress))
-                {
-                    lensControl.Add(LensCommand.IrisStop, registerAddress);
-                }
-
-                take = new string[] { "AutoIris" };
-                registerAddress = CheckForRegister(take, skip);
-                if (!string.IsNullOrEmpty(registerAddress))
-                {
-                    lensControl.Add(LensCommand.IrisAuto, registerAddress);
-                }
-            }
-            catch (Exception ex)
-            {
-            }
-        }
-
-        private string CheckForRegister(string[] lookFor, string[] skipThese)
-        {
-            List<string> totalKeys = new List<string>();
-            foreach (var item in lookFor)
-            {
-                var keys = Gvcp.RegistersDictionary.Keys.Where(x => x.Contains(item));
-                foreach (var keyItem in keys)
-                {
-                    totalKeys.Add(keyItem);
-                }
-            }
-            if (totalKeys?.Count() > 0)
-            {
-                foreach (var skipKey in skipThese)
-                {
-                    var toBeRemoved = totalKeys.Where(x => x.Contains(skipKey)).ToList();
-
-                    foreach (var item in toBeRemoved)
-                    {
-                        totalKeys.Remove(item);
-                    }
-                }
-                if (totalKeys.Count > 0)
-                {
-                    return Gvcp.RegistersDictionary[totalKeys.FirstOrDefault()];
-                }
-            }
-
-            return null;
-        }
-
-        private async void DecodePacketsAsync()
-        {
-            bool isResolutionUpdateRequired = true;
-            int packetID = 0;
-            int finalPacketID = 20000;
-            int bufferLength = 0;
-            byte[] singlePacket;
-            var rawBytes = Array.Empty<byte>();
-            try
-            {
-                while (IsStreaming)
-                {
-                    singlePacket = SocketRx.Receive(ref endPoint);
-                    if (isResolutionUpdateRequired)
-                    {
-                        if (singlePacket.Length == 44) //Image Data Leader
-                        {
-                            if (singlePacket[11] == 01) //Payload type Image
-                            {
-                                var pixelFormat = (PixelFormat)(singlePacket[20] << 24 | singlePacket[21] << 16 | singlePacket[22] << 8 | singlePacket[23]);
-                                var width = (uint)(singlePacket[24] << 24 | singlePacket[25] << 16 | singlePacket[26] << 8 | singlePacket[27]);
-                                var height = (uint)(singlePacket[28] << 24 | singlePacket[29] << 16 | singlePacket[30] << 8 | singlePacket[31]);
-                                int bytesPerPixel = (int)Math.Ceiling(singlePacket[21] / 8.0);
-                                rawBytes = new byte[width * height * bytesPerPixel];
-                                isResolutionUpdateRequired = false;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        if (singlePacket.Length > 44) //Packet
-                        {
-                            packetID = (singlePacket[6] << 8) | singlePacket[7];
-                            if (packetID < finalPacketID) //Check for final packet because final packet length maybe lesser than the regular packets
-                            {
-                                bufferLength = singlePacket.Length - 8;
-                                Buffer.BlockCopy(singlePacket, 8, rawBytes, (packetID - 1) * bufferLength, bufferLength);
-                            }
-                            else
-                            {
-                                Buffer.BlockCopy(singlePacket, 8, rawBytes, (packetID - 1) * bufferLength, singlePacket.Length - 8);
-                            }
-                        }
-                        else if (singlePacket.Length == 16) //Trailer packet size=16, Header Packet Size=44
-                        {
-                            if (finalPacketID == 20000)
-                            {
-                                finalPacketID = ((singlePacket[6] << 8) | singlePacket[7]) - 1;
-                            }
-                            FrameReady?.Invoke(this, rawBytes);
-                        }
-                    }
-                }
-                IsStreaming = false;
-            }
-            catch (Exception ex)
-            {
-                IsStreaming = false;
-                await StopStream().ConfigureAwait(false);
-            }
-        }
-
-        private void SetupRxSocket()
-        {
-            try
-            {
-                SocketRx.Client.Close();
-                SocketRx.Close();
-            }
-            catch (Exception) { }
-            try
-            {
-                SocketRx = new UdpClient((int)Port);
-                endPoint = new IPEndPoint(IPAddress.Any, (int)Port);
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
-
-            SocketRx.Client.ReceiveTimeout = 3000;
+            return true;
         }
 
         private string GetMyIp()

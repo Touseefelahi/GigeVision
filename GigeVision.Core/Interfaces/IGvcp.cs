@@ -14,6 +14,8 @@ namespace GigeVision.Core.Interfaces
         /// </summary>
         EventHandler ElapsedOneSecond { get; set; }
 
+        EventHandler CameraIpChanged { get; set; }
+
         string CameraIp { get; set; }
         int PortControl { get; }
         bool IsKeepingAlive { get; }
