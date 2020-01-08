@@ -7,18 +7,10 @@ namespace GigeVision.Core
 {
     public static class CvInterop
     {
-#if DEBUG
-#if WIN32
-        private const string libraryPath = "lib\\runtimes\\win-x86\\native\\StreamRxCpp.dll";
+#if PLATFORM_X86
+        private const string libraryPath = "runtimes\\win-x86\\native\\StreamRxCpp.dll";
 #else
-        private const string libraryPath = "lib\\runtimes\\win-x64\\native\\StreamRxCpp.dll";
-#endif
-#else
-#if WIN32
-        private const string libraryPath = "lib\\runtimes\\win-x86\\native\\StreamRxCpp.dll";
-#else
-        private const string libraryPath = "lib\\runtimes\\win-x64\\native\\StreamRxCpp.dll";
-#endif
+        private const string libraryPath = "runtimes\\win-x64\\native\\StreamRxCpp.dll";
 #endif
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]

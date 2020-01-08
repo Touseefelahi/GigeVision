@@ -34,13 +34,33 @@ namespace GigeVisionLibrary.Test.Wpf
         {
             gvcp = new Gvcp() { };
             var devices = await gvcp.GetAllGigeDevicesInNetworkAsnyc();
-            gvcp.CameraIp = "192.168.10.196";
+            if (devices.Count > 0)
+            {
+                gvcp.CameraIp = devices[0].IP;
+            }
             gvsp = new Gvsp(gvcp);
+            gvsp.FrameReady += FrameReady;
+        }
+
+        private void FrameReady(object sender, byte[] e)
+        {
+            image = frameProcessor.ByteArrayToBitmapSource(e);
+            image.Freeze();
+            //Dispatcher.CurrentDispatcher.Invoke(() => RaisePropertyChanged(nameof(Image)), DispatcherPriority.Render);
+            RaisePropertyChanged(nameof(Image));
+            fpsCount++;
         }
 
         private async void Button_Click(object sender, RoutedEventArgs e)
         {
-            await gvsp.StartStreamAsync().ConfigureAwait(false);
+            if (gvsp.IsStreaming)
+            {
+                await gvsp.StopStream().ConfigureAwait(false);
+            }
+            else
+            {
+                await gvsp.StartStreamAsync().ConfigureAwait(false);
+            }
         }
     }
 }

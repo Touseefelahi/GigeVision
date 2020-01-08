@@ -11,17 +11,11 @@
     <PackageTags>GigeVision, GeniCam, GVSP, GVCP</PackageTags>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>1.2.0</Version>
+    <Version>1.2.20</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <OutputPath>D:\VisualStudioProjects\Visual Studio 2019\Nuget Packages\All Packages\</OutputPath>
-    <DocumentationFile>D:\VisualStudioProjects\Visual Studio 2019\Nuget Packages\GigePackage\GigeVision.Core\GigeVision.Core.xml</DocumentationFile>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <OutputPath>D:\VisualStudioProjects\Visual Studio 2019\Nuget Packages\All Packages\</OutputPath>
-    <DocumentationFile>D:\VisualStudioProjects\Visual Studio 2019\Nuget Packages\GigePackage\GigeVision.Core\GigeVision.Core.xml</DocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -39,6 +33,15 @@
     <None Include="$(MSBuildThisFileDirectory)\runtimes\win-x64\native\StreamRxCpp.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>runtimes\win-x64\native\StreamRxCpp.dll</Link>
+      <Pack>True</Pack>
+      <Visible>false</Visible>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)\runtimes\win-x86\native\StreamRxCpp.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>runtimes\win-x86\native\StreamRxCpp.dll</Link>
       <Pack>True</Pack>
       <Visible>false</Visible>
     </None>
