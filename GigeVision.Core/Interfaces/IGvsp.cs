@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace GigeVision.Core.Interfaces
 {
-    public interface IGvsp
+    public interface ICamera
     {
         MotorControl MotorController { get; set; }
         IGvcp Gvcp { get; }
@@ -17,6 +17,7 @@ namespace GigeVision.Core.Interfaces
         uint OffsetX { get; set; }
         uint OffsetY { get; set; }
         PixelFormat PixelFormat { get; set; }
+        string IP { get; set; }
 
         /// <summary>
         /// This method will get current PC IP and Gets the Camera ip from Gvcp

@@ -597,7 +597,15 @@
             </summary>
             <returns>Leave Status</returns>
         </member>
-        <member name="M:GigeVision.Core.Interfaces.IGvsp.StartStreamAsync(System.String,System.Int32)">
+        <member name="M:GigeVision.Core.Interfaces.ICamera.StartStreamAsync(System.String,System.Int32)">
+            <summary>
+            This method will get current PC IP and Gets the Camera ip from Gvcp
+            </summary>
+            <param name="rxIP">If rxIP is not provided, method will detect system IP and use it</param>
+            <param name="rxPort">It will set randomly when not provided</param>
+            <returns></returns>
+        </member>
+        <member name="M:GigeVision.Core.Models.Camera.StartStreamAsync(System.String,System.Int32)">
             <summary>
             This method will get current PC IP and Gets the Camera ip from Gvcp
             </summary>
@@ -663,14 +671,6 @@
             <summary>
             For Multiple register reading
             </summary>
-        </member>
-        <member name="M:GigeVision.Core.Models.Gvsp.StartStreamAsync(System.String,System.Int32)">
-            <summary>
-            This method will get current PC IP and Gets the Camera ip from Gvcp
-            </summary>
-            <param name="rxIP">If rxIP is not provided, method will detect system IP and use it</param>
-            <param name="rxPort">It will set randomly when not provided</param>
-            <returns></returns>
         </member>
     </members>
 </doc>

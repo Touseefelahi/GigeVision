@@ -3,9 +3,9 @@ using System.Runtime.InteropServices;
 
 namespace GigeVision.Core
 {
-    public static class CvInterop
+    public static class CvInterop64
     {
-        private const string libraryPath = "runtimes\\win-x86\\native\\StreamRxCpp.dll";
+        private const string libraryPath = "runtimes\\win-x64\\native\\StreamRxCpp.dll";
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         public delegate void ProgressCallback(int value);

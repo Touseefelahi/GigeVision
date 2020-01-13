@@ -9,13 +9,22 @@
       Simple GigE Vision Implementation
     </Description>
     <PackageTags>GigeVision, GeniCam, GVSP, GVCP</PackageTags>
-    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>1.2.20</Version>
+    <Version>1.2.1</Version>
+    <PackageLicenseFile>License.txt</PackageLicenseFile>
+    <PackageIcon>gige.png</PackageIcon>
+    <PackageIconUrl />
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <OutputPath>D:\VisualStudioProjects\Visual Studio 2019\Nuget Packages\All Packages\</OutputPath>
+    <DocumentationFile>D:\VisualStudioProjects\Visual Studio 2019\Nuget Packages\GigePackage\GigeVision.Core\GigeVision.Core.xml</DocumentationFile>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DocumentationFile>D:\VisualStudioProjects\Visual Studio 2019\Nuget Packages\GigePackage\GigeVision.Core\GigeVision.Core.xml</DocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -26,6 +35,14 @@
     <None Include="build\GigeVision.Core.targets">
       <PackagePath>build/</PackagePath>
       <Pack>true</Pack>
+    </None>
+    <None Include="gige.png">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
+    <None Include="Licenses\License.txt">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
     </None>
   </ItemGroup>
 

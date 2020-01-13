@@ -1,6 +1,8 @@
 ﻿using GigeVision.Core.Models;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -21,8 +23,23 @@ namespace GigeVisionLibrary.Test.Wpf
     /// </summary>
     public partial class MainWindow : Window
     {
-        private Gvsp gvsp;
+        private PixelFormat pixelFormat = PixelFormats.Gray8;
+        private Camera camera;
         private Gvcp gvcp;
+
+        private BitmapSource image;
+        private int fpsCount;
+
+        private int width = 1024;
+
+        private int height = 728;
+
+        private double dpiX = 96d;
+
+        private double dpiY = 96d;
+
+        private int bytesPerPixel;
+        private int stride;
 
         public MainWindow()
         {
@@ -30,36 +47,55 @@ namespace GigeVisionLibrary.Test.Wpf
             Setup();
         }
 
+        public BitmapSource Image
+        {
+            get => image;
+            set => image = value;
+        }
+
         private async void Setup()
         {
-            gvcp = new Gvcp() { };
-            var devices = await gvcp.GetAllGigeDevicesInNetworkAsnyc();
-            if (devices.Count > 0)
-            {
-                gvcp.CameraIp = devices[0].IP;
-            }
-            gvsp = new Gvsp(gvcp);
-            gvsp.FrameReady += FrameReady;
+            camera = new Camera();
+            camera.IP = "192.168.10.197";
+            camera.FrameReady += FrameReady;
+            camera.Gvcp.ElapsedOneSecond += UpdateFps;
+        }
+
+        private void UpdateFps(object sender, EventArgs e)
+        {
+            Dispatcher.Invoke(() =>
+           Fps.Text = fpsCount.ToString(), System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+            fpsCount = 0;
         }
 
         private void FrameReady(object sender, byte[] e)
         {
-            image = frameProcessor.ByteArrayToBitmapSource(e);
-            image.Freeze();
-            //Dispatcher.CurrentDispatcher.Invoke(() => RaisePropertyChanged(nameof(Image)), DispatcherPriority.Render);
-            RaisePropertyChanged(nameof(Image));
+            Dispatcher.Invoke(() =>
+            {
+                lightControl.ImagePtr = (IntPtr)sender;
+            }, System.Windows.Threading.DispatcherPriority.Render
+            );
+            //image = BitmapSource.Create(width, height, dpiX, dpiY, pixelFormat, null, e, stride);
+            //image.Freeze();
+            //Dispatcher.Invoke(() => ImageControl.Source = Image, System.Windows.Threading.DispatcherPriority.Render);
             fpsCount++;
         }
 
         private async void Button_Click(object sender, RoutedEventArgs e)
         {
-            if (gvsp.IsStreaming)
+            if (camera.IsStreaming)
             {
-                await gvsp.StopStream().ConfigureAwait(false);
+                await camera.StopStream().ConfigureAwait(false);
             }
             else
             {
-                await gvsp.StartStreamAsync().ConfigureAwait(false);
+                width = (int)camera.Width;
+                height = (int)camera.Height;
+                lightControl.WidthImage = width;
+                lightControl.HeightImage = height;
+                bytesPerPixel = 1;
+                stride = bytesPerPixel * width;
+                await camera.StartStreamAsync().ConfigureAwait(false);
             }
         }
     }
