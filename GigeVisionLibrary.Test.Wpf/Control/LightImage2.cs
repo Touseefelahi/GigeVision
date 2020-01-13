@@ -23,9 +23,29 @@ namespace GigeVisionLibrary.Test.Wpf
         public static readonly DependencyProperty WidthImageProperty =
             DependencyProperty.Register("WidthImage", typeof(int), typeof(LightImage2), new PropertyMetadata(0));
 
+        // Using a DependencyProperty as the backing store for IsColored. This enables animation,
+        // styling, binding, etc...
+        public static readonly DependencyProperty IsColoredProperty =
+            DependencyProperty.Register("IsColored", typeof(bool), typeof(LightImage2), new PropertyMetadata(false));
+
         private WriteableBitmap SourceImage;
 
         private Int32Rect rectBitmap;
+        private int bytesPerPixel = 1;
+
+        public bool IsColored
+        {
+            get { return (bool)GetValue(IsColoredProperty); }
+            set
+            {
+                if (value != IsColored)
+                {
+                    SetValue(IsColoredProperty, value);
+                    bytesPerPixel = IsColored ? 3 : 1;
+                    SetupImage();
+                }
+            }
+        }
 
         public IntPtr ImagePtr
         {
@@ -33,7 +53,7 @@ namespace GigeVisionLibrary.Test.Wpf
             set
             {
                 SetValue(ImagePtrProperty, value);
-                SourceImage.WritePixels(rectBitmap, ImagePtr, WidthImage * HeightImage, WidthImage);
+                SourceImage.WritePixels(rectBitmap, ImagePtr, WidthImage * HeightImage * bytesPerPixel, WidthImage * bytesPerPixel);
                 Source = SourceImage;
             }
         }
@@ -63,12 +83,18 @@ namespace GigeVisionLibrary.Test.Wpf
             if (Width != 0 && HeightImage != 0)
             {
                 rectBitmap = new Int32Rect(0, 0, WidthImage, HeightImage);
-                List<Color> colors = new List<Color>
-                                              {
-                                                  Colors.Gray
-                                              };
-                BitmapPalette myPalette = new BitmapPalette(colors);
-                SourceImage = new WriteableBitmap(WidthImage, HeightImage, 96, 96, PixelFormats.Gray8, myPalette);
+                if (bytesPerPixel == 3)
+                {
+                    List<Color> colors = new List<Color> { Colors.Red, Colors.Green, Colors.Blue };
+                    BitmapPalette myPalette = new BitmapPalette(colors);
+                    SourceImage = new WriteableBitmap(WidthImage, HeightImage, 96, 96, PixelFormats.Rgb24, myPalette);
+                }
+                else if (bytesPerPixel == 1)
+                {
+                    List<Color> colors = new List<Color> { Colors.Gray };
+                    BitmapPalette myPalette = new BitmapPalette(colors);
+                    SourceImage = new WriteableBitmap(WidthImage, HeightImage, 96, 96, PixelFormats.Gray8, myPalette);
+                }
             }
         }
     }

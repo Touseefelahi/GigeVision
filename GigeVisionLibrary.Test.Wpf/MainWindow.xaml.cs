@@ -34,12 +34,7 @@ namespace GigeVisionLibrary.Test.Wpf
 
         private int height = 728;
 
-        private double dpiX = 96d;
-
-        private double dpiY = 96d;
-
         private int bytesPerPixel;
-        private int stride;
 
         public MainWindow()
         {
@@ -53,10 +48,12 @@ namespace GigeVisionLibrary.Test.Wpf
             set => image = value;
         }
 
-        private async void Setup()
+        private void Setup()
         {
-            camera = new Camera();
-            camera.IP = "192.168.10.197";
+            camera = new Camera
+            {
+                IP = "192.168.10.197"
+            };
             camera.FrameReady += FrameReady;
             camera.Gvcp.ElapsedOneSecond += UpdateFps;
         }
@@ -75,9 +72,6 @@ namespace GigeVisionLibrary.Test.Wpf
                 lightControl.ImagePtr = (IntPtr)sender;
             }, System.Windows.Threading.DispatcherPriority.Render
             );
-            //image = BitmapSource.Create(width, height, dpiX, dpiY, pixelFormat, null, e, stride);
-            //image.Freeze();
-            //Dispatcher.Invoke(() => ImageControl.Source = Image, System.Windows.Threading.DispatcherPriority.Render);
             fpsCount++;
         }
 
@@ -93,8 +87,7 @@ namespace GigeVisionLibrary.Test.Wpf
                 height = (int)camera.Height;
                 lightControl.WidthImage = width;
                 lightControl.HeightImage = height;
-                bytesPerPixel = 1;
-                stride = bytesPerPixel * width;
+                lightControl.IsColored = camera.PixelFormat.ToString().Contains("Bayer");
                 await camera.StartStreamAsync().ConfigureAwait(false);
             }
         }

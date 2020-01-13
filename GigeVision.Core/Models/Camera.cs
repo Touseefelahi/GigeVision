@@ -306,11 +306,13 @@ namespace GigeVision.Core.Models
             intPtr = new IntPtr();
             if (Is64Bit)
             {
-                CvInterop64.Start(Port, out intPtr, (int)Width, (int)Height, (int)bytesPerPixel, RawFrameReady);
+                //CvInterop64.Start(Port, out intPtr, (int)Width, (int)Height, (int)bytesPerPixel, RawFrameReady);
+                CvInterop64.GetProcessedFrame(Port, out intPtr, RawFrameReady);
             }
             else
             {
-                CvInterop.Start(Port, out intPtr, (int)Width, (int)Height, (int)bytesPerPixel, RawFrameReady);
+                // CvInterop.Start(Port, out intPtr, (int)Width, (int)Height, (int)bytesPerPixel, RawFrameReady);
+                CvInterop.GetProcessedFrame(Port, out intPtr, RawFrameReady);
             }
         }
 
