@@ -7,6 +7,7 @@
 #include <string>
 #include <iostream>
 #include <thread>
+#include <stdlib.h>
 #pragma comment(lib, "Ws2_32.lib")
 namespace Receiver
 {
@@ -26,5 +27,9 @@ namespace Receiver
 	extern "C" __declspec(dllexport) bool Stop();
 	extern "C" __declspec(dllexport) unsigned long GetCurrentInvalidFrameCounter();
 	extern "C" __declspec(dllexport) unsigned long GetCurrentValidFrameCounter();
+	extern "C" __declspec(dllexport) bool GetRawFrame(long port, const char* group, unsigned char** imageDataAddress, ProgressCallback frameReady);
+
 	void BayerGr2RGB(unsigned char* imageDataCopy, unsigned char* startingAddressImage2, ProgressCallback frameReady);
+	void GetRawPixels(int finalPacketID, int payloadSizeNormal,
+		unsigned char* imageAddressRaw, unsigned char* startingAddressRaw, ProgressCallback frameReady);
 }

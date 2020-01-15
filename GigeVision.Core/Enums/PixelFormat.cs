@@ -1,5 +1,8 @@
 ﻿namespace GigeVision.Core.Enums
 {
+    /// <summary>
+    /// Pixel format of GVSP stream
+    /// </summary>
     public enum PixelFormat
     {
         /// <summary>

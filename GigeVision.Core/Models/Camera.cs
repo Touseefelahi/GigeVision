@@ -10,16 +10,21 @@ using System.Threading.Tasks;
 
 namespace GigeVision.Core.Models
 {
+    /// <summary>
+    /// Camera class is responsible to initilize the stream and receive the stream
+    /// </summary>
     public class Camera : BaseNotifyPropertyChanged, ICamera
     {
-        private int Port = 0;
+        private int port = 0;
         private uint width, height, offsetX, offsetY, bytesPerPixel;
-        private uint zoomValue;
-        private uint focusValue;
-        private IntPtr intPtr;
-        private byte[] rawBytes = Array.Empty<byte>();
         private bool isStreaming;
 
+        private IntPtr intPtr;
+
+        /// <summary>
+        /// Camera constructor with initialized Gvcp Controller
+        /// </summary>
+        /// <param name="gvcp">GVCP Controller</param>
         public Camera(IGvcp gvcp)
         {
             Gvcp = gvcp;
@@ -28,6 +33,9 @@ namespace GigeVision.Core.Models
             Gvcp.CameraIpChanged += CameraIpChanged;
         }
 
+        /// <summary>
+        /// Default camera constructor initializes the controller
+        /// </summary>
         public Camera()
         {
             Gvcp = new Gvcp();
@@ -35,12 +43,35 @@ namespace GigeVision.Core.Models
             Gvcp.CameraIpChanged += CameraIpChanged;
         }
 
+        /// <summary>
+        /// Camera stream status
+        /// </summary>
         public bool IsStreaming { get => isStreaming; set { isStreaming = value; OnPropertyChanged(nameof(IsStreaming)); } }
+
+        /// <summary>
+        /// GVCP controller
+        /// </summary>
         public IGvcp Gvcp { get; private set; }
+
+        /// <summary>
+        /// Event for frame ready
+        /// </summary>
         public EventHandler<byte[]> FrameReady { get; set; }
+
+        /// <summary>
+        /// Event for general updates
+        /// </summary>
         public EventHandler<string> Updates { get; set; }
+
+        /// <summary>
+        /// Payload size, if not provided it will be automatically set to one row, depending on resolution
+        /// </summary>
+
         public uint Payload { get; set; } = 0;
 
+        /// <summary>
+        /// Camera width
+        /// </summary>
         public uint Width
         {
             get => width;
@@ -54,6 +85,9 @@ namespace GigeVision.Core.Models
             }
         }
 
+        /// <summary>
+        /// Camera height
+        /// </summary>
         public uint Height
         {
             get => height;
@@ -67,6 +101,9 @@ namespace GigeVision.Core.Models
             }
         }
 
+        /// <summary>
+        /// Camera offset X
+        /// </summary>
         public uint OffsetX
         {
             get => offsetX;
@@ -80,6 +117,9 @@ namespace GigeVision.Core.Models
             }
         }
 
+        /// <summary>
+        /// Camera offset Y
+        /// </summary>
         public uint OffsetY
         {
             get => offsetY;
@@ -93,38 +133,36 @@ namespace GigeVision.Core.Models
             }
         }
 
+        /// <summary>
+        /// Camera Pixel Format
+        /// </summary>
         public PixelFormat PixelFormat { get; set; }
 
-        public uint ZoomValue
-        {
-            get => zoomValue;
-            set
-            {
-                zoomValue = value;
-                OnPropertyChanged(nameof(ZoomValue));
-            }
-        }
-
-        public uint FocusValue
-        {
-            get => focusValue;
-            set
-            {
-                focusValue = value;
-                OnPropertyChanged(nameof(FocusValue));
-            }
-        }
-
+        /// <summary>
+        /// Motor Controller for camera, zoom/focus/iris control if any
+        /// </summary>
         public MotorControl MotorController { get; set; }
 
+        /// <summary>
+        /// Camera IP
+        /// </summary>
         public string IP
         {
             get => Gvcp.CameraIp;
-            set =>
-                Gvcp.CameraIp = value;
+            set => Gvcp.CameraIp = value;
         }
 
-        private bool Is64Bit => IntPtr.Size == 8;
+        /// <summary>
+        /// Multicast IP: it will be applied only when IsMulticast Property is true
+        /// </summary>
+        public string MulticastIP { get; set; } = "239.192.11.12";
+
+        /// <summary>
+        /// Multicast Option
+        /// </summary>
+        public bool IsMulticast { get; set; }
+
+        private bool is64Bit => IntPtr.Size == 8;
 
         /// <summary>
         /// This method will get current PC IP and Gets the Camera ip from Gvcp
@@ -137,6 +175,10 @@ namespace GigeVision.Core.Models
             if (string.IsNullOrEmpty(rxIP))
             {
                 rxIP = GetMyIp();
+            }
+            if (IsMulticast)
+            {
+                rxIP = MulticastIP;
             }
             try
             {
@@ -154,14 +196,14 @@ namespace GigeVision.Core.Models
             }
             if (rxPort == 0)
             {
-                if (Port == 0)
+                if (port == 0)
                 {
-                    Port = new Random().Next(5000, 6000);
+                    port = new Random().Next(5000, 6000);
                 }
             }
             else
             {
-                Port = rxPort;
+                port = rxPort;
             }
             if (Payload == 0)
             {
@@ -172,7 +214,7 @@ namespace GigeVision.Core.Models
                 if (await Gvcp.TakeControl(true).ConfigureAwait(false))
                 {
                     StartRxCppThread();
-                    if ((await Gvcp.WriteRegisterAsync(GvcpRegister.SCPHostPort, (uint)Port).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS)
+                    if ((await Gvcp.WriteRegisterAsync(GvcpRegister.SCPHostPort, (uint)port).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS)
                     {
                         await Gvcp.WriteRegisterAsync(GvcpRegister.SCDA, Converter.IpToNumber(rxIP)).ConfigureAwait(false);
                         await Gvcp.WriteRegisterAsync(GvcpRegister.SCPSPacketSize, Payload).ConfigureAwait(false);
@@ -191,9 +233,13 @@ namespace GigeVision.Core.Models
             return IsStreaming;
         }
 
+        /// <summary>
+        /// Stops the camera stream and leave camera control
+        /// </summary>
+        /// <returns>Is streaming status</returns>
         public async Task<bool> StopStream()
         {
-            if (Is64Bit)
+            if (is64Bit)
             {
                 CvInterop64.Stop();
             }
@@ -210,6 +256,12 @@ namespace GigeVision.Core.Models
             return IsStreaming;
         }
 
+        /// <summary>
+        /// Sets the resolution of camera
+        /// </summary>
+        /// <param name="width">Width to set</param>
+        /// <param name="height">Height to set</param>
+        /// <returns>Command Status</returns>
         public async Task<bool> SetResolutionAsync(uint width, uint height)
         {
             try
@@ -236,16 +288,34 @@ namespace GigeVision.Core.Models
             }
         }
 
+        /// <summary>
+        /// Sets the resolution of camera
+        /// </summary>
+        /// <param name="width">Width to set</param>
+        /// <param name="height">Height to set</param>
+        /// <returns>Command Status</returns>
         public async Task<bool> SetResolutionAsync(int width, int height)
         {
             return await SetResolutionAsync((uint)width, (uint)height).ConfigureAwait(false);
         }
 
+        /// <summary>
+        /// Sets the offset of camera
+        /// </summary>
+        /// <param name="offsetX">Offset X to set</param>
+        /// <param name="offsetY">Offset Y to set</param>
+        /// <returns>Command Status</returns>
         public async Task<bool> SetOffsetAsync(int offsetX, int offsetY)
         {
             return await SetOffsetAsync((uint)offsetX, (uint)offsetY).ConfigureAwait(false);
         }
 
+        /// <summary>
+        /// Sets the offset of camera
+        /// </summary>
+        /// <param name="offsetX">Offset X to set</param>
+        /// <param name="offsetY">Offset Y to set</param>
+        /// <returns>Command Status</returns>
         public async Task<bool> SetOffsetAsync(uint offsetX, uint offsetY)
         {
             if (!IsStreaming)
@@ -270,11 +340,21 @@ namespace GigeVision.Core.Models
             return status;
         }
 
+        /// <summary>
+        /// Bridge Command for motor controller, controls focus/zoom/iris operation
+        /// </summary>
+        /// <param name="command">Command to set</param>
+        /// <param name="value">Value to set (Applicable for ZoomValue/FocusValue)</param>
+        /// <returns>Command Status</returns>
         public async Task<bool> MotorControl(LensCommand command, uint value = 1)
         {
             return await MotorController.SendMotorCommand(Gvcp, command, value).ConfigureAwait(false);
         }
 
+        /// <summary>
+        /// Read register for camera
+        /// </summary>
+        /// <returns>Command Status</returns>
         public async Task<bool> ReadRegisters()
         {
             return await ReadParameters().ConfigureAwait(false);
@@ -304,21 +384,25 @@ namespace GigeVision.Core.Models
         private void RxCpp()
         {
             intPtr = new IntPtr();
-            if (Is64Bit)
+            try
             {
-                //CvInterop64.Start(Port, out intPtr, (int)Width, (int)Height, (int)bytesPerPixel, RawFrameReady);
-                CvInterop64.GetProcessedFrame(Port, out intPtr, RawFrameReady);
+                if (is64Bit)
+                {
+                    CvInterop64.GetRawFrame(port, IsMulticast ? MulticastIP : null, out intPtr, RawFrameReady);
+                }
+                else
+                {
+                    CvInterop.GetRawFrame(port, IsMulticast ? MulticastIP : null, out intPtr, RawFrameReady);
+                }
             }
-            else
+            catch (Exception ex)
             {
-                // CvInterop.Start(Port, out intPtr, (int)Width, (int)Height, (int)bytesPerPixel, RawFrameReady);
-                CvInterop.GetProcessedFrame(Port, out intPtr, RawFrameReady);
+                Updates?.Invoke(null, ex.Message);
             }
         }
 
         private void RawFrameReady(int value)
         {
-            // Marshal.Copy(intPtr, rawBytes, 0, rawBytes.Length);
             FrameReady?.Invoke(intPtr, null);
         }
 
@@ -349,7 +433,6 @@ namespace GigeVision.Core.Models
                     OffsetY = reply2.RegisterValues[3];
                     PixelFormat = (PixelFormat)reply2.RegisterValues[4];
                     bytesPerPixel = (uint)(reply2.Reply[reply2.Reply.Count - 3] / 8);
-                    rawBytes = new byte[Width * Height * (int)bytesPerPixel];
                 }
             }
             catch

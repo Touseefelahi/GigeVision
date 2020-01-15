@@ -148,6 +148,11 @@
             Generic error. Try to avoid and use a more descriptive status code from list above.
              </summary>
         </member>
+        <member name="T:GigeVision.Core.Enums.PixelFormat">
+            <summary>
+            Pixel format of GVSP stream
+            </summary>
+        </member>
         <member name="F:GigeVision.Core.Enums.PixelFormat.Mono8">
             <summary>
             GVSP_PIX_MONO8
@@ -605,6 +610,92 @@
             <param name="rxPort">It will set randomly when not provided</param>
             <returns></returns>
         </member>
+        <member name="T:GigeVision.Core.Models.Camera">
+            <summary>
+            Camera class is responsible to initilize the stream and receive the stream
+            </summary>
+        </member>
+        <member name="M:GigeVision.Core.Models.Camera.#ctor(GigeVision.Core.Interfaces.IGvcp)">
+            <summary>
+            Camera constructor with initialized Gvcp Controller
+            </summary>
+            <param name="gvcp">GVCP Controller</param>
+        </member>
+        <member name="M:GigeVision.Core.Models.Camera.#ctor">
+            <summary>
+            Default camera constructor initializes the controller
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.Camera.IsStreaming">
+            <summary>
+            Camera stream status
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.Camera.Gvcp">
+            <summary>
+            GVCP controller
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.Camera.FrameReady">
+            <summary>
+            Event for frame ready
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.Camera.Updates">
+            <summary>
+            Event for general updates
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.Camera.Payload">
+            <summary>
+            Payload size, if not provided it will be automatically set to one row, depending on resolution
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.Camera.Width">
+            <summary>
+            Camera width
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.Camera.Height">
+            <summary>
+            Camera height
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.Camera.OffsetX">
+            <summary>
+            Camera offset X
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.Camera.OffsetY">
+            <summary>
+            Camera offset Y
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.Camera.PixelFormat">
+            <summary>
+            Camera Pixel Format
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.Camera.MotorController">
+            <summary>
+            Motor Controller for camera, zoom/focus/iris control if any
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.Camera.IP">
+            <summary>
+            Camera IP
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.Camera.MulticastIP">
+            <summary>
+            Multicast IP: it will be applied only when IsMulticast Property is true
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.Camera.IsMulticast">
+            <summary>
+            Multicast Option
+            </summary>
+        </member>
         <member name="M:GigeVision.Core.Models.Camera.StartStreamAsync(System.String,System.Int32)">
             <summary>
             This method will get current PC IP and Gets the Camera ip from Gvcp
@@ -612,6 +703,58 @@
             <param name="rxIP">If rxIP is not provided, method will detect system IP and use it</param>
             <param name="rxPort">It will set randomly when not provided</param>
             <returns></returns>
+        </member>
+        <member name="M:GigeVision.Core.Models.Camera.StopStream">
+            <summary>
+            Stops the camera stream and leave camera control
+            </summary>
+            <returns>Is streaming status</returns>
+        </member>
+        <member name="M:GigeVision.Core.Models.Camera.SetResolutionAsync(System.UInt32,System.UInt32)">
+            <summary>
+            Sets the resolution of camera
+            </summary>
+            <param name="width">Width to set</param>
+            <param name="height">Height to set</param>
+            <returns>Command Status</returns>
+        </member>
+        <member name="M:GigeVision.Core.Models.Camera.SetResolutionAsync(System.Int32,System.Int32)">
+            <summary>
+            Sets the resolution of camera
+            </summary>
+            <param name="width">Width to set</param>
+            <param name="height">Height to set</param>
+            <returns>Command Status</returns>
+        </member>
+        <member name="M:GigeVision.Core.Models.Camera.SetOffsetAsync(System.Int32,System.Int32)">
+            <summary>
+            Sets the offset of camera
+            </summary>
+            <param name="offsetX">Offset X to set</param>
+            <param name="offsetY">Offset Y to set</param>
+            <returns>Command Status</returns>
+        </member>
+        <member name="M:GigeVision.Core.Models.Camera.SetOffsetAsync(System.UInt32,System.UInt32)">
+            <summary>
+            Sets the offset of camera
+            </summary>
+            <param name="offsetX">Offset X to set</param>
+            <param name="offsetY">Offset Y to set</param>
+            <returns>Command Status</returns>
+        </member>
+        <member name="M:GigeVision.Core.Models.Camera.MotorControl(GigeVision.Core.Enums.LensCommand,System.UInt32)">
+            <summary>
+            Bridge Command for motor controller, controls focus/zoom/iris operation
+            </summary>
+            <param name="command">Command to set</param>
+            <param name="value">Value to set (Applicable for ZoomValue/FocusValue)</param>
+            <returns>Command Status</returns>
+        </member>
+        <member name="M:GigeVision.Core.Models.Camera.ReadRegisters">
+            <summary>
+            Read register for camera
+            </summary>
+            <returns>Command Status</returns>
         </member>
         <member name="T:GigeVision.Core.Models.Gvcp">
             <summary>

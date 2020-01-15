@@ -7,8 +7,16 @@ using System.Threading.Tasks;
 
 namespace GigeVision.Core.Models
 {
+    /// <summary>
+    /// General converter
+    /// </summary>
     public static class Converter
     {
+        /// <summary>
+        /// Converts String to byte array
+        /// </summary>
+        /// <param name="registerAddress">Register address that needs to be converted</param>
+        /// <returns>Hex bytes</returns>
         public static byte[] RegisterStringToByteArray(string registerAddress)
         {
             registerAddress = registerAddress.Replace("0x", "");
@@ -35,6 +43,11 @@ namespace GigeVision.Core.Models
             }
         }
 
+        /// <summary>
+        /// Converts IP to int
+        /// </summary>
+        /// <param name="dottedIpAddress">String ip that needs to be converted</param>
+        /// <returns>IP in int</returns>
         public static uint IpToNumber(string dottedIpAddress)
         {
             uint num = 0;
@@ -54,6 +67,11 @@ namespace GigeVision.Core.Models
             }
         }
 
+        /// <summary>
+        /// Converts String to byte array
+        /// </summary>
+        /// <param name="registerAddresses">Register address that needs to be converted</param>
+        /// <returns>Hex bytes</returns>
         public static byte[] RegisterStringsToByteArray(string[] registerAddresses)
         {
             byte[] registersBytes = new byte[4 * registerAddresses.Length];
@@ -70,31 +88,41 @@ namespace GigeVision.Core.Models
             return registersBytes;
         }
 
-        public static byte[] HexStringToByteArray(string registerAddress)
+        /// <summary>
+        /// Hex to string byte array
+        /// </summary>
+        /// <param name="hexString">General hex string</param>
+        /// <returns>Hex bytes</returns>
+        public static byte[] HexStringToByteArray(string hexString)
         {
-            registerAddress = registerAddress.Replace("0x", "");
-            if (registerAddress.Length % 2 == 1)
+            hexString = hexString.Replace("0x", "");
+            if (hexString.Length % 2 == 1)
             {
-                registerAddress = "0" + registerAddress;
+                hexString = "0" + hexString;
             }
             try
             {
-                var register = Enumerable.Range(0, registerAddress.Length)
+                var register = Enumerable.Range(0, hexString.Length)
                           .Where(x => x % 2 == 0)
-                          .Select(x => Convert.ToByte(registerAddress.Substring(x, 2), 16))
+                          .Select(x => Convert.ToByte(hexString.Substring(x, 2), 16))
                           .ToArray();
                 return register;
             }
             catch (Exception ex)
             {
-                throw new RegisterConversionException($"Unknown error in Hex conversion {registerAddress}", ex);
+                throw new RegisterConversionException($"Unknown error in Hex conversion {hexString}", ex);
             }
         }
 
+        /// <summary>
+        /// Converts IP to int
+        /// </summary>
+        /// <param name="dottedIpAddress">String ip that needs to be converted</param>
+        /// <returns>IP in int</returns>
         public static int ConvertIpToNumber(string dottedIpAddress)
         {
             int num = 0;
-            if (dottedIpAddress == "")
+            if (string.IsNullOrEmpty(dottedIpAddress))
             {
                 return 0;
             }

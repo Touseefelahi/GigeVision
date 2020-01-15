@@ -86,12 +86,15 @@ namespace GigeVisionLibrary.Test.Wpf
             }
             else
             {
-                // await camera.SetResolutionAsync(32, 32).ConfigureAwait(false);
+                // await camera.SetResolutionAsync(800, 600).ConfigureAwait(false);
+
                 width = (int)camera.Width;
                 height = (int)camera.Height;
-                lightControl.WidthImage = width;
-                lightControl.HeightImage = height;
-                lightControl.IsColored = camera.PixelFormat.ToString().Contains("Bayer");
+                Dispatcher.Invoke(() =>
+                {
+                    lightControl.WidthImage = width;
+                    lightControl.HeightImage = height;
+                });
                 await camera.StartStreamAsync().ConfigureAwait(false);
             }
         }

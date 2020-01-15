@@ -8,6 +8,8 @@ namespace GigeVision.Core.Interfaces
     public interface ICamera
     {
         MotorControl MotorController { get; set; }
+        string MulticastIP { get; set; }
+        bool IsMulticast { get; set; }
         IGvcp Gvcp { get; }
         EventHandler<byte[]> FrameReady { get; set; }
         EventHandler<string> Updates { get; set; }
