@@ -24,7 +24,7 @@ namespace GigeVisionLibrary.Test.Wpf
     public partial class MainWindow : Window
     {
         private PixelFormat pixelFormat = PixelFormats.Gray8;
-        private Camera camera;
+
         private Gvcp gvcp;
 
         private BitmapSource image;
@@ -35,11 +35,19 @@ namespace GigeVisionLibrary.Test.Wpf
         private int height = 728;
 
         private int bytesPerPixel;
+        private Camera camera;
 
         public MainWindow()
         {
             InitializeComponent();
+            this.DataContext = this;
             Setup();
+        }
+
+        public Camera Camera
+        {
+            get { return camera; }
+            set { camera = value; }
         }
 
         public BitmapSource Image
@@ -48,12 +56,11 @@ namespace GigeVisionLibrary.Test.Wpf
             set => image = value;
         }
 
-        private void Setup()
+        private async void Setup()
         {
-            camera = new Camera
-            {
-                IP = "192.168.10.197"
-            };
+            camera = new Camera();
+            var listOfDevices = await camera.Gvcp.GetAllGigeDevicesInNetworkAsnyc().ConfigureAwait(false);
+            if (listOfDevices.Count > 0) { Camera.IP = listOfDevices.FirstOrDefault()?.IP; }
             camera.FrameReady += FrameReady;
             camera.Gvcp.ElapsedOneSecond += UpdateFps;
         }
@@ -67,11 +74,7 @@ namespace GigeVisionLibrary.Test.Wpf
 
         private void FrameReady(object sender, byte[] e)
         {
-            Dispatcher.Invoke(() =>
-            {
-                lightControl.ImagePtr = (IntPtr)sender;
-            }, System.Windows.Threading.DispatcherPriority.Render
-            );
+            Dispatcher.Invoke(() => lightControl.ImagePtr = (IntPtr)sender, System.Windows.Threading.DispatcherPriority.Render);
             fpsCount++;
         }
 
@@ -83,6 +86,7 @@ namespace GigeVisionLibrary.Test.Wpf
             }
             else
             {
+                // await camera.SetResolutionAsync(32, 32).ConfigureAwait(false);
                 width = (int)camera.Width;
                 height = (int)camera.Height;
                 lightControl.WidthImage = width;

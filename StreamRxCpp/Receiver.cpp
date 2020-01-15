@@ -132,8 +132,9 @@ namespace Receiver
 
 		Bind(port);
 		packetLength = 10000;//Max  value
-		buffer = static_cast<char*>(malloc(8 * packetLength));
-
+		char* bufferLocal;
+		bufferLocal = static_cast<char*>(malloc(8 * packetLength));
+		char* ringBuffer = NULL, * ringBufferStart = NULL;
 		int size = sizeof(from);
 		isListening = true;
 
@@ -144,24 +145,25 @@ namespace Receiver
 		int finalPacketID = 0;
 		int payloadSizeNormal = 0;
 		unsigned int packetID;
-		unsigned char* startingAddressImage2;
-		unsigned int bytesPerpixel2, width2, height2;
+		unsigned char* startingAddressImage2, * startingAddressImageNew, * imageDataCopy = NULL, * imageData2 = NULL, * startingAddressRaw = NULL;
+		int bytesPerpixel2, width2, height2;
 		bool informationGathered = false;
 		bool isLeaderProcessed = false;
 		bool isBayerPattern = false;
+		startingAddressImageNew = NULL;
 		while (!informationGathered)
 		{
-			int payloadSize = recvfrom(globalSock, buffer, packetLength, flags, reinterpret_cast<SOCKADDR*>(&from), &size);
+			int payloadSize = recvfrom(globalSock, bufferLocal, packetLength, flags, reinterpret_cast<SOCKADDR*>(&from), &size);
 			if (payloadSize < 0)
 				return false;
 
-			packetID = (unsigned int)(((byte)buffer[6] * 256) + (byte)buffer[7]);
+			packetID = (unsigned int)(((byte)bufferLocal[6] * 256) + (byte)bufferLocal[7]);
 			if (packetID == 0)
 			{
-				bytesPerpixel2 = (unsigned int)((byte)(buffer[21]) / (byte)8);
-				width2 = (unsigned int)(((byte)buffer[26] * 256) + (byte)buffer[27]);
-				height2 = (unsigned int)(((byte)buffer[30] * 256) + (byte)buffer[31]);
-				if ((byte)buffer[23] > 7 && (byte)buffer[23] < 0x0c)
+				bytesPerpixel2 = (int)((byte)(bufferLocal[21]) / (byte)8);
+				width2 = (int)(((byte)bufferLocal[26] * 256) + (byte)bufferLocal[27]);
+				height2 = (int)(((byte)bufferLocal[30] * 256) + (byte)bufferLocal[31]);
+				if ((byte)bufferLocal[23] > 7 && (byte)bufferLocal[23] < 0x0c)
 				{
 					isBayerPattern = true;
 				}
@@ -169,16 +171,18 @@ namespace Receiver
 				if (isBayerPattern)
 				{
 					*imageDataAddress = static_cast<unsigned char*>(malloc((size_t)(8 * width2 * height2 * 3)));
-					startingAddressImage = *imageDataAddress;
-					startingAddressImage2 = startingAddressImage;
-					imageData = static_cast<unsigned char*>(malloc((size_t)(8 * width2 * height2 * bytesPerpixel2)));
-					startingAddress = imageData;
+					startingAddressImageNew = *imageDataAddress;
+					startingAddressImage2 = startingAddressImageNew;
+					imageData2 = static_cast<unsigned char*>(malloc((size_t)(8 * width2 * height2)));
+					imageDataCopy = static_cast<unsigned char*>(malloc((size_t)(8 * width2 * height2)));
+					startingAddressRaw = imageData2;
 				}
 				else
 				{
 					*imageDataAddress = static_cast<unsigned char*>(malloc((size_t)(8 * width2 * height2 * bytesPerpixel2)));
-					imageData = (*imageDataAddress);
-					startingAddress = imageData;
+					imageData2 = static_cast<unsigned char*>(malloc((size_t)(8 * width2 * height2 * bytesPerpixel2)));
+					imageData2 = (*imageDataAddress);
+					startingAddressRaw = imageData2;
 				}
 				continue;
 			}
@@ -193,87 +197,188 @@ namespace Receiver
 			}
 		}
 
-		while (isListening)
+		if (isBayerPattern)
 		{
-			int payloadSize = recvfrom(globalSock, buffer, packetLength, flags, reinterpret_cast<SOCKADDR*>(&from), &size);
-			if (payloadSize < 0)
-				return false;
-			else if (payloadSize < 44)
+			if (payloadSizeNormal >= 3 * width2)
 			{
-				if (isBayerPattern)
-				{
-					imageData = (startingAddress);
-					startingAddressImage2 = startingAddressImage;
-					unsigned char pixelValueR = 0, pixelValueG = 0, pixelValueB = 0;
-					for (int row = 0; row < height2; row++)
-					{
-						for (int col = 0; col < width2; col++)
-						{
-							if (row > 0 && col > 0 && row < height2 - 1 && col < width2 - 1)
-							{
-								if (row % 2 == 0 && col % 2 == 0)
-								{
-									pixelValueG = imageData[row * width2 + col];
-									pixelValueR = (imageData[(row * width2) + col - 1] + imageData[(row * width2) + col + 1]) / 2;
-									pixelValueB = (imageData[((row - 1) * width2) + col] + imageData[((row + 1) * width2) + col]) / 2;
-								}
-								else if (row % 2 == 1 && col % 2 == 0)
-								{
-									pixelValueB = imageData[row * width2 + col];
-									pixelValueR = (imageData[((row - 1) * width2) + col - 1] + imageData[((row - 1) * width2) + col - 1]) / 2;
-									pixelValueG = (imageData[((row - 1) * width2) + col] + imageData[((row + 1) * width2) + col]) / 2;
-								}
-								else if (row % 2 == 0 && col % 2 == 1)
-								{
-									pixelValueR = imageData[row * width2 + col];
-									pixelValueG = (imageData[((row - 1) * width2) + col] + imageData[((row + 1) * width2) + col]) / 2;
-									pixelValueB = (imageData[((row - 1) * width2) + col - 1] + imageData[((row - 1) * width2) + col - 1]) / 2;
-								}
-								else
-								{
-									pixelValueG = imageData[row * width2 + col];
-									pixelValueR = (imageData[((row - 1) * width2) + col] + imageData[((row + 1) * width2) + col]) / 2;
-									pixelValueB = (imageData[(row * width2) + col - 1] + imageData[(row * width2) + col + 1]) / 2;
-								}
-							}
-							else
-							{
-							}
-							*startingAddressImage2++ = pixelValueR;
-							*startingAddressImage2++ = pixelValueG;
-							*startingAddressImage2++ = pixelValueB;
-						}
-					}
-					imageData = (startingAddress);
-					frameReady(globalCounterValid);
-				}
-				else
-				{
-					frameReady(globalCounterValid);
-				}
+				ringBuffer = static_cast<char*>(malloc(8 * payloadSizeNormal));
 			}
-			else if (payloadSize == 44)
+			else if (payloadSizeNormal < width2)
 			{
-				imageData = (startingAddress);
-			}
-
-			packetID = (unsigned int)(((byte)buffer[6] * 256) + (byte)buffer[7]);
-			if (packetID == 0) continue;
-
-			buffer += 8;
-			if (packetID == finalPacketID)
-			{
-				imageData = startingAddress + ((packetID - 1) * (payloadSizeNormal - 8));
-				memcpy(imageData, buffer, payloadSize - 8);
+				ringBuffer = static_cast<char*>(malloc(8 * 3 * width2));
 			}
 			else
 			{
-				imageData = startingAddress + ((packetID - 1) * (payloadSize - 8));
-				memcpy(imageData, buffer, payloadSize - 8);
+				ringBuffer = static_cast<char*>(malloc(8 * 3 * payloadSizeNormal));
 			}
-			buffer -= 8;
+			ringBufferStart = ringBuffer;
+		}
+
+		int totalPixelsReceived = 0;
+		int rowProcessed = 0;
+		unsigned int pixelProcessedCount = 0;
+		startingAddressImage2 = startingAddressImageNew;
+		std::cout << "StartAddressB" << &startingAddressImage2 << std::endl;
+		int ringCount = 0;
+		while (isListening)
+		{
+			int payloadSize = recvfrom(globalSock, bufferLocal, packetLength, flags, reinterpret_cast<SOCKADDR*>(&from), &size);
+			if (payloadSize < 0)
+				return false;
+			else if (bufferLocal[4] == 0x02)//Trailer
+			{
+				frameReady(globalCounterValid);
+				totalPixelsReceived = 0;
+				startingAddressImage2 = startingAddressImageNew;
+				rowProcessed = 0;
+				pixelProcessedCount = 0;
+				ringCount = 0;
+				continue;
+			}
+			else if (bufferLocal[4] == 0x01)//Leader
+			{
+				totalPixelsReceived = 0;
+				startingAddressImage2 = startingAddressImageNew;
+				rowProcessed = 0;
+				pixelProcessedCount = 0;
+				ringCount = 0;
+				continue;
+			}
+			packetID = (unsigned int)(((byte)bufferLocal[6] * 256) + (byte)bufferLocal[7]);
+			bufferLocal += 8;
+			if (!isBayerPattern)
+			{
+				if (packetID == finalPacketID)
+				{
+					imageData2 = startingAddressRaw + ((packetID - 1) * (payloadSizeNormal - 8));
+					memcpy(imageData2, bufferLocal, payloadSize - 8);
+				}
+				else
+				{
+					imageData2 = startingAddressRaw + ((packetID - 1) * (payloadSize - 8));
+					memcpy(imageData2, bufferLocal, payloadSize - 8);
+				}
+			}
+			else	//BayerGr8
+			{
+				totalPixelsReceived += (payloadSize - 8);
+				int midRow = 0, upperRow = 0, lowerRow = 0;
+				switch (ringCount)
+				{
+				case 0:
+					ringBuffer = ringBufferStart;
+					memcpy(ringBuffer, bufferLocal, payloadSize - 8);
+					ringCount = 1;
+					lowerRow = width2;
+					midRow = 2 * width2;
+					upperRow = 0;
+					break;
+				case 1:
+					ringBuffer = ringBufferStart + (payloadSize - 8);
+					memcpy(ringBuffer, bufferLocal, payloadSize - 8);
+					ringCount = 2;
+					upperRow = width2;
+					lowerRow = 2 * width2;
+					midRow = 0;
+					break;
+				case 2:
+					ringBuffer = ringBufferStart + (2 * (payloadSize - 8));
+					memcpy(ringBuffer, bufferLocal, payloadSize - 8);
+					ringCount = 0;
+					midRow = width2;
+					upperRow = 2 * width2;
+					lowerRow = 0;
+					break;
+				}
+
+				ringBuffer = ringBufferStart;
+				unsigned char pixelValueR = 0, pixelValueG = 0, pixelValueB = 0;
+				for (int row = rowProcessed; row < totalPixelsReceived / width2; row++)
+				{
+					for (int col = 0; col < width2; col++)
+					{
+						if (row > 0 && col > 0 && row < height2 - 1 && col < width2 - 1)
+						{
+							if (row % 2 == 0 && col % 2 == 0)
+							{
+								pixelValueG = ringBuffer[midRow + col];
+								pixelValueR = (ringBuffer[midRow + col - 1] + ringBuffer[midRow + col + 1]) / 2;
+								pixelValueB = (ringBuffer[upperRow + col] + ringBuffer[lowerRow + col]) / 2;
+							}
+							else if (row % 2 == 1 && col % 2 == 0)
+							{
+								pixelValueB = ringBuffer[midRow + col];
+								pixelValueR = (ringBuffer[upperRow + col - 1] + ringBuffer[upperRow + col - 1]) / 2;
+								pixelValueG = (ringBuffer[upperRow + col] + ringBuffer[lowerRow + col]) / 2;
+							}
+							else if (row % 2 == 0 && col % 2 == 1)
+							{
+								pixelValueR = ringBuffer[midRow + col];
+								pixelValueG = (ringBuffer[upperRow + col] + ringBuffer[lowerRow + col]) / 2;
+								pixelValueB = (ringBuffer[upperRow + col - 1] + ringBuffer[upperRow + col - 1]) / 2;
+							}
+							else
+							{
+								pixelValueG = ringBuffer[midRow + col];
+								pixelValueR = (ringBuffer[upperRow + col] + ringBuffer[lowerRow + col]) / 2;
+								pixelValueB = (ringBuffer[midRow + col - 1] + ringBuffer[midRow + col + 1]) / 2;
+							}
+						}
+						*startingAddressImage2++ = pixelValueR;
+						*startingAddressImage2++ = pixelValueG;
+						*startingAddressImage2++ = pixelValueB;
+					}
+					rowProcessed++;
+				}
+			}
+			bufferLocal -= 8;
 		}
 		return true;
+	}
+
+	void BayerGr2RGB(unsigned char* imageDataCopy, unsigned char* startingAddressImage2, ProgressCallback frameReady)
+	{
+		unsigned char pixelValueR = 0, pixelValueG = 0, pixelValueB = 0;
+		for (int row = 0; row < height; row++)
+		{
+			for (int col = 0; col < width; col++)
+			{
+				if (row > 0 && col > 0 && row < height - 1 && col < width - 1)
+				{
+					if (row % 2 == 0 && col % 2 == 0)
+					{
+						pixelValueG = imageDataCopy[row * width + col];
+						pixelValueR = (imageDataCopy[(row * width) + col - 1] + imageDataCopy[(row * width) + col + 1]) / 2;
+						pixelValueB = (imageDataCopy[((row - 1) * width) + col] + imageDataCopy[((row + 1) * width) + col]) / 2;
+					}
+					else if (row % 2 == 1 && col % 2 == 0)
+					{
+						pixelValueB = imageDataCopy[row * width + col];
+						pixelValueR = (imageDataCopy[((row - 1) * width) + col - 1] + imageDataCopy[((row - 1) * width) + col - 1]) / 2;
+						pixelValueG = (imageDataCopy[((row - 1) * width) + col] + imageDataCopy[((row + 1) * width) + col]) / 2;
+					}
+					else if (row % 2 == 0 && col % 2 == 1)
+					{
+						pixelValueR = imageDataCopy[row * width + col];
+						pixelValueG = (imageDataCopy[((row - 1) * width) + col] + imageDataCopy[((row + 1) * width) + col]) / 2;
+						pixelValueB = (imageDataCopy[((row - 1) * width) + col - 1] + imageDataCopy[((row - 1) * width) + col - 1]) / 2;
+					}
+					else
+					{
+						pixelValueG = imageDataCopy[row * width + col];
+						pixelValueR = (imageDataCopy[((row - 1) * width) + col] + imageDataCopy[((row + 1) * width) + col]) / 2;
+						pixelValueB = (imageDataCopy[(row * width) + col - 1] + imageDataCopy[(row * width) + col + 1]) / 2;
+					}
+				}
+				else
+				{
+				}
+				*startingAddressImage2++ = pixelValueR;
+				*startingAddressImage2++ = pixelValueG;
+				*startingAddressImage2++ = pixelValueB;
+			}
+		}
+		frameReady(globalCounterValid);
 	}
 
 	bool Stop()

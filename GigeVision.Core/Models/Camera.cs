@@ -282,7 +282,7 @@ namespace GigeVision.Core.Models
 
         private void CalculateSingleRowPayload()
         {
-            Payload = 8 + (Width * bytesPerPixel);
+            Payload = 8 + 28 + (Width * bytesPerPixel);
         }
 
         private async void CameraIpChanged(object sender, EventArgs e)

@@ -26,4 +26,5 @@ namespace Receiver
 	extern "C" __declspec(dllexport) bool Stop();
 	extern "C" __declspec(dllexport) unsigned long GetCurrentInvalidFrameCounter();
 	extern "C" __declspec(dllexport) unsigned long GetCurrentValidFrameCounter();
+	void BayerGr2RGB(unsigned char* imageDataCopy, unsigned char* startingAddressImage2, ProgressCallback frameReady);
 }
