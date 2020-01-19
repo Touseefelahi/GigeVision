@@ -20,6 +20,7 @@ namespace GigeVision.Core.Models
         private bool isStreaming;
 
         private IntPtr intPtr;
+        private byte[] rawBytes;
 
         /// <summary>
         /// Camera constructor with initialized Gvcp Controller
@@ -161,6 +162,11 @@ namespace GigeVision.Core.Models
         /// Multicast Option
         /// </summary>
         public bool IsMulticast { get; set; }
+
+        /// <summary>
+        /// Gets the raw data from the camera. Set false to get RGB frame instead of BayerGR8
+        /// </summary>
+        public bool IsRawFrame { get; set; } = true;
 
         private bool is64Bit => IntPtr.Size == 8;
 
@@ -386,13 +392,27 @@ namespace GigeVision.Core.Models
             intPtr = new IntPtr();
             try
             {
-                if (is64Bit)
+                if (IsRawFrame)
                 {
-                    CvInterop64.GetRawFrame(port, IsMulticast ? MulticastIP : null, out intPtr, RawFrameReady);
+                    if (is64Bit)
+                    {
+                        CvInterop64.GetRawFrame(port, IsMulticast ? MulticastIP : null, out intPtr, RawFrameReady);
+                    }
+                    else
+                    {
+                        CvInterop.GetRawFrame(port, IsMulticast ? MulticastIP : null, out intPtr, RawFrameReady);
+                    }
                 }
                 else
                 {
-                    CvInterop.GetRawFrame(port, IsMulticast ? MulticastIP : null, out intPtr, RawFrameReady);
+                    if (is64Bit)
+                    {
+                        CvInterop64.GetProcessedFrame(port, IsMulticast ? MulticastIP : null, out intPtr, RawFrameReady);
+                    }
+                    else
+                    {
+                        CvInterop.GetProcessedFrame(port, IsMulticast ? MulticastIP : null, out intPtr, RawFrameReady);
+                    }
                 }
             }
             catch (Exception ex)
@@ -403,7 +423,8 @@ namespace GigeVision.Core.Models
 
         private void RawFrameReady(int value)
         {
-            FrameReady?.Invoke(intPtr, null);
+            Marshal.Copy(intPtr, rawBytes, 0, rawBytes.Length);
+            FrameReady?.Invoke(intPtr, rawBytes);
         }
 
         private async Task<bool> ReadParameters()
@@ -433,6 +454,14 @@ namespace GigeVision.Core.Models
                     OffsetY = reply2.RegisterValues[3];
                     PixelFormat = (PixelFormat)reply2.RegisterValues[4];
                     bytesPerPixel = (uint)(reply2.Reply[reply2.Reply.Count - 3] / 8);
+                    if (!IsRawFrame && PixelFormat.ToString().Contains("Bayer"))
+                    {
+                        rawBytes = new byte[Width * Height * 3];
+                    }
+                    else
+                    {
+                        rawBytes = new byte[Width * Height * bytesPerPixel];
+                    }
                 }
             }
             catch

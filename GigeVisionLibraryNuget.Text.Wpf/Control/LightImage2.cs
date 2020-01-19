@@ -4,7 +4,7 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
-namespace GigeVisionLibrary.Test.Wpf
+namespace GigeVisionLibraryNuget.Text.Wpf
 {
     public class LightImage2 : System.Windows.Controls.Image
     {
@@ -26,29 +26,12 @@ namespace GigeVisionLibrary.Test.Wpf
         // Using a DependencyProperty as the backing store for IsColored. This enables animation,
         // styling, binding, etc...
         public static readonly DependencyProperty IsColoredProperty =
-            DependencyProperty.Register("IsColored", typeof(bool), typeof(LightImage2), new PropertyMetadata(false));
-
-        // Using a DependencyProperty as the backing store for RawBytes. This enables animation,
-        // styling, binding, etc...
-        public static readonly DependencyProperty RawBytesProperty =
-            DependencyProperty.Register("RawBytes", typeof(byte[]), typeof(LightImage2), new PropertyMetadata(null));
+            DependencyProperty.Register("IsColored", typeof(bool), typeof(LightImage2), new PropertyMetadata(true));
 
         private WriteableBitmap SourceImage;
 
         private Int32Rect rectBitmap;
-
-        private int bytesPerPixel = 1;
-
-        public byte[] RawBytes
-        {
-            get { return (byte[])GetValue(RawBytesProperty); }
-            set
-            {
-                SetValue(RawBytesProperty, value);
-                SourceImage.WritePixels(rectBitmap, RawBytes, WidthImage * bytesPerPixel, 0);
-                Source = SourceImage;
-            }
-        }
+        private int bytesPerPixel = 3;
 
         public bool IsColored
         {

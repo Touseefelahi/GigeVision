@@ -23,7 +23,7 @@ namespace Receiver
 
 	extern "C" typedef void(__stdcall* ProgressCallback)(int);
 	extern "C" __declspec(dllexport) bool Start(long port, unsigned char** imageDataAddress, long width, long height, long bytesPerPixel, ProgressCallback frameReady);
-	extern "C" __declspec(dllexport) bool GetProcessedFrame(long port, unsigned char** imageDataAddress, ProgressCallback frameReady);
+	extern "C" __declspec(dllexport) bool GetProcessedFrame(long port, const char* group, unsigned char** imageDataAddress, ProgressCallback frameReady);
 	extern "C" __declspec(dllexport) bool Stop();
 	extern "C" __declspec(dllexport) unsigned long GetCurrentInvalidFrameCounter();
 	extern "C" __declspec(dllexport) unsigned long GetCurrentValidFrameCounter();

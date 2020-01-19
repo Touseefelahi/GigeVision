@@ -24,7 +24,7 @@ namespace GigeVision.Core
         public static extern ulong GetCurrentValidFrameCounter();
 
         [DllImport(libraryPath, SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
-        public static extern bool GetProcessedFrame(long port, out IntPtr imageDataAddress, ProgressCallback frameReady);
+        public static extern bool GetProcessedFrame(long port, string multicastGroupIP, out IntPtr imageDataAddress, ProgressCallback frameReady);
 
         [DllImport(libraryPath, SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
         public static extern bool GetRawFrame(long port, string multicastGroupIP, out IntPtr imageDataAddress, ProgressCallback frameReady);

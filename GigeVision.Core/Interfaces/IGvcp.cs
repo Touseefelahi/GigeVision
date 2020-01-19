@@ -140,26 +140,71 @@ namespace GigeVision.Core.Interfaces
         /// <param name="valueToWrite">Value to write on register</param>
         Task<GvcpReply> WriteRegisterAsync(string Ip, GvcpRegister register, uint valueToWrite);
 
+        /// <summary>
+        /// Write Register: it will send the GVCP command to the specified IP, take control first
+        /// assigned then leave the control
+        /// </summary>
+        /// <returns>Command Status</returns>
         Task<GvcpReply> WriteRegisterAsync(UdpClient socket, GvcpRegister register, uint valueToWrite);
 
+        /// <summary>
+        /// Read Register
+        /// </summary>
+        /// <returns>Acknowledgement</returns>
         Task<GvcpReply> ReadRegisterAsync(GvcpRegister register);
 
+        /// <summary>
+        /// Read Register
+        /// </summary>
+        /// <returns>Acknowledgement</returns>
         Task<GvcpReply> ReadRegisterAsync(string Ip, GvcpRegister register);
 
+        /// <summary>
+        /// Read Register
+        /// </summary>
+        /// <returns>Acknowledgement</returns>
         Task<GvcpReply> ReadRegisterAsync(string Ip, byte[] registerAddress);
 
+        /// <summary>
+        /// Read Register
+        /// </summary>
+        /// <returns>Acknowledgement</returns>
         Task<GvcpReply> ReadRegisterAsync(string Ip, string registerAddress);
 
+        /// <summary>
+        /// Read Register
+        /// </summary>
+        /// <returns>Acknowledgement</returns>
         Task<GvcpReply> ReadRegisterAsync(byte[] registerAddressOrKey);
 
+        /// <summary>
+        /// Read Register
+        /// </summary>
+        /// <returns>Acknowledgement</returns>
         Task<GvcpReply> ReadRegisterAsync(string registerAddressOrKey);
 
+        /// <summary>
+        /// Read Register
+        /// </summary>
+        /// <returns>Acknowledgement</returns>
         Task<GvcpReply> ReadRegisterAsync(string Ip, string[] registerAddresses);
 
+        /// <summary>
+        /// Read Register
+        /// </summary>
+        /// <returns>Acknowledgement</returns>
         Task<GvcpReply> ReadRegisterAsync(string[] registerAddresses);
 
+        /// <summary>
+        /// Read all Register
+        /// </summary>
+        /// <returns>Dictionary of registers</returns>
         Task<Dictionary<string, string>> ReadAllRegisterAddressFromCameraAsync(string cameraIp);
 
+        /// <summary>
+        /// Read all Register
+        /// </summary>
+        /// <returns>Dictionary of registers</returns>
         Task<Dictionary<string, string>> ReadAllRegisterAddressFromCameraAsync();
 
         /// <summary>

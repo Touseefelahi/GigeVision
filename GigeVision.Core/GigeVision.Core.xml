@@ -423,6 +423,146 @@
             GVSP_PIX_RGB16_PACKED
             </summary>
         </member>
+        <member name="T:GigeVision.Core.Interfaces.ICamera">
+            <summary>
+            Camera class is responsible to initilize the stream and receive the stream
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Interfaces.ICamera.MotorController">
+            <summary>
+            Motor Controller for camera, zoom/focus/iris control if any
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Interfaces.ICamera.MulticastIP">
+            <summary>
+            Multicast IP: it will be applied only when IsMulticast Property is true
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Interfaces.ICamera.IsMulticast">
+            <summary>
+            Multicast Option
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Interfaces.ICamera.Gvcp">
+            <summary>
+            GVCP controller
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Interfaces.ICamera.FrameReady">
+            <summary>
+            Event for frame ready
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Interfaces.ICamera.Updates">
+            <summary>
+            Event for general updates
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Interfaces.ICamera.Payload">
+            <summary>
+            Payload size, if not provided it will be automatically set to one row, depending on resolution
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Interfaces.ICamera.Width">
+            <summary>
+            Camera width
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Interfaces.ICamera.Height">
+            <summary>
+            Camera height
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Interfaces.ICamera.OffsetX">
+            <summary>
+            Camera offset X
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Interfaces.ICamera.OffsetY">
+            <summary>
+            Camera offset Y
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Interfaces.ICamera.PixelFormat">
+            <summary>
+            Camera Pixel Format
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Interfaces.ICamera.IP">
+            <summary>
+            Device IP
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Interfaces.ICamera.IsStreaming">
+            <summary>
+            Camera stream status
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Interfaces.ICamera.IsRawFrame">
+            <summary>
+            Gets the raw data from the camera. Set false to get RGB frame instead of BayerGR8
+            </summary>
+        </member>
+        <member name="M:GigeVision.Core.Interfaces.ICamera.StartStreamAsync(System.String,System.Int32)">
+            <summary>
+            This method will get current PC IP and Gets the Camera ip from Gvcp
+            </summary>
+            <param name="rxIP">If rxIP is not provided, method will detect system IP and use it</param>
+            <param name="rxPort">It will set randomly when not provided</param>
+            <returns></returns>
+        </member>
+        <member name="M:GigeVision.Core.Interfaces.ICamera.StopStream">
+            <summary>
+            Stops the camera stream and leave camera control
+            </summary>
+            <returns>Is streaming status</returns>
+        </member>
+        <member name="M:GigeVision.Core.Interfaces.ICamera.SetResolutionAsync(System.UInt32,System.UInt32)">
+            <summary>
+            Sets the resolution of camera
+            </summary>
+            <param name="width">Width to set</param>
+            <param name="height">Height to set</param>
+            <returns>Command Status</returns>
+        </member>
+        <member name="M:GigeVision.Core.Interfaces.ICamera.SetResolutionAsync(System.Int32,System.Int32)">
+            <summary>
+            Sets the resolution of camera
+            </summary>
+            <param name="width">Width to set</param>
+            <param name="height">Height to set</param>
+            <returns>Command Status</returns>
+        </member>
+        <member name="M:GigeVision.Core.Interfaces.ICamera.SetOffsetAsync(System.Int32,System.Int32)">
+            <summary>
+            Sets the offset of camera
+            </summary>
+            <param name="offsetX">Offset X to set</param>
+            <param name="offsetY">Offset Y to set</param>
+            <returns>Command Status</returns>
+        </member>
+        <member name="M:GigeVision.Core.Interfaces.ICamera.SetOffsetAsync(System.UInt32,System.UInt32)">
+            <summary>
+            Sets the offset of camera
+            </summary>
+            <param name="offsetX">Offset X to set</param>
+            <param name="offsetY">Offset Y to set</param>
+            <returns>Command Status</returns>
+        </member>
+        <member name="M:GigeVision.Core.Interfaces.ICamera.MotorControl(GigeVision.Core.Enums.LensCommand,System.UInt32)">
+            <summary>
+            Bridge Command for motor controller, controls focus/zoom/iris operation
+            </summary>
+            <param name="command">Command to set</param>
+            <param name="value">Value to set (Applicable for ZoomValue/FocusValue)</param>
+            <returns>Command Status</returns>
+        </member>
+        <member name="M:GigeVision.Core.Interfaces.ICamera.ReadRegisters">
+            <summary>
+            Read register for camera
+            </summary>
+            <returns>Command Status</returns>
+        </member>
         <member name="P:GigeVision.Core.Interfaces.IGvcp.ElapsedOneSecond">
             <summary>
             It can be for any thing, to update fps to check devices
@@ -554,6 +694,73 @@
             <param name="register">Fixed GigE registers</param>
             <param name="valueToWrite">Value to write on register</param>
         </member>
+        <member name="M:GigeVision.Core.Interfaces.IGvcp.WriteRegisterAsync(System.Net.Sockets.UdpClient,GigeVision.Core.Enums.GvcpRegister,System.UInt32)">
+            <summary>
+            Write Register: it will send the GVCP command to the specified IP, take control first
+            assigned then leave the control
+            </summary>
+            <returns>Command Status</returns>
+        </member>
+        <member name="M:GigeVision.Core.Interfaces.IGvcp.ReadRegisterAsync(GigeVision.Core.Enums.GvcpRegister)">
+            <summary>
+            Read Register
+            </summary>
+            <returns>Acknowledgement</returns>
+        </member>
+        <member name="M:GigeVision.Core.Interfaces.IGvcp.ReadRegisterAsync(System.String,GigeVision.Core.Enums.GvcpRegister)">
+            <summary>
+            Read Register
+            </summary>
+            <returns>Acknowledgement</returns>
+        </member>
+        <member name="M:GigeVision.Core.Interfaces.IGvcp.ReadRegisterAsync(System.String,System.Byte[])">
+            <summary>
+            Read Register
+            </summary>
+            <returns>Acknowledgement</returns>
+        </member>
+        <member name="M:GigeVision.Core.Interfaces.IGvcp.ReadRegisterAsync(System.String,System.String)">
+            <summary>
+            Read Register
+            </summary>
+            <returns>Acknowledgement</returns>
+        </member>
+        <member name="M:GigeVision.Core.Interfaces.IGvcp.ReadRegisterAsync(System.Byte[])">
+            <summary>
+            Read Register
+            </summary>
+            <returns>Acknowledgement</returns>
+        </member>
+        <member name="M:GigeVision.Core.Interfaces.IGvcp.ReadRegisterAsync(System.String)">
+            <summary>
+            Read Register
+            </summary>
+            <returns>Acknowledgement</returns>
+        </member>
+        <member name="M:GigeVision.Core.Interfaces.IGvcp.ReadRegisterAsync(System.String,System.String[])">
+            <summary>
+            Read Register
+            </summary>
+            <returns>Acknowledgement</returns>
+        </member>
+        <member name="M:GigeVision.Core.Interfaces.IGvcp.ReadRegisterAsync(System.String[])">
+            <summary>
+            Read Register
+            </summary>
+            <returns>Acknowledgement</returns>
+        </member>
+        <member name="M:GigeVision.Core.Interfaces.IGvcp.ReadAllRegisterAddressFromCameraAsync(System.String)">
+            <summary>
+            Read all Register
+            </summary>
+            <returns>Dictionary of registers</returns>
+        </member>
+        <member name="M:GigeVision.Core.Interfaces.IGvcp.ReadAllRegisterAddressFromCameraAsync">
+            <summary>
+            Read all Register
+            </summary>
+            <returns>Dictionary of registers</returns>
+        </member>
         <member name="M:GigeVision.Core.Interfaces.IGvcp.ForceIPAsync(System.Byte[],System.String)">
             <summary>
             Forces the IP of camera to be changed to the given IP
@@ -601,14 +808,6 @@
             It will leave the control of the camera CCP=0
             </summary>
             <returns>Leave Status</returns>
-        </member>
-        <member name="M:GigeVision.Core.Interfaces.ICamera.StartStreamAsync(System.String,System.Int32)">
-            <summary>
-            This method will get current PC IP and Gets the Camera ip from Gvcp
-            </summary>
-            <param name="rxIP">If rxIP is not provided, method will detect system IP and use it</param>
-            <param name="rxPort">It will set randomly when not provided</param>
-            <returns></returns>
         </member>
         <member name="T:GigeVision.Core.Models.Camera">
             <summary>
@@ -696,6 +895,11 @@
             Multicast Option
             </summary>
         </member>
+        <member name="P:GigeVision.Core.Models.Camera.IsRawFrame">
+            <summary>
+            Gets the raw data from the camera. Set false to get RGB frame instead of BayerGR8
+            </summary>
+        </member>
         <member name="M:GigeVision.Core.Models.Camera.StartStreamAsync(System.String,System.Int32)">
             <summary>
             This method will get current PC IP and Gets the Camera ip from Gvcp
@@ -756,15 +960,317 @@
             </summary>
             <returns>Command Status</returns>
         </member>
+        <member name="T:GigeVision.Core.Models.CameraInformation">
+            <summary>
+            Discovery Packet Information for GigeCamera
+            </summary>
+        </member>
+        <member name="M:GigeVision.Core.Models.CameraInformation.#ctor">
+            <summary>
+            Discovery Packet Information for GigeCamera
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.CameraInformation.IP">
+            <summary>
+            Camera IP
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.CameraInformation.MAC">
+            <summary>
+            Camera MAC address
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.CameraInformation.MacAddress">
+            <summary>
+            Camera MAC address
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.CameraInformation.Model">
+            <summary>
+            Camera Model
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.CameraInformation.SerialNumber">
+            <summary>
+            Device Serial number
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.CameraInformation.ManufacturerName">
+            <summary>
+            Device Manufacturer Name
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.CameraInformation.ManufacturerSpecificInformation">
+            <summary>
+            Device Manufactuere Specific Information
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.CameraInformation.Version">
+            <summary>
+            Device Version
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.CameraInformation.UserDefinedName">
+            <summary>
+            Device User Defined Name
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.CameraInformation.Status">
+            <summary>
+            Device Status
+            </summary>
+        </member>
+        <member name="T:GigeVision.Core.Models.Converter">
+            <summary>
+            General converter
+            </summary>
+        </member>
+        <member name="M:GigeVision.Core.Models.Converter.RegisterStringToByteArray(System.String)">
+            <summary>
+            Converts String to byte array
+            </summary>
+            <param name="registerAddress">Register address that needs to be converted</param>
+            <returns>Hex bytes</returns>
+        </member>
+        <member name="M:GigeVision.Core.Models.Converter.IpToNumber(System.String)">
+            <summary>
+            Converts IP to int
+            </summary>
+            <param name="dottedIpAddress">String ip that needs to be converted</param>
+            <returns>IP in int</returns>
+        </member>
+        <member name="M:GigeVision.Core.Models.Converter.RegisterStringsToByteArray(System.String[])">
+            <summary>
+            Converts String to byte array
+            </summary>
+            <param name="registerAddresses">Register address that needs to be converted</param>
+            <returns>Hex bytes</returns>
+        </member>
+        <member name="M:GigeVision.Core.Models.Converter.HexStringToByteArray(System.String)">
+            <summary>
+            Hex to string byte array
+            </summary>
+            <param name="hexString">General hex string</param>
+            <returns>Hex bytes</returns>
+        </member>
+        <member name="M:GigeVision.Core.Models.Converter.ConvertIpToNumber(System.String)">
+            <summary>
+            Converts IP to int
+            </summary>
+            <param name="dottedIpAddress">String ip that needs to be converted</param>
+            <returns>IP in int</returns>
+        </member>
         <member name="T:GigeVision.Core.Models.Gvcp">
             <summary>
             Max GVCP payload = 540 bytes and must be multiple of 32
+            </summary>
+        </member>
+        <member name="F:GigeVision.Core.Models.Gvcp.PortGvcp">
+            <summary>
+            GVCP Port
+            </summary>
+        </member>
+        <member name="M:GigeVision.Core.Models.Gvcp.#ctor(System.String)">
+            <summary>
+            Gvcp constructor, initializes camera IP, and try to get register values
+            </summary>
+            <param name="ip"></param>
+        </member>
+        <member name="M:GigeVision.Core.Models.Gvcp.#ctor">
+            <summary>
+            Default GVCP constructor
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.Gvcp.CameraIp">
+            <summary>
+            Camera IP, whenever changed, library tries to get latest register values
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.Gvcp.PortControl">
+            <summary>
+            Controlling port of GVCP
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.Gvcp.ControlSocket">
+            <summary>
+            Control socket
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.Gvcp.IsKeepingAlive">
+            <summary>
+            If true, heartbeat command will be sent to the devices after regular interval
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.Gvcp.RegistersDictionary">
+            <summary>
+            Register dictionary of camera
             </summary>
         </member>
         <member name="P:GigeVision.Core.Models.Gvcp.ElapsedOneSecond">
             <summary>
             It can be for any thing, to update fps to check devices
             </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.Gvcp.CameraIpChanged">
+            <summary>
+            Event fired whenever camera ip changed: used to get registers
+            </summary>
+        </member>
+        <member name="M:GigeVision.Core.Models.Gvcp.ReadAllRegisterAddressFromCameraAsync(System.String)">
+            <summary>
+            Reads all register of camera
+            </summary>
+            <param name="cameraIp">Camera IP</param>
+            <returns>Register dictionary</returns>
+        </member>
+        <member name="M:GigeVision.Core.Models.Gvcp.ReadAllRegisterAddressFromCameraAsync">
+            <summary>
+            Reads all register of camera
+            </summary>
+            <returns>Register dictionary</returns>
+        </member>
+        <member name="M:GigeVision.Core.Models.Gvcp.ReadRegisterAsync(System.String,System.Byte[])">
+            <summary>
+            Read Register
+            </summary>
+            <param name="ip"></param>
+            <param name="registerAddress"></param>
+            <returns>Command Reply</returns>
+        </member>
+        <member name="M:GigeVision.Core.Models.Gvcp.ReadRegisterAsync(GigeVision.Core.Enums.GvcpRegister)">
+            <summary>
+            Read Register
+            </summary>
+            <returns>Command Reply</returns>
+        </member>
+        <member name="M:GigeVision.Core.Models.Gvcp.ReadRegisterAsync(System.String,System.String)">
+            <summary>
+            Read Register
+            </summary>
+            <returns>Command Reply</returns>
+        </member>
+        <member name="M:GigeVision.Core.Models.Gvcp.ReadRegisterAsync(System.Byte[])">
+            <summary>
+            Read Register
+            </summary>
+            <returns>Command Reply</returns>
+        </member>
+        <member name="M:GigeVision.Core.Models.Gvcp.ReadRegisterAsync(System.String)">
+            <summary>
+            Read Register
+            </summary>
+            <returns>Command Reply</returns>
+        </member>
+        <member name="M:GigeVision.Core.Models.Gvcp.ReadRegisterAsync(System.String,System.String[])">
+            <summary>
+            Read Register
+            </summary>
+            <returns>Command Reply</returns>
+        </member>
+        <member name="M:GigeVision.Core.Models.Gvcp.ReadRegisterAsync(System.String[])">
+            <summary>
+            Read Register
+            </summary>
+            <returns>Command Reply</returns>
+        </member>
+        <member name="M:GigeVision.Core.Models.Gvcp.ReadRegisterAsync(System.String,GigeVision.Core.Enums.GvcpRegister)">
+            <summary>
+            Read Register
+            </summary>
+            <returns>Command Reply</returns>
+        </member>
+        <member name="M:GigeVision.Core.Models.Gvcp.WriteRegisterAsync(System.Net.Sockets.UdpClient,System.Byte[],System.UInt32)">
+            <summary>
+            Write Register
+            </summary>
+            <returns>Command Status</returns>
+        </member>
+        <member name="M:GigeVision.Core.Models.Gvcp.WriteRegisterAsync(System.Net.Sockets.UdpClient,System.String,System.UInt32)">
+            <summary>
+            Write Register
+            </summary>
+            <returns>Command Status</returns>
+        </member>
+        <member name="M:GigeVision.Core.Models.Gvcp.WriteRegisterAsync(System.Net.Sockets.UdpClient,System.String[],System.UInt32[])">
+            <summary>
+            Write Register
+            </summary>
+            <returns>Command Status</returns>
+        </member>
+        <member name="M:GigeVision.Core.Models.Gvcp.WriteRegisterAsync(System.Net.Sockets.UdpClient,GigeVision.Core.Enums.GvcpRegister,System.UInt32)">
+            <summary>
+            Write Register
+            </summary>
+            <returns>Command Status</returns>
+        </member>
+        <member name="M:GigeVision.Core.Models.Gvcp.WriteRegisterAsync(System.String,System.Byte[],System.UInt32)">
+            <summary>
+            Write Register
+            </summary>
+            <returns>Command Status</returns>
+        </member>
+        <member name="M:GigeVision.Core.Models.Gvcp.WriteRegisterAsync(System.String,System.String,System.UInt32)">
+            <summary>
+            Write Register
+            </summary>
+            <returns>Command Status</returns>
+        </member>
+        <member name="M:GigeVision.Core.Models.Gvcp.WriteRegisterAsync(System.String,System.String[],System.UInt32[])">
+            <summary>
+            Write Register
+            </summary>
+            <returns>Command Status</returns>
+        </member>
+        <member name="M:GigeVision.Core.Models.Gvcp.WriteRegisterAsync(System.String,GigeVision.Core.Enums.GvcpRegister,System.UInt32)">
+            <summary>
+            Write Register
+            </summary>
+            <returns>Command Status</returns>
+        </member>
+        <member name="M:GigeVision.Core.Models.Gvcp.WriteRegisterAsync(System.Byte[],System.UInt32)">
+            <summary>
+            Write Register
+            </summary>
+            <returns>Command Status</returns>
+        </member>
+        <member name="M:GigeVision.Core.Models.Gvcp.WriteRegisterAsync(System.String,System.UInt32)">
+            <summary>
+            Write Register
+            </summary>
+            <returns>Command Status</returns>
+        </member>
+        <member name="M:GigeVision.Core.Models.Gvcp.WriteRegisterAsync(System.String[],System.UInt32[])">
+            <summary>
+            Write Register
+            </summary>
+            <returns>Command Status</returns>
+        </member>
+        <member name="M:GigeVision.Core.Models.Gvcp.WriteRegisterAsync(GigeVision.Core.Enums.GvcpRegister,System.UInt32)">
+            <summary>
+            Write Register
+            </summary>
+            <returns>Command Status</returns>
+        </member>
+        <member name="M:GigeVision.Core.Models.Gvcp.WriteRegister(System.Net.Sockets.UdpClient,GigeVision.Core.Models.GvcpCommand)">
+            <summary>
+            Write Register
+            </summary>
+            <returns>Command Status</returns>
+        </member>
+        <member name="M:GigeVision.Core.Models.Gvcp.TakeControl(System.Boolean)">
+            <summary>
+            Takes control of the devices
+            </summary>
+            <param name="KeepAlive">
+            If true thread will continously send heartbeat command to keep the devices in control
+            </param>
+            <returns>Control Status</returns>
+        </member>
+        <member name="M:GigeVision.Core.Models.Gvcp.LeaveControl">
+            <summary>
+            Leaves to control if in control
+            </summary>
+            <returns>True if leaves the control</returns>
         </member>
         <member name="M:GigeVision.Core.Models.Gvcp.SendUdp(System.Net.Sockets.UdpClient,System.Byte[],System.Boolean,System.String)">
             <summary>
@@ -774,6 +1280,116 @@
             <param name="inputCommand"></param>
             <param name="replySize"></param>
             <returns></returns>
+        </member>
+        <member name="T:GigeVision.Core.Models.GvcpCommand">
+            <summary>
+            Generates GVCP command
+            </summary>
+        </member>
+        <member name="F:GigeVision.Core.Models.GvcpCommand.GvcpHeader">
+            <summary>
+            GVCP header
+            </summary>
+        </member>
+        <member name="F:GigeVision.Core.Models.GvcpCommand.flag">
+            <summary>
+            Flag for acknowledgement
+            </summary>
+        </member>
+        <member name="M:GigeVision.Core.Models.GvcpCommand.#ctor(System.Byte[],GigeVision.Core.Enums.GvcpCommandType,System.UInt32,System.UInt16)">
+            <summary>
+            Generates Gvcp Command
+            </summary>
+            <param name="adress"></param>
+            <param name="type"></param>
+            <param name="value"></param>
+            <param name="requestID"></param>
+        </member>
+        <member name="M:GigeVision.Core.Models.GvcpCommand.#ctor(System.String[],System.UInt32[],System.UInt16)">
+            <summary>
+            Geneartes GVCP Command
+            </summary>
+            <param name="address"></param>
+            <param name="valuesToWrite"></param>
+            <param name="requestID"></param>
+        </member>
+        <member name="M:GigeVision.Core.Models.GvcpCommand.#ctor(System.String[],System.UInt16)">
+            <summary>
+            Generate read command
+            </summary>
+            <param name="address"></param>
+            <param name="requestID"></param>
+        </member>
+        <member name="M:GigeVision.Core.Models.GvcpCommand.#ctor(GigeVision.Core.Enums.GvcpCommandType)">
+            <summary>
+            Generate GVCP command
+            </summary>
+            <param name="command"></param>
+        </member>
+        <member name="P:GigeVision.Core.Models.GvcpCommand.Type">
+            <summary>
+            GVCP command type
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.GvcpCommand.CommandBytes">
+            <summary>
+            Command bytes for generated command
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.GvcpCommand.Length">
+            <summary>
+            Length of GVCP command
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.GvcpCommand.RequestId">
+            <summary>
+            Request ID
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.GvcpCommand.IsValid">
+            <summary>
+            Is command valid
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.GvcpCommand.Value">
+            <summary>
+            Value of register (for read command)
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.GvcpCommand.Values">
+            <summary>
+            Values for register (for multiple read commands)
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.GvcpCommand.Address">
+            <summary>
+            Address of register
+            </summary>
+        </member>
+        <member name="M:GigeVision.Core.Models.GvcpCommand.GenerateCommand(System.Byte[],GigeVision.Core.Enums.GvcpCommandType,System.UInt16,System.UInt32)">
+            <summary>
+            Generate general GVCP command
+            </summary>
+            <param name="adress"></param>
+            <param name="type"></param>
+            <param name="requestID"></param>
+            <param name="valueToWrite"></param>
+        </member>
+        <member name="T:GigeVision.Core.Models.GvcpReply">
+            <summary>
+            Decodes GVCP acknowledgement
+            </summary>
+        </member>
+        <member name="M:GigeVision.Core.Models.GvcpReply.#ctor(System.Byte[])">
+            <summary>
+            Decode GVCP acknowledgement packet
+            </summary>
+            <param name="buffer"></param>
+        </member>
+        <member name="M:GigeVision.Core.Models.GvcpReply.#ctor">
+            <summary>
+            Default constructor
+            </summary>
         </member>
         <member name="P:GigeVision.Core.Models.GvcpReply.Error">
             <summary>
@@ -813,6 +1429,94 @@
         <member name="P:GigeVision.Core.Models.GvcpReply.RegisterValues">
             <summary>
             For Multiple register reading
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.GvcpReply.AcknowledgementID">
+            <summary>
+            acknowledgement id
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.GvcpReply.IsValid">
+            <summary>
+            Is command valid
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.GvcpReply.Type">
+            <summary>
+            GVCP command type
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.GvcpReply.Status">
+            <summary>
+            GEV_Status
+            </summary>
+        </member>
+        <member name="M:GigeVision.Core.Models.GvcpReply.SetReply(System.Byte[])">
+            <summary>
+            Sets the reply
+            </summary>
+            <param name="reply"></param>
+        </member>
+        <member name="M:GigeVision.Core.Models.GvcpReply.SetReply(System.Collections.Generic.List{System.Byte})">
+            <summary>
+            Sets the reply
+            </summary>
+            <param name="reply"></param>
+        </member>
+        <member name="M:GigeVision.Core.Models.GvcpReply.DetectCommand(System.Byte[])">
+            <summary>
+            Detect command/Decode Command
+            </summary>
+            <param name="buffer"></param>
+        </member>
+        <member name="T:GigeVision.Core.Models.MotorControl">
+            <summary>
+            Motor Controller for device
+            </summary>
+        </member>
+        <member name="M:GigeVision.Core.Models.MotorControl.#ctor">
+            <summary>
+            Motor Controller for device
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.MotorControl.LensControl">
+            <summary>
+            Dictionary for motor commands (Lens command)
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.MotorControl.ZoomValue">
+            <summary>
+            Current Zoom Value
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.MotorControl.FocusValue">
+            <summary>
+            Current Focus Value
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.MotorControl.HasZoomControl">
+            <summary>
+            Enables only if it detects that devices has zoom registers
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.MotorControl.HasFocusControl">
+            <summary>
+            Enables only if it detects that devices has Focus registers
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.MotorControl.HasIrisControl">
+            <summary>
+            Enables only if it detects that devices has Iris registers
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.MotorControl.HasFixedZoomValue">
+            <summary>
+            Enables only if it detects that devices has Fixed zoom registers
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.MotorControl.HasFixedFocusValue">
+            <summary>
+            Enables only if it detects that devices has fixed focus registers
             </summary>
         </member>
     </members>

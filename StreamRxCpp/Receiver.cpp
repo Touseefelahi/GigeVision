@@ -192,7 +192,8 @@ namespace Receiver
 				if (isLeaderProcessed)informationGathered = true;
 			}
 		}
-
+		int packetIndex = 0;
+		int packetIDBuffer[3000];
 		while (isListening)
 		{
 			int payloadSize = recvfrom(globalSock, bufferLocal, packetLength, flags, reinterpret_cast<SOCKADDR*>(&from), &size);
@@ -200,7 +201,11 @@ namespace Receiver
 				return false;
 			else if (bufferLocal[4] == 0x02)//Trailer
 			{
-				frameReady(globalCounterValid);
+				if (packetIndex == packetIDBuffer[packetIndex - 1])
+				{
+					frameReady(globalCounterValid);
+				}
+				packetIndex = 0;
 				continue;
 			}
 			else if (bufferLocal[4] == 0x01)//Leader
@@ -208,6 +213,7 @@ namespace Receiver
 				continue;
 			}
 			packetID = (unsigned int)(((byte)bufferLocal[6] * 256) + (byte)bufferLocal[7]);
+			packetIDBuffer[packetIndex++] = packetID;
 			bufferLocal += 8;
 
 			if (packetID == finalPacketID)
@@ -263,7 +269,7 @@ namespace Receiver
 		}
 	}
 
-	bool GetProcessedFrame(long port, unsigned char** imageDataAddress, ProgressCallback frameReady)
+	bool GetProcessedFrame(long port, const char* group, unsigned char** imageDataAddress, ProgressCallback frameReady)
 	{
 		WSADATA wsaData;
 		int res = WSAStartup(MAKEWORD(2, 0), &wsaData);
@@ -282,10 +288,14 @@ namespace Receiver
 		}
 
 		Bind(port);
+		if (group != NULL)
+		{
+			JoinMulticastGroup(group);
+		}
 		packetLength = 10000;//Max  value
 		char* bufferLocal;
 		bufferLocal = static_cast<char*>(malloc(8 * packetLength));
-		unsigned char* ringBuffer = NULL, * ringBufferStart = NULL;
+		uint8_t* ringBuffer = NULL, * ringBufferStart = NULL;
 		int size = sizeof(from);
 		isListening = true;
 
@@ -296,7 +306,7 @@ namespace Receiver
 		int finalPacketID = 0;
 		int payloadSizeNormal = 0;
 		unsigned int packetID;
-		unsigned char* startingAddressImage2, * startingAddressImageNew, * imageDataCopy = NULL, * imageData2 = NULL, * startingAddressRaw = NULL;
+		uint8_t* startingAddressImage2, * startingAddressImageNew, * imageDataCopy = NULL, * imageData2 = NULL, * startingAddressRaw = NULL;
 		int bytesPerpixel2, width2, height2;
 		bool informationGathered = false;
 		bool isLeaderProcessed = false;
@@ -321,17 +331,17 @@ namespace Receiver
 				isLeaderProcessed = true;
 				if (isBayerPattern)
 				{
-					*imageDataAddress = static_cast<unsigned char*>(malloc((size_t)(8 * width2 * height2 * 3)));
+					*imageDataAddress = static_cast<uint8_t*>(malloc((size_t)(8 * width2 * height2 * 3)));
 					startingAddressImageNew = *imageDataAddress;
 					startingAddressImage2 = startingAddressImageNew;
-					imageData2 = static_cast<unsigned char*>(malloc((size_t)(8 * width2 * height2)));
-					imageDataCopy = static_cast<unsigned char*>(malloc((size_t)(8 * width2 * height2)));
+					imageData2 = static_cast<uint8_t*>(malloc((size_t)(8 * width2 * height2)));
+					imageDataCopy = static_cast<uint8_t*>(malloc((size_t)(8 * width2 * height2)));
 					startingAddressRaw = imageData2;
 				}
 				else
 				{
-					*imageDataAddress = static_cast<unsigned char*>(malloc((size_t)(8 * width2 * height2 * bytesPerpixel2)));
-					imageData2 = static_cast<unsigned char*>(malloc((size_t)(8 * width2 * height2 * bytesPerpixel2)));
+					*imageDataAddress = static_cast<uint8_t*>(malloc((size_t)(8 * width2 * height2 * bytesPerpixel2)));
+					imageData2 = static_cast<uint8_t*>(malloc((size_t)(8 * width2 * height2 * bytesPerpixel2)));
 					imageData2 = (*imageDataAddress);
 					startingAddressRaw = imageData2;
 				}
@@ -352,15 +362,15 @@ namespace Receiver
 		{
 			if (payloadSizeNormal >= 3 * width2)
 			{
-				ringBuffer = static_cast<unsigned char*>(malloc(8 * payloadSizeNormal));
+				ringBuffer = static_cast<uint8_t*>(malloc(8 * payloadSizeNormal));
 			}
 			else if (payloadSizeNormal < width2)
 			{
-				ringBuffer = static_cast<unsigned char*>(malloc(8 * 3 * width2));
+				ringBuffer = static_cast<uint8_t*>(malloc(8 * 3 * width2));
 			}
 			else
 			{
-				ringBuffer = static_cast<unsigned char*>(malloc(8 * 3 * payloadSizeNormal));
+				ringBuffer = static_cast<uint8_t*>(malloc(8 * 3 * payloadSizeNormal));
 			}
 			ringBufferStart = ringBuffer;
 		}
@@ -371,6 +381,8 @@ namespace Receiver
 		startingAddressImage2 = startingAddressImageNew;
 		std::cout << "StartAddressB" << &startingAddressImage2 << std::endl;
 		int ringCount = 0;
+		int packetIndex = 0;
+		int packetIDBuffer[3000];
 		while (isListening)
 		{
 			int payloadSize = recvfrom(globalSock, bufferLocal, packetLength, flags, reinterpret_cast<SOCKADDR*>(&from), &size);
@@ -378,11 +390,16 @@ namespace Receiver
 				return false;
 			else if (bufferLocal[4] == 0x02)//Trailer
 			{
-				frameReady(globalCounterValid);
+				if (packetIndex == packetIDBuffer[packetIndex - 1])
+				{
+					frameReady(globalCounterValid);
+				}
 				totalPixelsReceived = 0;
 				startingAddressImage2 = startingAddressImageNew;
 				rowProcessed = 0;
 				pixelProcessedCount = 0;
+				ringCount = 0;
+				packetIndex = 0;
 				continue;
 			}
 			else if (bufferLocal[4] == 0x01)//Leader
@@ -391,9 +408,12 @@ namespace Receiver
 				startingAddressImage2 = startingAddressImageNew;
 				rowProcessed = 0;
 				pixelProcessedCount = 0;
+				ringCount = 0;
+				packetIndex = 0;
 				continue;
 			}
 			packetID = (unsigned int)(((byte)bufferLocal[6] * 256) + (byte)bufferLocal[7]);
+			packetIDBuffer[packetIndex++] = packetID;
 			bufferLocal += 8;
 			if (!isBayerPattern)
 			{
@@ -448,25 +468,25 @@ namespace Receiver
 					{
 						if (row > 0 && col > 0 && row < height2 - 1 && col < width2 - 1)
 						{
-							if (row % 2 == 0 && col % 2 == 0)
+							if (row % 2 != 0 && col % 2 == 0)
 							{
 								pixelValueG = ringBuffer[midRow + col];
 								pixelValueR = (ringBuffer[midRow + col - 1] + ringBuffer[midRow + col + 1]) / 2;
 								pixelValueB = (ringBuffer[upperRow + col] + ringBuffer[lowerRow + col]) / 2;
 							}
-							else if (row % 2 == 1 && col % 2 == 0)
+							else if (row % 2 == 0 && col % 2 == 0)
 							{
 								pixelValueB = ringBuffer[midRow + col];
 								pixelValueR = (ringBuffer[upperRow + col - 1] + ringBuffer[upperRow + col - 1]) / 2;
 								pixelValueG = (ringBuffer[upperRow + col] + ringBuffer[lowerRow + col]) / 2;
 							}
-							else if (row % 2 == 0 && col % 2 == 1)
+							else if (row % 2 == 0 && col % 2 != 1)
 							{
 								pixelValueR = ringBuffer[midRow + col];
 								pixelValueG = (ringBuffer[upperRow + col] + ringBuffer[lowerRow + col]) / 2;
 								pixelValueB = (ringBuffer[upperRow + col - 1] + ringBuffer[upperRow + col - 1]) / 2;
 							}
-							else
+							else if (row % 2 != 1 && col % 2 != 1)
 							{
 								pixelValueG = ringBuffer[midRow + col];
 								pixelValueR = (ringBuffer[upperRow + col] + ringBuffer[lowerRow + col]) / 2;

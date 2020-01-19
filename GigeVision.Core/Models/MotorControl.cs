@@ -4,11 +4,13 @@ using Stira.WpfCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace GigeVision.Core.Models
 {
+    /// <summary>
+    /// Motor Controller for device
+    /// </summary>
     public class MotorControl : BaseNotifyPropertyChanged
     {
         private uint zoomValue;
@@ -25,13 +27,22 @@ namespace GigeVision.Core.Models
 
         private bool hasFixedFocusValue;
 
+        /// <summary>
+        /// Motor Controller for device
+        /// </summary>
         public MotorControl()
         {
             LensControl = new Dictionary<LensCommand, string>();
         }
 
+        /// <summary>
+        /// Dictionary for motor commands (Lens command)
+        /// </summary>
         public Dictionary<LensCommand, string> LensControl { get; private set; }
 
+        /// <summary>
+        /// Current Zoom Value
+        /// </summary>
         public uint ZoomValue
         {
             get => zoomValue;
@@ -45,9 +56,12 @@ namespace GigeVision.Core.Models
             }
         }
 
+        /// <summary>
+        /// Current Focus Value
+        /// </summary>
         public uint FocusValue
         {
-            get { return focusValue; }
+            get => focusValue;
             set
             {
                 if (focusValue != value)
@@ -58,10 +72,13 @@ namespace GigeVision.Core.Models
             }
         }
 
+        /// <summary>
+        /// Enables only if it detects that devices has zoom registers
+        /// </summary>
         public bool HasZoomControl
         {
-            get { return hasZoomControl; }
-            set
+            get => hasZoomControl;
+            private set
             {
                 if (hasZoomControl != value)
                 {
@@ -71,10 +88,13 @@ namespace GigeVision.Core.Models
             }
         }
 
+        /// <summary>
+        /// Enables only if it detects that devices has Focus registers
+        /// </summary>
         public bool HasFocusControl
         {
-            get { return hasFocusControl; }
-            set
+            get => hasFocusControl;
+            private set
             {
                 if (hasFocusControl != value)
                 {
@@ -84,10 +104,13 @@ namespace GigeVision.Core.Models
             }
         }
 
+        /// <summary>
+        /// Enables only if it detects that devices has Iris registers
+        /// </summary>
         public bool HasIrisControl
         {
-            get { return hasIrisControl; }
-            set
+            get => hasIrisControl;
+            private set
             {
                 if (hasIrisControl != value)
                 {
@@ -97,10 +120,13 @@ namespace GigeVision.Core.Models
             }
         }
 
+        /// <summary>
+        /// Enables only if it detects that devices has Fixed zoom registers
+        /// </summary>
         public bool HasFixedZoomValue
         {
-            get { return hasFixedZoomValue; }
-            set
+            get => hasFixedZoomValue;
+            private set
             {
                 if (hasFixedZoomValue != value)
                 {
@@ -110,10 +136,13 @@ namespace GigeVision.Core.Models
             }
         }
 
+        /// <summary>
+        /// Enables only if it detects that devices has fixed focus registers
+        /// </summary>
         public bool HasFixedFocusValue
         {
-            get { return hasFixedFocusValue; }
-            set
+            get => hasFixedFocusValue;
+            private set
             {
                 if (hasFixedFocusValue != value)
                 {
@@ -137,7 +166,7 @@ namespace GigeVision.Core.Models
                             break;
                     }
                 }
-                var status = (await Gvcp.WriteRegisterAsync(LensControl[command], value).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS;
+                bool status = (await Gvcp.WriteRegisterAsync(LensControl[command], value).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS;
                 if (LensControl.ContainsKey(LensCommand.FocusAuto))
                 {
                     switch (command)
@@ -146,7 +175,7 @@ namespace GigeVision.Core.Models
                             await Gvcp.WriteRegisterAsync(LensControl[LensCommand.FocusAuto], 3).ConfigureAwait(false);
                             if (LensControl.ContainsKey(LensCommand.ZoomValue))
                             {
-                                var zoomValue = await Gvcp.ReadRegisterAsync(LensControl[LensCommand.ZoomValue]).ConfigureAwait(false);
+                                GvcpReply zoomValue = await Gvcp.ReadRegisterAsync(LensControl[LensCommand.ZoomValue]).ConfigureAwait(false);
                                 if (zoomValue.Status == GvcpStatus.GEV_STATUS_SUCCESS)
                                 {
                                     ZoomValue = zoomValue.RegisterValue;
@@ -158,7 +187,7 @@ namespace GigeVision.Core.Models
                         case LensCommand.FocusValue:
                             if (LensControl.ContainsKey(LensCommand.FocusValue))
                             {
-                                var focusValue = await Gvcp.ReadRegisterAsync(LensControl[LensCommand.FocusValue]).ConfigureAwait(false);
+                                GvcpReply focusValue = await Gvcp.ReadRegisterAsync(LensControl[LensCommand.FocusValue]).ConfigureAwait(false);
                                 if (focusValue.Status == GvcpStatus.GEV_STATUS_SUCCESS)
                                 {
                                     FocusValue = focusValue.RegisterValue;
@@ -177,8 +206,8 @@ namespace GigeVision.Core.Models
             try
             {
                 LensControl = new Dictionary<LensCommand, string>();
-                var take = new string[] { "ZoomIn", "ZoomTele" };
-                var skip = new string[] { "Step", "Speed", "Limit", "Digital" };
+                string[] take = new string[] { "ZoomIn", "ZoomTele" };
+                string[] skip = new string[] { "Step", "Speed", "Limit", "Digital" };
                 AddLensRegister(take, skip, LensCommand.ZoomIn, registersDictionary);
 
                 take = new string[] { "ZoomOut", "ZoomWide" };
@@ -254,21 +283,21 @@ namespace GigeVision.Core.Models
         private bool AddLensRegister(string[] lookFor, string[] skipThese, LensCommand lensCommand, Dictionary<string, string> registersDictionary)
         {
             List<string> totalKeys = new List<string>();
-            foreach (var item in lookFor)
+            foreach (string item in lookFor)
             {
-                var keys = registersDictionary.Keys.Where(x => x.Contains(item));
-                foreach (var keyItem in keys)
+                IEnumerable<string> keys = registersDictionary.Keys.Where(x => x.Contains(item));
+                foreach (string keyItem in keys)
                 {
                     totalKeys.Add(keyItem);
                 }
             }
             if (totalKeys?.Count() > 0)
             {
-                foreach (var skipKey in skipThese)
+                foreach (string skipKey in skipThese)
                 {
-                    var toBeRemoved = totalKeys.Where(x => x.Contains(skipKey)).ToList();
+                    List<string> toBeRemoved = totalKeys.Where(x => x.Contains(skipKey)).ToList();
 
-                    foreach (var item in toBeRemoved)
+                    foreach (string item in toBeRemoved)
                     {
                         totalKeys.Remove(item);
                     }

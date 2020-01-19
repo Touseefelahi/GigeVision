@@ -4,47 +4,110 @@ using System.Collections.Generic;
 
 namespace GigeVision.Core.Models
 {
+    /// <summary>
+    /// Generates GVCP command
+    /// </summary>
     public class GvcpCommand
     {
+        /// <summary>
+        /// GVCP header
+        /// </summary>
         public readonly byte GvcpHeader = 0x42;
+
+        /// <summary>
+        /// Flag for acknowledgement
+        /// </summary>
         public readonly byte flag = 0x01;
 
+        /// <summary>
+        /// Generates Gvcp Command
+        /// </summary>
+        /// <param name="adress"></param>
+        /// <param name="type"></param>
+        /// <param name="value"></param>
+        /// <param name="requestID"></param>
         public GvcpCommand(byte[] adress, GvcpCommandType type, uint value = 0, ushort requestID = 0)
         {
             GenerateCommand(adress, type, requestID, value);
         }
 
+        /// <summary>
+        /// Geneartes GVCP Command
+        /// </summary>
+        /// <param name="address"></param>
+        /// <param name="valuesToWrite"></param>
+        /// <param name="requestID"></param>
         public GvcpCommand(string[] address, uint[] valuesToWrite, ushort requestID = 0)
         {
             GenerateCommand(address, valuesToWrite: valuesToWrite, requestID);
         }
 
+        /// <summary>
+        /// Generate read command
+        /// </summary>
+        /// <param name="address"></param>
+        /// <param name="requestID"></param>
         public GvcpCommand(string[] address, ushort requestID = 0)
         {
             GenerateCommand(address, requestID);
         }
 
+        /// <summary>
+        /// Generate GVCP command
+        /// </summary>
+        /// <param name="command"></param>
         public GvcpCommand(GvcpCommandType command)
         {
             GenerateCommand(null, command, 0);
         }
 
+        /// <summary>
+        /// GVCP command type
+        /// </summary>
         public GvcpCommandType Type { get; set; }
 
+        /// <summary>
+        /// Command bytes for generated command
+        /// </summary>
         public byte[] CommandBytes { get; private set; }
 
+        /// <summary>
+        /// Length of GVCP command
+        /// </summary>
         public int Length { get => CommandBytes.Length; }
 
+        /// <summary>
+        /// Request ID
+        /// </summary>
         public ushort RequestId { get; set; }
 
+        /// <summary>
+        /// Is command valid
+        /// </summary>
         public bool IsValid { get; set; }
 
+        /// <summary>
+        /// Value of register (for read command)
+        /// </summary>
         public uint Value { get; set; }
 
+        /// <summary>
+        /// Values for register (for multiple read commands)
+        /// </summary>
         public List<uint> Values { get; set; }
 
+        /// <summary>
+        /// Address of register
+        /// </summary>
         public byte[] Address { get; set; }
 
+        /// <summary>
+        /// Generate general GVCP command
+        /// </summary>
+        /// <param name="adress"></param>
+        /// <param name="type"></param>
+        /// <param name="requestID"></param>
+        /// <param name="valueToWrite"></param>
         public void GenerateCommand(byte[] adress, GvcpCommandType type, ushort requestID, uint valueToWrite = 0)
         {
             Random random = new Random();
