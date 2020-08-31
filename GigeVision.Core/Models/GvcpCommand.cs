@@ -215,7 +215,7 @@ namespace GigeVision.Core.Models
                 requestID = (ushort)random.Next(1, 60000);
             }
 
-            ushort packetLength = (ushort)(8 + (4 * (type == GvcpCommandType.Write ? 2 : 1)));
+            ushort packetLength = (ushort)(4 * (type == GvcpCommandType.Write ? 2 : 1) * valuesToReadOrWrite);
             return new byte[]
                         {
                           GvcpHeader,
