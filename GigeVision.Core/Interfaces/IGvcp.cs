@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 
 namespace GigeVision.Core.Interfaces
 {
+    /// <summary>
+    /// General interface for GVCP procotol
+    /// </summary>
     public interface IGvcp
     {
         /// <summary>
@@ -222,6 +225,12 @@ namespace GigeVision.Core.Interfaces
         /// <param name="iPToSet">IP of camera that needs to be set</param>
         /// <returns>Success Status</returns>
         Task<bool> ForceIPAsync(string macAddress, string iPToSet);
+
+        /// <summary>
+        /// It will get all the devices from the network and then fires the event for updated list
+        /// </summary>
+        /// <param name="listUpdated">Event that will be fired once list is ready</param>
+        void GetAllGigeDevicesInNetworkAsnyc(Action<List<CameraInformation>> listUpdated);
 
         /// <summary>
         /// It will broadcast discovery command and get all the available devices in the network

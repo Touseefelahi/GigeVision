@@ -66,8 +66,8 @@ namespace GigeVision.Core.Models
                         {
                             try
                             {
-                                ControlSocket.Client.Close();
-                                ControlSocket.Close();
+                                ControlSocket?.Client.Close();
+                                ControlSocket?.Close();
                             }
                             catch (Exception)
                             {
@@ -120,6 +120,11 @@ namespace GigeVision.Core.Models
 
         #region Status Commands
 
+        /// <summary>
+        /// Check camera status
+        /// </summary>
+        /// <param name="ip">Ip Camera</param>
+        /// <returns>Camera Status: Available/Incontrol or Unavailable</returns>
         public async Task<CameraStatus> CheckCameraStatusAsync(string ip)
         {
             if (ValidateIp(ip))
@@ -143,11 +148,21 @@ namespace GigeVision.Core.Models
             }
         }
 
+        /// <summary>
+        /// Check camera status
+        /// </summary>
+        /// <returns>Camera Status: Available/Incontrol or Unavailable</returns>
         public async Task<CameraStatus> CheckCameraStatusAsync()
         {
             return await CheckCameraStatusAsync(CameraIp).ConfigureAwait(false);
         }
 
+        /// <summary>
+        /// Forces the IP of camera to be changed to the given IP
+        /// </summary>
+        /// <param name="macAddress">MAC address of the camera</param>
+        /// <param name="iPToSet">IP of camera that needs to be set</param>
+        /// <returns>Success Status</returns>
         public async Task<bool> ForceIPAsync(byte[] macAddress, string iPToSet)
         {
             var forceIpCommand = new byte[64];
@@ -200,11 +215,30 @@ namespace GigeVision.Core.Models
             }
         }
 
+        /// <summary>
+        /// Forces the IP to the camera
+        /// </summary>
+        /// <param name="macAddress">Mac Address of Camera</param>
+        /// <param name="iPToSet">IP to set</param>
+        /// <returns></returns>
         public async Task<bool> ForceIPAsync(string macAddress, string iPToSet)
         {
             return await ForceIPAsync(Converter.HexStringToByteArray(macAddress), iPToSet).ConfigureAwait(false);
         }
 
+        /// <summary>
+        /// It will get all the devices from the network and then fires the event for updated list
+        /// </summary>
+        /// <param name="listUpdated"></param>
+        public async void GetAllGigeDevicesInNetworkAsnyc(Action<List<CameraInformation>> listUpdated)
+        {
+            var list = await GetAllGigeDevicesInNetworkAsnyc().ConfigureAwait(false);
+            listUpdated?.Invoke(list);
+        }
+
+        /// <summary>
+        /// It will get all the devices from the network and returns the list updated list
+        /// </summary>
         public async Task<List<CameraInformation>> GetAllGigeDevicesInNetworkAsnyc()
         {
             var cameraInfoList = new List<CameraInformation>();
@@ -219,13 +253,21 @@ namespace GigeVision.Core.Models
                     socket.Client.SendTimeout = 50;
                     GvcpCommand discovery = new GvcpCommand(GvcpCommandType.Discovery);
                     socket.Send(discovery.CommandBytes, discovery.Length);
-                    socket.Connect(IPAddress.Any, 0);
+                    endPoint = new IPEndPoint(0, 0);
                     while (true)//listen for devices
                     {
-                        await Task.Delay(5).ConfigureAwait(false);
+                        var packet = socket.Receive(ref endPoint);
+                        if (packet.Length > 255)
+                        {
+                            cameraInfoList.Add(DecodeDiscoveryPacket(packet));
+                        }
+                        else
+                        {
+                            break;
+                        }
                         if (socket.Available > 255)
                         {
-                            var packet = socket.Receive(ref endPoint);
+                            packet = socket.Receive(ref endPoint);
                             cameraInfoList.Add(DecodeDiscoveryPacket(packet));
                         }
                         else
@@ -235,7 +277,7 @@ namespace GigeVision.Core.Models
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
             }
             return cameraInfoList;
@@ -342,7 +384,7 @@ namespace GigeVision.Core.Models
                     try
                     {
                         string registerName = childNode.Attributes["Name"].Value;
-                        string registerAddress = (childNode.SelectSingleNode(namespacePrefix + "Address", xmlNamespaceManager).InnerText.Remove(0, 2));
+                        string registerAddress = (childNode.SelectSingleNode(namespacePrefix + "Address", xmlNamespaceManager)?.InnerText.Remove(0, 2));
                         RegistersDictionary.Add(registerName, registerAddress);
                     }
                     catch (Exception)
@@ -359,7 +401,7 @@ namespace GigeVision.Core.Models
                     try
                     {
                         string registerName = childNode.Attributes["Name"].Value;
-                        string registerAddress = (childNode.SelectSingleNode(namespacePrefix + "Address", xmlNamespaceManager).InnerText.Remove(0, 2));
+                        string registerAddress = (childNode.SelectSingleNode(namespacePrefix + "Address", xmlNamespaceManager)?.InnerText.Remove(0, 2));
                         RegistersDictionary.Add(registerName, registerAddress);
                     }
                     catch { }
@@ -374,7 +416,7 @@ namespace GigeVision.Core.Models
                     try
                     {
                         string registerName = childNode.Attributes["Name"].Value;
-                        string registerAddress = (childNode.SelectSingleNode(namespacePrefix + "Address", xmlNamespaceManager).InnerText.Remove(0, 2));
+                        string registerAddress = (childNode.SelectSingleNode(namespacePrefix + "Address", xmlNamespaceManager)?.InnerText.Remove(0, 2));
                         RegistersDictionary.Add(registerName, registerAddress);
                     }
                     catch { }
