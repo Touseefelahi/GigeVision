@@ -21,6 +21,9 @@ namespace GigeVision.Core.Models
 
         private IntPtr intPtr;
         private byte[] rawBytes;
+        private Action<byte[]> frameReadyAction;
+
+        private bool ignoreCommand;
 
         /// <summary>
         /// Camera constructor with initialized Gvcp Controller
@@ -82,6 +85,8 @@ namespace GigeVision.Core.Models
                 {
                     width = value;
                     OnPropertyChanged(nameof(Width));
+                    if (ignoreCommand) return;
+                    SetResolutionAsync(Width, Height);
                 }
             }
         }
@@ -98,6 +103,8 @@ namespace GigeVision.Core.Models
                 {
                     height = value;
                     OnPropertyChanged(nameof(Height));
+                    if (ignoreCommand) return;
+                    SetResolutionAsync(Width, Height);
                 }
             }
         }
@@ -168,16 +175,16 @@ namespace GigeVision.Core.Models
         /// </summary>
         public bool IsRawFrame { get; set; } = true;
 
-        private bool is64Bit => IntPtr.Size == 8;
-
         /// <summary>
         /// This method will get current PC IP and Gets the Camera ip from Gvcp
         /// </summary>
         /// <param name="rxIP">If rxIP is not provided, method will detect system IP and use it</param>
         /// <param name="rxPort">It will set randomly when not provided</param>
+        /// <param name="frameReady">If not null this event will be raised</param>
         /// <returns></returns>
-        public async Task<bool> StartStreamAsync(string rxIP = null, int rxPort = 0)
+        public async Task<bool> StartStreamAsync(string rxIP = null, int rxPort = 0, Action<byte[]> frameReady = null)
         {
+            frameReadyAction = frameReady;
             if (string.IsNullOrEmpty(rxIP))
             {
                 rxIP = GetMyIp();
@@ -245,7 +252,7 @@ namespace GigeVision.Core.Models
         /// <returns>Is streaming status</returns>
         public async Task<bool> StopStream()
         {
-            if (is64Bit)
+            if (Environment.Is64BitProcess)
             {
                 CvInterop64.Stop();
             }
@@ -270,6 +277,7 @@ namespace GigeVision.Core.Models
         /// <returns>Command Status</returns>
         public async Task<bool> SetResolutionAsync(uint width, uint height)
         {
+            ignoreCommand = true;
             try
             {
                 await Gvcp.TakeControl().ConfigureAwait(false);
@@ -284,12 +292,13 @@ namespace GigeVision.Core.Models
                     Width = reply.RegisterValues[0];
                     Height = reply.RegisterValues[1];
                 }
-
                 await Gvcp.LeaveControl().ConfigureAwait(false);
+                ignoreCommand = false;
                 return status;
             }
             catch (Exception)
             {
+                ignoreCommand = false;
                 return false;
             }
         }
@@ -324,6 +333,7 @@ namespace GigeVision.Core.Models
         /// <returns>Command Status</returns>
         public async Task<bool> SetOffsetAsync(uint offsetX, uint offsetY)
         {
+            ignoreCommand = true;
             if (!IsStreaming)
             {
                 await Gvcp.TakeControl().ConfigureAwait(false);
@@ -343,6 +353,7 @@ namespace GigeVision.Core.Models
             {
                 await Gvcp.LeaveControl().ConfigureAwait(false);
             }
+            ignoreCommand = false;
             return status;
         }
 
@@ -394,7 +405,7 @@ namespace GigeVision.Core.Models
             {
                 if (IsRawFrame)
                 {
-                    if (is64Bit)
+                    if (Environment.Is64BitProcess)
                     {
                         CvInterop64.GetRawFrame(port, IsMulticast ? MulticastIP : null, out intPtr, RawFrameReady);
                     }
@@ -405,7 +416,7 @@ namespace GigeVision.Core.Models
                 }
                 else
                 {
-                    if (is64Bit)
+                    if (Environment.Is64BitProcess)
                     {
                         CvInterop64.GetProcessedFrame(port, IsMulticast ? MulticastIP : null, out intPtr, RawFrameReady);
                     }
@@ -423,12 +434,27 @@ namespace GigeVision.Core.Models
 
         private void RawFrameReady(int value)
         {
-            Marshal.Copy(intPtr, rawBytes, 0, rawBytes.Length);
-            FrameReady?.Invoke(intPtr, rawBytes);
+            try
+            {
+                Marshal.Copy(intPtr, rawBytes, 0, rawBytes.Length);
+                if (frameReadyAction != null)
+                {
+                    frameReadyAction?.Invoke(rawBytes);
+                }
+                else
+                {
+                    FrameReady?.Invoke(intPtr, rawBytes);
+                }
+            }
+            catch (Exception ex)
+            {
+                Updates?.Invoke(null, ex.Message);
+            }
         }
 
         private async Task<bool> ReadParameters()
         {
+            ignoreCommand = true;
             try
             {
                 await Gvcp.ReadAllRegisterAddressFromCameraAsync().ConfigureAwait(false);
@@ -466,6 +492,10 @@ namespace GigeVision.Core.Models
             }
             catch
             {
+            }
+            finally
+            {
+                ignoreCommand = false;
             }
             if (Gvcp.RegistersDictionary.Count > 0)
             {
