@@ -503,12 +503,13 @@
             Gets the raw data from the camera. Set false to get RGB frame instead of BayerGR8
             </summary>
         </member>
-        <member name="M:GigeVision.Core.Interfaces.ICamera.StartStreamAsync(System.String,System.Int32)">
+        <member name="M:GigeVision.Core.Interfaces.ICamera.StartStreamAsync(System.String,System.Int32,System.Action{System.Byte[]})">
             <summary>
             This method will get current PC IP and Gets the Camera ip from Gvcp
             </summary>
             <param name="rxIP">If rxIP is not provided, method will detect system IP and use it</param>
             <param name="rxPort">It will set randomly when not provided</param>
+            <param name="frameReady">If not Null this action will be called on frameready</param>
             <returns></returns>
         </member>
         <member name="M:GigeVision.Core.Interfaces.ICamera.StopStream">
@@ -562,6 +563,11 @@
             Read register for camera
             </summary>
             <returns>Command Status</returns>
+        </member>
+        <member name="T:GigeVision.Core.Interfaces.IGvcp">
+            <summary>
+            General interface for GVCP procotol
+            </summary>
         </member>
         <member name="P:GigeVision.Core.Interfaces.IGvcp.ElapsedOneSecond">
             <summary>
@@ -777,6 +783,12 @@
             <param name="iPToSet">IP of camera that needs to be set</param>
             <returns>Success Status</returns>
         </member>
+        <member name="M:GigeVision.Core.Interfaces.IGvcp.GetAllGigeDevicesInNetworkAsnyc(System.Action{System.Collections.Generic.List{GigeVision.Core.Models.CameraInformation}})">
+            <summary>
+            It will get all the devices from the network and then fires the event for updated list
+            </summary>
+            <param name="listUpdated">Event that will be fired once list is ready</param>
+        </member>
         <member name="M:GigeVision.Core.Interfaces.IGvcp.GetAllGigeDevicesInNetworkAsnyc">
             <summary>
             It will broadcast discovery command and get all the available devices in the network
@@ -900,12 +912,13 @@
             Gets the raw data from the camera. Set false to get RGB frame instead of BayerGR8
             </summary>
         </member>
-        <member name="M:GigeVision.Core.Models.Camera.StartStreamAsync(System.String,System.Int32)">
+        <member name="M:GigeVision.Core.Models.Camera.StartStreamAsync(System.String,System.Int32,System.Action{System.Byte[]})">
             <summary>
             This method will get current PC IP and Gets the Camera ip from Gvcp
             </summary>
             <param name="rxIP">If rxIP is not provided, method will detect system IP and use it</param>
             <param name="rxPort">It will set randomly when not provided</param>
+            <param name="frameReady">If not null this event will be raised</param>
             <returns></returns>
         </member>
         <member name="M:GigeVision.Core.Models.Camera.StopStream">
@@ -1114,6 +1127,46 @@
         <member name="P:GigeVision.Core.Models.Gvcp.CameraIpChanged">
             <summary>
             Event fired whenever camera ip changed: used to get registers
+            </summary>
+        </member>
+        <member name="M:GigeVision.Core.Models.Gvcp.CheckCameraStatusAsync(System.String)">
+            <summary>
+            Check camera status
+            </summary>
+            <param name="ip">Ip Camera</param>
+            <returns>Camera Status: Available/Incontrol or Unavailable</returns>
+        </member>
+        <member name="M:GigeVision.Core.Models.Gvcp.CheckCameraStatusAsync">
+            <summary>
+            Check camera status
+            </summary>
+            <returns>Camera Status: Available/Incontrol or Unavailable</returns>
+        </member>
+        <member name="M:GigeVision.Core.Models.Gvcp.ForceIPAsync(System.Byte[],System.String)">
+            <summary>
+            Forces the IP of camera to be changed to the given IP
+            </summary>
+            <param name="macAddress">MAC address of the camera</param>
+            <param name="iPToSet">IP of camera that needs to be set</param>
+            <returns>Success Status</returns>
+        </member>
+        <member name="M:GigeVision.Core.Models.Gvcp.ForceIPAsync(System.String,System.String)">
+            <summary>
+            Forces the IP to the camera
+            </summary>
+            <param name="macAddress">Mac Address of Camera</param>
+            <param name="iPToSet">IP to set</param>
+            <returns></returns>
+        </member>
+        <member name="M:GigeVision.Core.Models.Gvcp.GetAllGigeDevicesInNetworkAsnyc(System.Action{System.Collections.Generic.List{GigeVision.Core.Models.CameraInformation}})">
+            <summary>
+            It will get all the devices from the network and then fires the event for updated list
+            </summary>
+            <param name="listUpdated"></param>
+        </member>
+        <member name="M:GigeVision.Core.Models.Gvcp.GetAllGigeDevicesInNetworkAsnyc">
+            <summary>
+            It will get all the devices from the network and returns the list updated list
             </summary>
         </member>
         <member name="M:GigeVision.Core.Models.Gvcp.ReadAllRegisterAddressFromCameraAsync(System.String)">

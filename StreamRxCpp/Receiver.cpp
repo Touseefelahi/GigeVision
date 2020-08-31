@@ -331,7 +331,7 @@ namespace Receiver
 				isLeaderProcessed = true;
 				if (isBayerPattern)
 				{
-					*imageDataAddress = static_cast<uint8_t*>(malloc((size_t)(8 * width2 * height2 * 3)));
+					*imageDataAddress = static_cast<uint8_t*>(malloc(sizeof(uint8_t) * width2 * height2 * 3));
 					startingAddressImageNew = *imageDataAddress;
 					startingAddressImage2 = startingAddressImageNew;
 					imageData2 = static_cast<uint8_t*>(malloc((size_t)(8 * width2 * height2)));

@@ -77,7 +77,6 @@ namespace GigeVisionLibrary.Test.Wpf
             }
             else
             {
-                // await camera.SetResolutionAsync(1024, 768).ConfigureAwait(false);
                 width = (int)camera.Width;
                 height = (int)camera.Height;
                 Dispatcher.Invoke(() =>

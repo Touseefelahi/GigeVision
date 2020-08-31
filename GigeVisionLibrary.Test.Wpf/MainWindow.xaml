@@ -6,8 +6,8 @@
         xmlns:local="clr-namespace:GigeVisionLibrary.Test.Wpf"
         mc:Ignorable="d"
         xmlns:flatStyle="clr-namespace:FlatStyle;assembly=FlatStyle"
-
         Title="MainWindow" Height="800" Width="1024">
+
     <DockPanel LastChildFill="True">
         <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" HorizontalAlignment="Center">
             <TextBlock Text="IP" />
