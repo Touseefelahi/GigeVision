@@ -11,6 +11,11 @@ namespace GigeVision.Core.Interfaces
     public interface ICamera
     {
         /// <summary>
+        /// If enabled library will use C++ native library for Stream Reception
+        /// </summary>
+        bool IsUsingCppForRx { get; set; }
+
+        /// <summary>
         /// Motor Controller for camera, zoom/focus/iris control if any
         /// </summary>
         MotorControl MotorController { get; set; }

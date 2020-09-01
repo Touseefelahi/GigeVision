@@ -181,6 +181,11 @@ namespace GigeVision.Core.Models
         public bool IsRawFrame { get; set; } = true;
 
         /// <summary>
+        /// If enabled library will use C++ native code for stream reception
+        /// </summary>
+        public bool IsUsingCppForRx { get; set; }
+
+        /// <summary>
         /// This method will get current PC IP and Gets the Camera ip from Gvcp
         /// </summary>
         /// <param name="rxIP">If rxIP is not provided, method will detect system IP and use it</param>
@@ -231,7 +236,14 @@ namespace GigeVision.Core.Models
             {
                 if (await Gvcp.TakeControl(true).ConfigureAwait(false))
                 {
-                    streamReceiver.StartRxCppThread();
+                    if (IsUsingCppForRx)
+                    {
+                        streamReceiver.StartRxCppThread();
+                    }
+                    else
+                    {
+                        streamReceiver.StartRxThread();
+                    }
                     if ((await Gvcp.WriteRegisterAsync(GvcpRegister.SCPHostPort, (uint)port).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS)
                     {
                         await Gvcp.WriteRegisterAsync(GvcpRegister.SCDA, Converter.IpToNumber(rxIP)).ConfigureAwait(false);
@@ -257,13 +269,16 @@ namespace GigeVision.Core.Models
         /// <returns>Is streaming status</returns>
         public async Task<bool> StopStream()
         {
-            if (Environment.Is64BitProcess)
+            if (IsUsingCppForRx)
             {
-                CvInterop64.Stop();
-            }
-            else
-            {
-                CvInterop.Stop();
+                if (Environment.Is64BitProcess)
+                {
+                    CvInterop64.Stop();
+                }
+                else
+                {
+                    CvInterop.Stop();
+                }
             }
 
             await Gvcp.WriteRegisterAsync(GvcpRegister.SCDA, 0).ConfigureAwait(false);

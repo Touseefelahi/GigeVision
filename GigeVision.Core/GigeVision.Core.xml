@@ -428,6 +428,11 @@
             Camera class is responsible to initilize the stream and receive the stream
             </summary>
         </member>
+        <member name="P:GigeVision.Core.Interfaces.ICamera.IsUsingCppForRx">
+            <summary>
+            If enabled library will use C++ native library for Stream Reception
+            </summary>
+        </member>
         <member name="P:GigeVision.Core.Interfaces.ICamera.MotorController">
             <summary>
             Motor Controller for camera, zoom/focus/iris control if any
@@ -1187,6 +1192,11 @@
             Gets the raw data from the camera. Set false to get RGB frame instead of BayerGR8
             </summary>
         </member>
+        <member name="P:GigeVision.Core.Models.Camera.IsUsingCppForRx">
+            <summary>
+            If enabled library will use C++ native code for stream reception
+            </summary>
+        </member>
         <member name="M:GigeVision.Core.Models.Camera.StartStreamAsync(System.String,System.Int32,System.Action{System.Byte[]})">
             <summary>
             This method will get current PC IP and Gets the Camera ip from Gvcp
@@ -1625,6 +1635,11 @@
         <member name="M:GigeVision.Core.Models.StreamReceiver.StartRxCppThread">
             <summary>
             It starts Thread using C++ library
+            </summary>
+        </member>
+        <member name="M:GigeVision.Core.Models.StreamReceiver.StartRxThread">
+            <summary>
+            Start Rx thread using .Net
             </summary>
         </member>
     </members>
