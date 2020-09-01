@@ -15,15 +15,27 @@ namespace GigeVision.Core.Models
     /// </summary>
     public class Camera : BaseNotifyPropertyChanged, ICamera
     {
-        private int port = 0;
+        /// <summary>
+        /// Rx port
+        /// </summary>
+        public int port = 0;
+
+        /// <summary>
+        /// Raw bytes
+        /// </summary>
+        public byte[] rawBytes;
+
+        /// <summary>
+        /// frame ready action
+        /// </summary>
+        public Action<byte[]> frameReadyAction;
+
         private uint width, height, offsetX, offsetY, bytesPerPixel;
         private bool isStreaming;
 
         private IntPtr intPtr;
-        private byte[] rawBytes;
-        private Action<byte[]> frameReadyAction;
 
-        private bool ignoreCommand;
+        private StreamReceiver streamReceiver;
 
         /// <summary>
         /// Camera constructor with initialized Gvcp Controller
@@ -33,8 +45,7 @@ namespace GigeVision.Core.Models
         {
             Gvcp = gvcp;
             Task.Run(async () => await ReadParameters().ConfigureAwait(false));
-            MotorController = new MotorControl();
-            Gvcp.CameraIpChanged += CameraIpChanged;
+            Init();
         }
 
         /// <summary>
@@ -43,8 +54,7 @@ namespace GigeVision.Core.Models
         public Camera()
         {
             Gvcp = new Gvcp();
-            MotorController = new MotorControl();
-            Gvcp.CameraIpChanged += CameraIpChanged;
+            Init();
         }
 
         /// <summary>
@@ -70,7 +80,6 @@ namespace GigeVision.Core.Models
         /// <summary>
         /// Payload size, if not provided it will be automatically set to one row, depending on resolution
         /// </summary>
-
         public uint Payload { get; set; } = 0;
 
         /// <summary>
@@ -85,8 +94,6 @@ namespace GigeVision.Core.Models
                 {
                     width = value;
                     OnPropertyChanged(nameof(Width));
-                    if (ignoreCommand) return;
-                    SetResolutionAsync(Width, Height);
                 }
             }
         }
@@ -103,8 +110,6 @@ namespace GigeVision.Core.Models
                 {
                     height = value;
                     OnPropertyChanged(nameof(Height));
-                    if (ignoreCommand) return;
-                    SetResolutionAsync(Width, Height);
                 }
             }
         }
@@ -226,7 +231,7 @@ namespace GigeVision.Core.Models
             {
                 if (await Gvcp.TakeControl(true).ConfigureAwait(false))
                 {
-                    StartRxCppThread();
+                    streamReceiver.StartRxCppThread();
                     if ((await Gvcp.WriteRegisterAsync(GvcpRegister.SCPHostPort, (uint)port).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS)
                     {
                         await Gvcp.WriteRegisterAsync(GvcpRegister.SCDA, Converter.IpToNumber(rxIP)).ConfigureAwait(false);
@@ -277,7 +282,6 @@ namespace GigeVision.Core.Models
         /// <returns>Command Status</returns>
         public async Task<bool> SetResolutionAsync(uint width, uint height)
         {
-            ignoreCommand = true;
             try
             {
                 await Gvcp.TakeControl().ConfigureAwait(false);
@@ -293,12 +297,10 @@ namespace GigeVision.Core.Models
                     Height = reply.RegisterValues[1];
                 }
                 await Gvcp.LeaveControl().ConfigureAwait(false);
-                ignoreCommand = false;
                 return status;
             }
             catch (Exception)
             {
-                ignoreCommand = false;
                 return false;
             }
         }
@@ -328,12 +330,29 @@ namespace GigeVision.Core.Models
         /// <summary>
         /// Sets the offset of camera
         /// </summary>
+        /// <returns>Command Status</returns>
+        public async Task<bool> SetOffsetAsync()
+        {
+            return await SetOffsetAsync(OffsetX, OffsetY).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Sets the Resolution of camera
+        /// </summary>
+        /// <returns>Command Status</returns>
+        public async Task<bool> SetResolutionAsync()
+        {
+            return await SetResolutionAsync(Width, Height).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Sets the offset of camera
+        /// </summary>
         /// <param name="offsetX">Offset X to set</param>
         /// <param name="offsetY">Offset Y to set</param>
         /// <returns>Command Status</returns>
         public async Task<bool> SetOffsetAsync(uint offsetX, uint offsetY)
         {
-            ignoreCommand = true;
             if (!IsStreaming)
             {
                 await Gvcp.TakeControl().ConfigureAwait(false);
@@ -353,7 +372,6 @@ namespace GigeVision.Core.Models
             {
                 await Gvcp.LeaveControl().ConfigureAwait(false);
             }
-            ignoreCommand = false;
             return status;
         }
 
@@ -377,6 +395,13 @@ namespace GigeVision.Core.Models
             return await ReadParameters().ConfigureAwait(false);
         }
 
+        private void Init()
+        {
+            MotorController = new MotorControl();
+            streamReceiver = new StreamReceiver(this);
+            Gvcp.CameraIpChanged += CameraIpChanged;
+        }
+
         private void CalculateSingleRowPayload()
         {
             Payload = 8 + 28 + (Width * bytesPerPixel);
@@ -387,74 +412,8 @@ namespace GigeVision.Core.Models
             await ReadParameters().ConfigureAwait(false);
         }
 
-        private void StartRxCppThread()
-        {
-            Thread threadDecode = new Thread(RxCpp)
-            {
-                Priority = ThreadPriority.Highest,
-                Name = "Decode Cpp Packets Thread",
-                IsBackground = true
-            };
-            threadDecode.Start();
-        }
-
-        private void RxCpp()
-        {
-            intPtr = new IntPtr();
-            try
-            {
-                if (IsRawFrame)
-                {
-                    if (Environment.Is64BitProcess)
-                    {
-                        CvInterop64.GetRawFrame(port, IsMulticast ? MulticastIP : null, out intPtr, RawFrameReady);
-                    }
-                    else
-                    {
-                        CvInterop.GetRawFrame(port, IsMulticast ? MulticastIP : null, out intPtr, RawFrameReady);
-                    }
-                }
-                else
-                {
-                    if (Environment.Is64BitProcess)
-                    {
-                        CvInterop64.GetProcessedFrame(port, IsMulticast ? MulticastIP : null, out intPtr, RawFrameReady);
-                    }
-                    else
-                    {
-                        CvInterop.GetProcessedFrame(port, IsMulticast ? MulticastIP : null, out intPtr, RawFrameReady);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Updates?.Invoke(null, ex.Message);
-            }
-        }
-
-        private void RawFrameReady(int value)
-        {
-            try
-            {
-                Marshal.Copy(intPtr, rawBytes, 0, rawBytes.Length);
-                if (frameReadyAction != null)
-                {
-                    frameReadyAction?.Invoke(rawBytes);
-                }
-                else
-                {
-                    FrameReady?.Invoke(intPtr, rawBytes);
-                }
-            }
-            catch (Exception ex)
-            {
-                Updates?.Invoke(null, ex.Message);
-            }
-        }
-
         private async Task<bool> ReadParameters()
         {
-            ignoreCommand = true;
             try
             {
                 await Gvcp.ReadAllRegisterAddressFromCameraAsync().ConfigureAwait(false);
@@ -492,10 +451,6 @@ namespace GigeVision.Core.Models
             }
             catch
             {
-            }
-            finally
-            {
-                ignoreCommand = false;
             }
             if (Gvcp.RegistersDictionary.Count > 0)
             {

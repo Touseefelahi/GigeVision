@@ -101,6 +101,18 @@ namespace GigeVision.Core.Interfaces
         Task<bool> StopStream();
 
         /// <summary>
+        /// Sets the Resolution
+        /// </summary>
+        /// <returns></returns>
+        Task<bool> SetResolutionAsync();
+
+        /// <summary>
+        /// Sets the Offset
+        /// </summary>
+        /// <returns></returns>
+        Task<bool> SetOffsetAsync();
+
+        /// <summary>
         /// Sets the resolution of camera
         /// </summary>
         /// <param name="width">Width to set</param>

@@ -1,9 +1,6 @@
 ﻿using GigeVision.Core.Exceptions;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace GigeVision.Core.Models
 {
@@ -20,7 +17,11 @@ namespace GigeVision.Core.Models
         public static byte[] RegisterStringToByteArray(string registerAddress)
         {
             registerAddress = registerAddress.Replace("0x", "");
-            if (registerAddress.Length > 8) throw new RegisterConversionException($"Length Miss match {registerAddress}");
+            if (registerAddress.Length > 8)
+            {
+                throw new RegisterConversionException($"Length Miss match {registerAddress}");
+            }
+
             if (registerAddress.Length % 2 == 1)
             {
                 registerAddress = "0" + registerAddress;
@@ -31,7 +32,7 @@ namespace GigeVision.Core.Models
             }
             try
             {
-                var register = Enumerable.Range(0, registerAddress.Length)
+                byte[] register = Enumerable.Range(0, registerAddress.Length)
                           .Where(x => x % 2 == 0)
                           .Select(x => Convert.ToByte(registerAddress.Substring(x, 2), 16))
                           .ToArray();
@@ -57,7 +58,7 @@ namespace GigeVision.Core.Models
             }
             else
             {
-                var splitIpAddress = dottedIpAddress.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries);
+                string[] splitIpAddress = dottedIpAddress.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries);
                 int i;
                 for (i = splitIpAddress.Length - 1; i >= 0; i--)
                 {
@@ -76,9 +77,9 @@ namespace GigeVision.Core.Models
         {
             byte[] registersBytes = new byte[4 * registerAddresses.Length];
             int registerIndex = 0;
-            foreach (var register in registerAddresses)
+            foreach (string register in registerAddresses)
             {
-                var registerBytes = RegisterStringToByteArray(register);
+                byte[] registerBytes = RegisterStringToByteArray(register);
                 registersBytes[0 + (registerIndex * 4)] = registerBytes[0];
                 registersBytes[1 + (registerIndex * 4)] = registerBytes[1];
                 registersBytes[2 + (registerIndex * 4)] = registerBytes[2];
@@ -102,7 +103,7 @@ namespace GigeVision.Core.Models
             }
             try
             {
-                var register = Enumerable.Range(0, hexString.Length)
+                byte[] register = Enumerable.Range(0, hexString.Length)
                           .Where(x => x % 2 == 0)
                           .Select(x => Convert.ToByte(hexString.Substring(x, 2), 16))
                           .ToArray();
@@ -128,7 +129,7 @@ namespace GigeVision.Core.Models
             }
             else
             {
-                var splitIpAddress = dottedIpAddress.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries);
+                string[] splitIpAddress = dottedIpAddress.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries);
                 int i;
                 for (i = splitIpAddress.Length - 1; i >= 0; i--)
                 {

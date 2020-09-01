@@ -242,42 +242,37 @@ namespace GigeVision.Core.Models
         public async Task<List<CameraInformation>> GetAllGigeDevicesInNetworkAsnyc()
         {
             var cameraInfoList = new List<CameraInformation>();
-            var endPoint = new IPEndPoint(IPAddress.Any, PortGvcp);
             try
             {
-                using (var socket = new UdpClient())
+                using var socket = new UdpClient();
+                socket.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+                socket.Connect(IPAddress.Broadcast, PortGvcp);
+                socket.Client.ReceiveTimeout = 100;
+                socket.Client.SendTimeout = 50;
+                GvcpCommand discovery = new GvcpCommand(GvcpCommandType.Discovery);
+                socket.Send(discovery.CommandBytes, discovery.Length);
+                int port = ((IPEndPoint)socket.Client.LocalEndPoint).Port;
+                socket.Close();
+                UdpClient udpClient = new UdpClient();
+                var endPoint = new IPEndPoint(IPAddress.Any, port);
+                udpClient.Client.Bind(endPoint);
+                while (true)//listen for devices
                 {
-                    socket.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-                    socket.Connect(IPAddress.Broadcast, PortGvcp);
-                    socket.Client.ReceiveTimeout = 100;
-                    socket.Client.SendTimeout = 50;
-                    GvcpCommand discovery = new GvcpCommand(GvcpCommandType.Discovery);
-                    socket.Send(discovery.CommandBytes, discovery.Length);
-                    endPoint = new IPEndPoint(0, 0);
-                    while (true)//listen for devices
+                    await Task.Delay(5).ConfigureAwait(false);
+                    if (udpClient.Available > 255)
                     {
-                        var packet = socket.Receive(ref endPoint);
-                        if (packet.Length > 255)
-                        {
-                            cameraInfoList.Add(DecodeDiscoveryPacket(packet));
-                        }
-                        else
-                        {
-                            break;
-                        }
-                        if (socket.Available > 255)
-                        {
-                            packet = socket.Receive(ref endPoint);
-                            cameraInfoList.Add(DecodeDiscoveryPacket(packet));
-                        }
-                        else
-                        {
-                            break;
-                        }
+                        var packet = udpClient.Receive(ref endPoint);
+                        cameraInfoList.Add(DecodeDiscoveryPacket(packet));
+                    }
+                    else
+                    {
+                        udpClient.Close();
+                        udpClient.Dispose();
+                        break;
                     }
                 }
             }
-            catch (Exception ex)
+            catch
             {
             }
             return cameraInfoList;
