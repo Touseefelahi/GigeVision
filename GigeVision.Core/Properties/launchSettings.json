@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "GigeVision.Core": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}

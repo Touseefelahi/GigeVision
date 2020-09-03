@@ -5,24 +5,84 @@
     <Authors>Touseef Elahi</Authors>
     <Company>Stira.sa</Company>
     <Product>GigeVision</Product>
-    <Description>
-      Simple GigE Vision Implementation
-    </Description>
+    <Description>Simple GigE Vision Implementation (x64 platform only)
+</Description>
     <PackageTags>GigeVision, GeniCam, GVSP, GVCP</PackageTags>
-    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>1.0.15</Version>
+    <Version>1.2.7</Version>
+    <PackageLicenseFile>License.txt</PackageLicenseFile>
+    <PackageIcon>gige.png</PackageIcon>
+    <PackageIconUrl />
+    <Platforms>AnyCPU;x64;x86</Platforms>
+    <PackageReleaseNotes>Fixed Multiple Write Register command</PackageReleaseNotes>
+    <LangVersion>8.0</LangVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <OutputPath>D:\VisualStudioProjects\Visual Studio 2019\Nuget Packages\All Packages\</OutputPath>
+    <DocumentationFile>D:\VisualStudioProjects\Visual Studio 2019\Nuget Packages\GigePackage\GigeVision.Core\GigeVision.Core.xml</DocumentationFile>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
+    <OutputPath>D:\VisualStudioProjects\Visual Studio 2019\Nuget Packages\All Packages\</OutputPath>
+    <DocumentationFile>D:\VisualStudioProjects\Visual Studio 2019\Nuget Packages\GigePackage\GigeVision.Core\GigeVision.Core.xml</DocumentationFile>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutputPath>D:\VisualStudioProjects\Visual Studio 2019\Nuget Packages\All Packages\</OutputPath>
+    <DocumentationFile>D:\VisualStudioProjects\Visual Studio 2019\Nuget Packages\GigePackage\GigeVision.Core\GigeVision.Core.xml</DocumentationFile>
+    <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <OutputPath>D:\VisualStudioProjects\Visual Studio 2019\Nuget Packages\All Packages\</OutputPath>
+    <DocumentationFile>D:\VisualStudioProjects\Visual Studio 2019\Nuget Packages\GigePackage\GigeVision.Core\GigeVision.Core.xml</DocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
+    <DocumentationFile>D:\VisualStudioProjects\Visual Studio 2019\Nuget Packages\GigePackage\GigeVision.Core\GigeVision.Core.xml</DocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <DocumentationFile>D:\VisualStudioProjects\Visual Studio 2019\Nuget Packages\GigePackage\GigeVision.Core\GigeVision.Core.xml</DocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Stira.WpfCore" Version="1.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="build\GigeVision.Core.targets">
+      <PackagePath>build/</PackagePath>
+      <Pack>true</Pack>
+    </None>
+    <None Include="gige.png">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
+    <None Include="Licenses\License.txt">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)\runtimes\win-x64\native\StreamRxCpp.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>runtimes\win-x64\native\StreamRxCpp.dll</Link>
+      <Pack>True</Pack>
+      <Visible>false</Visible>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)\runtimes\win-x86\native\StreamRxCpp.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>runtimes\win-x86\native\StreamRxCpp.dll</Link>
+      <Pack>True</Pack>
+      <Visible>false</Visible>
+    </None>
   </ItemGroup>
 </Project>

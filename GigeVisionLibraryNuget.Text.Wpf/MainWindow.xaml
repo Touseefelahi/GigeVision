@@ -1,0 +1,29 @@
+﻿<Window x:Class="GigeVisionLibraryNuget.Text.Wpf.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:GigeVisionLibraryNuget.Text.Wpf"
+        xmlns:flatStyle="clr-namespace:FlatStyle;assembly=FlatStyle"
+        Style="{StaticResource FlatWindowTransparent}"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="800" Width="1024">
+    <DockPanel LastChildFill="True">
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" HorizontalAlignment="Center">
+            <TextBlock Text="IP" />
+            <TextBox Text="{Binding Camera.IP}" MinWidth="100" />
+            <Button  Content="Start Stream" Click="Button_Click" HorizontalAlignment="Center" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding Camera.Width}" />
+            <CheckBox IsChecked="{Binding Camera.IsRawFrame}" ToolTip="Is Raw Frame" />
+            <Slider Style="{StaticResource NumericUpDown}" />
+        </StackPanel>
+
+        <Grid>
+            <StackPanel VerticalAlignment="Top" HorizontalAlignment="Left">
+
+                <local:LightImage2 x:Name="lightControl" RawBytes="{Binding RawBytes, Mode=TwoWay}" />
+            </StackPanel>
+            <TextBlock x:Name="Fps" HorizontalAlignment="Right" VerticalAlignment="Bottom" Style="{StaticResource PrimaryBackgroundText}" />
+        </Grid>
+    </DockPanel>
+</Window>

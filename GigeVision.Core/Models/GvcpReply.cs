@@ -4,13 +4,23 @@ using System.Collections.Generic;
 
 namespace GigeVision.Core.Models
 {
+    /// <summary>
+    /// Decodes GVCP acknowledgement
+    /// </summary>
     public class GvcpReply
     {
+        /// <summary>
+        /// Decode GVCP acknowledgement packet
+        /// </summary>
+        /// <param name="buffer"></param>
         public GvcpReply(byte[] buffer)
         {
             DetectCommand(buffer);
         }
 
+        /// <summary>
+        /// Default constructor
+        /// </summary>
         public GvcpReply()
         {
         }
@@ -55,24 +65,48 @@ namespace GigeVision.Core.Models
         /// </summary>
         public List<uint> RegisterValues { get; set; }
 
+        /// <summary>
+        /// acknowledgement id
+        /// </summary>
         public ushort AcknowledgementID { get; set; }
 
+        /// <summary>
+        /// Is command valid
+        /// </summary>
         public bool IsValid { get; set; }
 
+        /// <summary>
+        /// GVCP command type
+        /// </summary>
         public GvcpCommandType Type { get; set; }
 
+        /// <summary>
+        /// GEV_Status
+        /// </summary>
         public GvcpStatus Status { get; set; }
 
+        /// <summary>
+        /// Sets the reply
+        /// </summary>
+        /// <param name="reply"></param>
         public void SetReply(byte[] reply)
         {
             Reply = new List<byte>(reply);
         }
 
+        /// <summary>
+        /// Sets the reply
+        /// </summary>
+        /// <param name="reply"></param>
         public void SetReply(List<byte> reply)
         {
             Reply = reply;
         }
 
+        /// <summary>
+        /// Detect command/Decode Command
+        /// </summary>
+        /// <param name="buffer"></param>
         public void DetectCommand(byte[] buffer)
         {
             if (buffer?.Length > 7)
