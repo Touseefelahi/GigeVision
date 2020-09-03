@@ -33,6 +33,10 @@
     <DocumentationFile>D:\VisualStudioProjects\Visual Studio 2019\Nuget Packages\GigePackage\GigeVision.Core\GigeVision.Core.xml</DocumentationFile>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)'=='PublishLocally'">
+    <Optimize>true</Optimize>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Stira.WpfCore" Version="1.0.1" />
   </ItemGroup>
