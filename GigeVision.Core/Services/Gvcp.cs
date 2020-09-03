@@ -1,6 +1,7 @@
 ﻿using GigeVision.Core.Enums;
 using GigeVision.Core.Exceptions;
 using GigeVision.Core.Interfaces;
+using GigeVision.Core.Services;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -36,7 +37,7 @@ namespace GigeVision.Core.Models
         public Gvcp(string ip)
         {
             CameraIp = ip;
-            RegistersDictionary = new Dictionary<string, string>();
+            RegistersDictionary = new Dictionary<string, CameraRegister>();
         }
 
         /// <summary>
@@ -44,7 +45,7 @@ namespace GigeVision.Core.Models
         /// </summary>
         public Gvcp()
         {
-            RegistersDictionary = new Dictionary<string, string>();
+            RegistersDictionary = new Dictionary<string, CameraRegister>();
         }
 
         #endregion Constructor
@@ -106,7 +107,7 @@ namespace GigeVision.Core.Models
         /// <summary>
         /// Register dictionary of camera
         /// </summary>
-        public Dictionary<string, string> RegistersDictionary { get; set; }
+        public Dictionary<string, CameraRegister> RegistersDictionary { get; set; }
 
         /// <summary>
         /// It can be for any thing, to update fps to check devices
@@ -337,7 +338,7 @@ namespace GigeVision.Core.Models
         /// </summary>
         /// <param name="cameraIp">Camera IP</param>
         /// <returns>Register dictionary</returns>
-        public async Task<Dictionary<string, string>> ReadAllRegisterAddressFromCameraAsync(string cameraIp)
+        public async Task<Dictionary<string, CameraRegister>> ReadAllRegisterAddressFromCameraAsync(string cameraIp)
         {
             if (!ValidateIp(cameraIP)) throw new InvalidIpException();
 
@@ -351,72 +352,10 @@ namespace GigeVision.Core.Models
                 RegistersDictionary.Clear();
             }
             //handeling the namespace of the xml file to cover all the cases
-            var namespaceName = "ns";
-            var namespacePrefix = string.Empty;
-
-            XmlNamespaceManager xmlNamespaceManager = null;
-
-            var root = xml.FirstChild.NextSibling;
-
-            if (root.Attributes != null)
-            {
-                var xmlns = root.Attributes["xmlns"];
-
-                if (xmlns != null)
-                {
-                    xmlNamespaceManager = new XmlNamespaceManager(xml.NameTable);
-                    xmlNamespaceManager.AddNamespace(namespaceName, xmlns.Value);
-                    namespacePrefix = $"{namespaceName}:";
-                }
-            }
-
+            Dictionary<string, CameraRegister> registersDictionary = null;
+            Helper.SearchForRegisterbyTagNameInXmlFile(out registersDictionary, "Group", xml);
             //finding the nodes and thier values
-            XmlNodeList nodeList = xml.DocumentElement.GetElementsByTagName("StringReg");
-            if (nodeList != null)
-            {
-                foreach (XmlNode childNode in nodeList)
-                {
-                    try
-                    {
-                        string registerName = childNode.Attributes["Name"].Value;
-                        string registerAddress = (childNode.SelectSingleNode(namespacePrefix + "Address", xmlNamespaceManager)?.InnerText.Remove(0, 2));
-                        RegistersDictionary.Add(registerName, registerAddress);
-                    }
-                    catch (Exception)
-                    {
-                    }
-                }
-            }
-
-            nodeList = xml.DocumentElement.GetElementsByTagName("IntReg");
-            if (nodeList != null)
-            {
-                foreach (XmlNode childNode in nodeList)
-                {
-                    try
-                    {
-                        string registerName = childNode.Attributes["Name"].Value;
-                        string registerAddress = (childNode.SelectSingleNode(namespacePrefix + "Address", xmlNamespaceManager)?.InnerText.Remove(0, 2));
-                        RegistersDictionary.Add(registerName, registerAddress);
-                    }
-                    catch { }
-                }
-            }
-
-            nodeList = xml.DocumentElement.GetElementsByTagName("MaskedIntReg");
-            if (nodeList != null)
-            {
-                foreach (XmlNode childNode in nodeList)
-                {
-                    try
-                    {
-                        string registerName = childNode.Attributes["Name"].Value;
-                        string registerAddress = (childNode.SelectSingleNode(namespacePrefix + "Address", xmlNamespaceManager)?.InnerText.Remove(0, 2));
-                        RegistersDictionary.Add(registerName, registerAddress);
-                    }
-                    catch { }
-                }
-            }
+            RegistersDictionary = registersDictionary;
             return RegistersDictionary;
         }
 
@@ -424,7 +363,7 @@ namespace GigeVision.Core.Models
         /// Reads all register of camera
         /// </summary>
         /// <returns>Register dictionary</returns>
-        public async Task<Dictionary<string, string>> ReadAllRegisterAddressFromCameraAsync()
+        public async Task<Dictionary<string, CameraRegister>> ReadAllRegisterAddressFromCameraAsync()
         {
             return await ReadAllRegisterAddressFromCameraAsync(CameraIp).ConfigureAwait(false);
         }

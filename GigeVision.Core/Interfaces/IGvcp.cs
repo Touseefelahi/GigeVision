@@ -40,7 +40,7 @@ namespace GigeVision.Core.Interfaces
         /// <summary>
         /// Dictionary for registers
         /// </summary>
-        Dictionary<string, string> RegistersDictionary { get; set; }
+        Dictionary<string, CameraRegister> RegistersDictionary { get; set; }
 
         /// <summary>
         /// Write Register: it will send the GVCP command to the specified socket
@@ -202,13 +202,13 @@ namespace GigeVision.Core.Interfaces
         /// Read all Register
         /// </summary>
         /// <returns>Dictionary of registers</returns>
-        Task<Dictionary<string, string>> ReadAllRegisterAddressFromCameraAsync(string cameraIp);
+        Task<Dictionary<string, CameraRegister>> ReadAllRegisterAddressFromCameraAsync(string cameraIp);
 
         /// <summary>
         /// Read all Register
         /// </summary>
         /// <returns>Dictionary of registers</returns>
-        Task<Dictionary<string, string>> ReadAllRegisterAddressFromCameraAsync();
+        Task<Dictionary<string, CameraRegister>> ReadAllRegisterAddressFromCameraAsync();
 
         /// <summary>
         /// Forces the IP of camera to be changed to the given IP
