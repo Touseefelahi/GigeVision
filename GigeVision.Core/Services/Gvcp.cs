@@ -469,11 +469,6 @@ namespace GigeVision.Core.Models
                     //connecting to the server
                     client.Connect(IP, PortGvcp);
 
-                    byte[] commandCCP = new byte[] { 0x42, 0x00, 0x00, 0x82, 0x00, 0x08, 0x10, 0x01, 0x00, 0x00, 0x0a, 0x00, 0x00, 0x00, 0x00, 0x02 };
-
-                    //sending the packet
-                    //  client.Send(commandCCP, commandCCP.Length);
-                    Task.Delay(100);
                     //praparing the header for sending
                     byte[] gvcpHeader = GetReadMessageHeader(0x0200); //GevFirstURL = 0x0200
 
