@@ -4,8 +4,6 @@ using Stira.WpfCore;
 using System;
 using System.Net;
 using System.Net.Sockets;
-using System.Runtime.InteropServices;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace GigeVision.Core.Models
@@ -32,9 +30,6 @@ namespace GigeVision.Core.Models
 
         private uint width, height, offsetX, offsetY, bytesPerPixel;
         private bool isStreaming;
-
-        private IntPtr intPtr;
-
         private StreamReceiver streamReceiver;
 
         /// <summary>
@@ -232,6 +227,7 @@ namespace GigeVision.Core.Models
             {
                 CalculateSingleRowPayload();
             }
+            SetRxBuffer();
             if (Gvcp.RegistersDictionary.ContainsKey(nameof(RegisterName.AcquisitionStartReg)))
             {
                 if (await Gvcp.TakeControl(true).ConfigureAwait(false))
@@ -410,6 +406,20 @@ namespace GigeVision.Core.Models
             return await ReadParameters().ConfigureAwait(false);
         }
 
+        private void SetRxBuffer()
+        {
+            if (rawBytes != null)
+                Array.Clear(rawBytes, 0, rawBytes.Length);
+            if (!IsRawFrame && PixelFormat.ToString().Contains("Bayer"))
+            {
+                rawBytes = new byte[Width * Height * 3];
+            }
+            else
+            {
+                rawBytes = new byte[Width * Height * bytesPerPixel];
+            }
+        }
+
         private void Init()
         {
             MotorController = new MotorControl();
@@ -445,7 +455,7 @@ namespace GigeVision.Core.Models
                     Gvcp.RegistersDictionary[nameof(RegisterName.OffsetYReg)],
                     Gvcp.RegistersDictionary[nameof(RegisterName.PixelFormatReg)],
                 };
-                GvcpReply reply2 = await Gvcp.ReadRegisterAsync(registersToRead);
+                GvcpReply reply2 = await Gvcp.ReadRegisterAsync(registersToRead).ConfigureAwait(false);
                 if (reply2.Status == GvcpStatus.GEV_STATUS_SUCCESS)
                 {
                     Width = reply2.RegisterValues[0];
@@ -454,18 +464,11 @@ namespace GigeVision.Core.Models
                     OffsetY = reply2.RegisterValues[3];
                     PixelFormat = (PixelFormat)reply2.RegisterValues[4];
                     bytesPerPixel = (uint)(reply2.Reply[reply2.Reply.Count - 3] / 8);
-                    if (!IsRawFrame && PixelFormat.ToString().Contains("Bayer"))
-                    {
-                        rawBytes = new byte[Width * Height * 3];
-                    }
-                    else
-                    {
-                        rawBytes = new byte[Width * Height * bytesPerPixel];
-                    }
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                Updates?.Invoke(this, ex.Message);
             }
             if (Gvcp.RegistersDictionary.Count > 0)
             {
