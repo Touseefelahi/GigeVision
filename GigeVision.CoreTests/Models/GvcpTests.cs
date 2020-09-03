@@ -10,11 +10,11 @@ namespace GigeVision.Core.Models.Tests
     public class GvcpTests
     {
         private readonly Gvcp gvcp;
-        private readonly string ipCamera = "192.168.10.196";
+        private readonly string ipCamera = "192.168.10.155";
 
         public GvcpTests()
         {
-            gvcp = new Gvcp() { CameraIp = "192.168.10.196" };
+            gvcp = new Gvcp() { CameraIp = "192.168.10.155" };
         }
 
         [TestMethod()]
@@ -22,13 +22,13 @@ namespace GigeVision.Core.Models.Tests
         {
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
-            Dictionary<string, string> registers = await gvcp.ReadAllRegisterAddressFromCameraAsync().ConfigureAwait(false);
+            Dictionary<string, CameraRegister> registers = await gvcp.ReadAllRegisterAddressFromCameraAsync().ConfigureAwait(false);
             stopwatch.Stop();
             long timeTook = stopwatch.ElapsedMilliseconds;
             if (registers.Count > 10)
             {
                 bool isTrue = registers.ContainsKey("AcquisitionStartReg");
-                string startRegister = registers["AcquisitionStartReg"];
+                string startRegister = registers["AcquisitionStartReg"].Address;
                 Assert.IsTrue(isTrue);
             }
         }

@@ -22,6 +22,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Library", "Library", "{B120
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GigeVisionLibraryNuget.Text.Wpf", "GigeVisionLibraryNuget.Text.Wpf\GigeVisionLibraryNuget.Text.Wpf.csproj", "{D66C9912-F614-4F53-980A-EE63BC3BDEA9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GigeVision.Wpf", "GigeVision.Wpf\GigeVision.Wpf.csproj", "{2D8579CF-9742-4D73-99A3-6F935AC8E9FA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -91,6 +93,18 @@ Global
 		{D66C9912-F614-4F53-980A-EE63BC3BDEA9}.Release|x64.Build.0 = Release|x64
 		{D66C9912-F614-4F53-980A-EE63BC3BDEA9}.Release|x86.ActiveCfg = Release|x86
 		{D66C9912-F614-4F53-980A-EE63BC3BDEA9}.Release|x86.Build.0 = Release|x86
+		{2D8579CF-9742-4D73-99A3-6F935AC8E9FA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2D8579CF-9742-4D73-99A3-6F935AC8E9FA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2D8579CF-9742-4D73-99A3-6F935AC8E9FA}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{2D8579CF-9742-4D73-99A3-6F935AC8E9FA}.Debug|x64.Build.0 = Debug|Any CPU
+		{2D8579CF-9742-4D73-99A3-6F935AC8E9FA}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{2D8579CF-9742-4D73-99A3-6F935AC8E9FA}.Debug|x86.Build.0 = Debug|Any CPU
+		{2D8579CF-9742-4D73-99A3-6F935AC8E9FA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2D8579CF-9742-4D73-99A3-6F935AC8E9FA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2D8579CF-9742-4D73-99A3-6F935AC8E9FA}.Release|x64.ActiveCfg = Release|Any CPU
+		{2D8579CF-9742-4D73-99A3-6F935AC8E9FA}.Release|x64.Build.0 = Release|Any CPU
+		{2D8579CF-9742-4D73-99A3-6F935AC8E9FA}.Release|x86.ActiveCfg = Release|Any CPU
+		{2D8579CF-9742-4D73-99A3-6F935AC8E9FA}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -102,6 +116,7 @@ Global
 		{97A76C11-AECE-4DA8-8014-6E463C21F2EF} = {0307491D-B8FC-42AE-8EAB-69D2C072973B}
 		{02238C23-09C5-4087-9989-F98A9CB5CBA5} = {B120F0DB-D7D6-4ABA-845B-32117EB4B1B2}
 		{D66C9912-F614-4F53-980A-EE63BC3BDEA9} = {0307491D-B8FC-42AE-8EAB-69D2C072973B}
+		{2D8579CF-9742-4D73-99A3-6F935AC8E9FA} = {B120F0DB-D7D6-4ABA-845B-32117EB4B1B2}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C6692468-3D71-4CF6-BBB2-3E938FFB2E6F}
