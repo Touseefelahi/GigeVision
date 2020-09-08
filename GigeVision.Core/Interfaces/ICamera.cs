@@ -91,6 +91,12 @@ namespace GigeVision.Core.Interfaces
         bool IsRawFrame { get; set; }
 
         /// <summary>
+        /// If we set the external buffer using <see cref="SetBuffer(ref byte[])"/> this will be set
+        /// true and software will copy stream on this buffer
+        /// </summary>
+        bool IsUsingExternalBuffer { get; set; }
+
+        /// <summary>
         /// This method will get current PC IP and Gets the Camera ip from Gvcp
         /// </summary>
         /// <param name="rxIP">If rxIP is not provided, method will detect system IP and use it</param>
@@ -162,5 +168,11 @@ namespace GigeVision.Core.Interfaces
         /// </summary>
         /// <returns>Command Status</returns>
         Task<bool> ReadRegisters();
+
+        /// <summary>
+        /// Set External Raw bytes buffer
+        /// </summary>
+        /// <param name="externalBuffer"></param>
+        void SetBuffer(byte[] externalBuffer);
     }
 }

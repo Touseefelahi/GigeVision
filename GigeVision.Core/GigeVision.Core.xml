@@ -508,6 +508,12 @@
             Gets the raw data from the camera. Set false to get RGB frame instead of BayerGR8
             </summary>
         </member>
+        <member name="P:GigeVision.Core.Interfaces.ICamera.IsUsingExternalBuffer">
+            <summary>
+            If we set the external buffer using <see cref="!:SetBuffer(ref byte[])"/> this will be set
+            true and software will copy stream on this buffer
+            </summary>
+        </member>
         <member name="M:GigeVision.Core.Interfaces.ICamera.StartStreamAsync(System.String,System.Int32,System.Action{System.Byte[]})">
             <summary>
             This method will get current PC IP and Gets the Camera ip from Gvcp
@@ -580,6 +586,12 @@
             Read register for camera
             </summary>
             <returns>Command Status</returns>
+        </member>
+        <member name="M:GigeVision.Core.Interfaces.ICamera.SetBuffer(System.Byte[])">
+            <summary>
+            Set External Raw bytes buffer
+            </summary>
+            <param name="externalBuffer"></param>
         </member>
         <member name="T:GigeVision.Core.Interfaces.IGvcp">
             <summary>
@@ -1096,14 +1108,19 @@
             Rx port
             </summary>
         </member>
+        <member name="F:GigeVision.Core.Models.Camera.frameReadyAction">
+            <summary>
+            frame ready action
+            </summary>
+        </member>
         <member name="F:GigeVision.Core.Models.Camera.rawBytes">
             <summary>
             Raw bytes
             </summary>
         </member>
-        <member name="F:GigeVision.Core.Models.Camera.frameReadyAction">
+        <member name="F:GigeVision.Core.Models.Camera.externalBuffer">
             <summary>
-            frame ready action
+            External buffer it has to set from externally using <see cref="!:SetBuffer(IntPtr)"/>
             </summary>
         </member>
         <member name="M:GigeVision.Core.Models.Camera.#ctor(GigeVision.Core.Interfaces.IGvcp)">
@@ -1197,6 +1214,12 @@
             If enabled library will use C++ native code for stream reception
             </summary>
         </member>
+        <member name="P:GigeVision.Core.Models.Camera.IsUsingExternalBuffer">
+            <summary>
+            If we set the external buffer using <see cref="!:SetBuffer(ref byte[])"/> this will be set
+            true and software will copy stream on this buffer
+            </summary>
+        </member>
         <member name="M:GigeVision.Core.Models.Camera.StartStreamAsync(System.String,System.Int32,System.Action{System.Byte[]})">
             <summary>
             This method will get current PC IP and Gets the Camera ip from Gvcp
@@ -1269,6 +1292,12 @@
             Read register for camera
             </summary>
             <returns>Command Status</returns>
+        </member>
+        <member name="M:GigeVision.Core.Models.Camera.SetBuffer(System.Byte[])">
+            <summary>
+            Sets the buffer from external source
+            </summary>
+            <param name="externalRawBytes"></param>
         </member>
         <member name="T:GigeVision.Core.Models.Converter">
             <summary>
@@ -1631,6 +1660,11 @@
             Receives the GigeStream
             </summary>
             <param name="camera"></param>
+        </member>
+        <member name="M:GigeVision.Core.Models.StreamReceiver.ResetPacketSize">
+            <summary>
+            Resets the final packet ID
+            </summary>
         </member>
         <member name="M:GigeVision.Core.Models.StreamReceiver.StartRxCppThread">
             <summary>

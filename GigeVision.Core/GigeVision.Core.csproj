@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>netstandard2.1</TargetFramework>
     <Authors>Touseef Elahi</Authors>
     <Company>Stira.sa</Company>
     <Product>GigeVision</Product>
@@ -11,7 +11,7 @@
     <PackageTags>GigeVision, GeniCam, GVSP, GVCP</PackageTags>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>1.2.7</Version>
+    <Version>1.2.8</Version>
     <PackageLicenseFile>License.txt</PackageLicenseFile>
     <PackageIcon>gige.png</PackageIcon>
     <PackageIconUrl />

@@ -19,14 +19,19 @@ namespace GigeVision.Core.Models
         public int port = 0;
 
         /// <summary>
-        /// Raw bytes
-        /// </summary>
-        public byte[] rawBytes;
-
-        /// <summary>
         /// frame ready action
         /// </summary>
         public Action<byte[]> frameReadyAction;
+
+        /// <summary>
+        /// Raw bytes
+        /// </summary>
+        internal byte[] rawBytes;
+
+        /// <summary>
+        /// External buffer it has to set from externally using <see cref="SetBuffer(IntPtr)"/>
+        /// </summary>
+        internal IntPtr externalBuffer;
 
         private uint width, height, offsetX, offsetY, bytesPerPixel;
         private bool isStreaming;
@@ -88,6 +93,7 @@ namespace GigeVision.Core.Models
                 if (value != width)
                 {
                     width = value;
+                    streamReceiver?.ResetPacketSize();
                     OnPropertyChanged(nameof(Width));
                 }
             }
@@ -104,6 +110,7 @@ namespace GigeVision.Core.Models
                 if (value != height)
                 {
                     height = value;
+                    streamReceiver?.ResetPacketSize();
                     OnPropertyChanged(nameof(Height));
                 }
             }
@@ -181,6 +188,12 @@ namespace GigeVision.Core.Models
         public bool IsUsingCppForRx { get; set; }
 
         /// <summary>
+        /// If we set the external buffer using <see cref="SetBuffer(ref byte[])"/> this will be set
+        /// true and software will copy stream on this buffer
+        /// </summary>
+        public bool IsUsingExternalBuffer { get; set; }
+
+        /// <summary>
         /// This method will get current PC IP and Gets the Camera ip from Gvcp
         /// </summary>
         /// <param name="rxIP">If rxIP is not provided, method will detect system IP and use it</param>
@@ -227,7 +240,10 @@ namespace GigeVision.Core.Models
             {
                 CalculateSingleRowPayload();
             }
-            SetRxBuffer();
+            if (!IsUsingExternalBuffer)
+            {
+                SetRxBuffer();
+            }
             if (Gvcp.RegistersDictionary.ContainsKey(nameof(RegisterName.AcquisitionStartReg)))
             {
                 if (await Gvcp.TakeControl(true).ConfigureAwait(false))
@@ -404,6 +420,21 @@ namespace GigeVision.Core.Models
         public async Task<bool> ReadRegisters()
         {
             return await ReadParameters().ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Sets the buffer from external source
+        /// </summary>
+        /// <param name="externalRawBytes"></param>
+        public void SetBuffer(byte[] externalRawBytes)
+        {
+            if (!IsStreaming && externalRawBytes != default)
+            {
+                if (rawBytes != null)
+                    Array.Clear(rawBytes, 0, rawBytes.Length);
+                rawBytes = externalRawBytes;
+                IsUsingExternalBuffer = true;
+            }
         }
 
         private void SetRxBuffer()

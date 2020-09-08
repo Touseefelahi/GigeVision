@@ -15,8 +15,9 @@ namespace GigeVision.Core.Models
         private IntPtr intPtr;
 
         private UdpClient socketRx;
-
         private IPEndPoint endPoint;
+        private Socket socketRxRaw;
+        private int finalPacketID = 0;
 
         /// <summary>
         /// Receives the GigeStream
@@ -25,6 +26,14 @@ namespace GigeVision.Core.Models
         public StreamReceiver(Camera camera)
         {
             Camera = camera;
+        }
+
+        /// <summary>
+        /// Resets the final packet ID
+        /// </summary>
+        public void ResetPacketSize()
+        {
+            finalPacketID = 0;
         }
 
         /// <summary>
@@ -46,15 +55,92 @@ namespace GigeVision.Core.Models
         /// </summary>
         public void StartRxThread()
         {
-            Thread threadDecode = new Thread(DecodePackets)
+            Thread threadDecode = new Thread(DecodePacketsRawSocket)
             {
                 Priority = ThreadPriority.Highest,
                 Name = "Decode Packets Thread",
                 IsBackground = true
             };
-            SetupSocketRx();
+            SetupSocketRxRaw();
             threadDecode.Start();
         }
+
+        private void SetupSocketRxRaw()
+        {
+            try
+            {
+                if (socketRxRaw != null)
+                {
+                    socketRxRaw.Close();
+                    socketRxRaw.Dispose();
+                }
+                socketRxRaw = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+                socketRxRaw.Bind(new IPEndPoint(IPAddress.Any, Camera.port));
+                if (Camera.IsMulticast)
+                {
+                    var mcastOption = new MulticastOption(IPAddress.Parse(Camera.MulticastIP), IPAddress.Any);
+                    socketRxRaw.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership, mcastOption);
+                }
+                socketRxRaw.ReceiveTimeout = 1000;
+                socketRxRaw.ReceiveBufferSize = (int)(Camera.Payload * Camera.Height * 5);
+            }
+            catch (Exception ex)
+            {
+                Camera.Updates?.Invoke(null, ex.Message);
+            }
+        }
+
+        private void DecodePacketsRawSocket()
+        {
+            int packetID = 0;
+            int bufferLength = 0;
+            byte[] singlePacket = new byte[10000];
+            try
+            {
+                int length = socketRxRaw.Receive(singlePacket);
+                while (Camera.IsStreaming)
+                {
+                    length = socketRxRaw.Receive(singlePacket);
+                    if (length > 44) //Packet
+                    {
+                        packetID = (singlePacket[6] << 8) | singlePacket[7];
+
+                        if (packetID < finalPacketID) //Check for final packet because final packet length maybe lesser than the regular packets
+                        {
+                            bufferLength = length - 8;
+                            Buffer.BlockCopy(singlePacket, 8, Camera.rawBytes, (packetID - 1) * bufferLength, bufferLength);
+                        }
+                        else
+                        {
+                            Buffer.BlockCopy(singlePacket, 8, Camera.rawBytes, (packetID - 1) * bufferLength, length - 8);
+                        }
+                    }
+                    else if (length == 16) //Trailer packet size=16, Header Packet Size=44
+                    {
+                        if (finalPacketID == 0)
+                        {
+                            finalPacketID = packetID - 1;
+                        }
+
+                        if (Camera.frameReadyAction != null)
+                        {
+                            Camera.frameReadyAction?.Invoke(Camera.rawBytes);
+                        }
+                        else
+                        {
+                            Camera.FrameReady?.Invoke(intPtr, Camera.rawBytes);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Camera.Updates?.Invoke(null, ex.Message);
+                _ = Camera.StopStream();
+            }
+        }
+
+        #region OldCode
 
         private void SetupSocketRx()
         {
@@ -80,14 +166,13 @@ namespace GigeVision.Core.Models
                 IPAddress multicastAddress = IPAddress.Parse(Camera.MulticastIP);
                 socketRx.JoinMulticastGroup(multicastAddress);
             }
-            socketRx.Client.ReceiveTimeout = 3000;
+            socketRx.Client.ReceiveTimeout = 1000;
             socketRx.Client.ReceiveBufferSize = (int)(Camera.Payload * Camera.Height * 5);
         }
 
         private void DecodePackets()
         {
             int packetID = 0;
-            int finalPacketID = 0;
             int bufferLength = 0;
             byte[] singlePacket;
             try
@@ -99,6 +184,7 @@ namespace GigeVision.Core.Models
                     if (singlePacket.Length > 44) //Packet
                     {
                         packetID = (singlePacket[6] << 8) | singlePacket[7];
+
                         if (packetID < finalPacketID) //Check for final packet because final packet length maybe lesser than the regular packets
                         {
                             bufferLength = singlePacket.Length - 8;
@@ -188,5 +274,7 @@ namespace GigeVision.Core.Models
                 Camera.Updates?.Invoke(null, ex.Message);
             }
         }
+
+        #endregion OldCode
     }
 }
