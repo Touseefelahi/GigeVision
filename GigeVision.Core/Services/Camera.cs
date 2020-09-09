@@ -205,7 +205,15 @@ namespace GigeVision.Core.Models
             frameReadyAction = frameReady;
             if (string.IsNullOrEmpty(rxIP))
             {
-                rxIP = GetMyIp();
+                try
+                {
+                    rxIP = GetMyIp();
+                }
+                catch (Exception ex)
+                {
+                    Updates?.Invoke(this, ex.Message);
+                    return false;
+                }
             }
             if (IsMulticast)
             {
