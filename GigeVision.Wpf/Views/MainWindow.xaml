@@ -4,8 +4,8 @@
         xmlns:prism="http://prismlibrary.com/"
         xmlns:userControls="clr-namespace:GigeVision.Wpf.Views"
         prism:ViewModelLocator.AutoWireViewModel="True"
-        Title="{Binding Title}" Height="350" Width="525">
+        Title="{Binding Title}" Height="600" Width="500">
     <Grid>
-        <userControls:DeviceControl />
+        <userControls:DeviceControl  LoadedWindowCommand="{Binding LoadedWindowCommand}" />
     </Grid>
 </Window>
