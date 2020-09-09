@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="GigeVision.Wpf.Views.DeviceControl"
+﻿<UserControl x:Name="root" x:Class="GigeVision.Wpf.Views.DeviceControl"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -7,17 +7,244 @@
               xmlns:prism="http://prismlibrary.com/"
              prism:ViewModelLocator.AutoWireViewModel="True"
              mc:Ignorable="d"
-             d:DesignHeight="200" d:DesignWidth="400">
+             xmlns:enums="clr-namespace:GigeVision.Core.Enums;assembly=GigeVision.Core"
+             xmlns:converters="clr-namespace:GigeVision.Wpf.Converters"
+             xmlns:System="clr-namespace:System;assembly=mscorlib"
+             d:DesignHeight="600" d:DesignWidth="200"
+             xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity">
+    <UserControl.Resources>
+
+        <!--Converters-->
+        <converters:TextBoxReadOnlyConverter x:Key="AccessModeConverter" />
+        <converters:CameraRegisterVisibiltyConverter x:Key="CameraRegisterVisibiltyConverter" />
+        <converters:EnumerationVisibiltyConverter x:Key="EnumerationVisibiltyConverter" />
+
+        <!--Enums-->
+        <ObjectDataProvider x:Key="CameraRegisterVisibiltyList" MethodName="GetValues"
+                            ObjectType="{x:Type System:Enum}">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="enums:CameraRegisterVisibilty" />
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+
+        <!--TreeView Template-->
+        <HierarchicalDataTemplate   x:Key="Registers"   ItemsSource="{Binding Child}">
+            <ContentControl  x:Name="ContentControl" Content="{Binding}" />
+
+            <HierarchicalDataTemplate.Triggers>
+
+                <!--Check if current object  is parent-->
+                <DataTrigger Binding="{Binding IsParent}" Value="True">
+                    <Setter Property="ContentTemplate" TargetName="ContentControl">
+                        <Setter.Value>
+                            <DataTemplate>
+
+                                <TextBlock Text="{Binding Name}" />
+                            </DataTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </DataTrigger>
+
+                <DataTrigger Binding="{Binding IsParent}" Value="False">
+                    <Setter Property="ContentTemplate" TargetName="ContentControl">
+                        <Setter.Value>
+                            <DataTemplate>
+                                <Grid   HorizontalAlignment="Stretch" Width="auto">
+                                    <Grid.Resources>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="MinWidth" Value="250" />
+                                        </Style>
+
+                                        <Style TargetType="TextBox">
+                                            <Setter Property="Width" Value="100" />
+                                            <Setter Property="TextAlignment" Value="Center" />
+                                        </Style>
+
+                                        <Style TargetType="Grid">
+                                            <Setter Property="Visibility">
+                                                <Setter.Value>
+                                                    <MultiBinding  Converter="{StaticResource CameraRegisterVisibiltyConverter}">
+                                                        <Binding Path="CameraRegister.Visibilty" />
+                                                        <Binding Path="SelectedItem"  ElementName="VisibiltySelector" />
+                                                    </MultiBinding>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Style>
+                                    </Grid.Resources>
+
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="200" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Grid.Column="0" Text="{Binding Name}" />
+                                    <ContentControl  x:Name="InputType" Grid.Column="1" Content="{Binding}" />
+                                </Grid>
+                            </DataTemplate>
+                        </Setter.Value>
+                    </Setter>
+
+                    <!--ToDo:: Bind CameraRegistre to the Footer content-->
+                </DataTrigger>
+
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition Binding="{Binding IsParent}" Value="False" />
+                        <Condition Binding="{Binding CameraRegister.Enumeration, Converter={StaticResource EnumerationVisibiltyConverter}}" Value="False" />
+                    </MultiDataTrigger.Conditions>
+                    <Setter Property="ContentTemplate" TargetName="ContentControl">
+                        <Setter.Value>
+                            <DataTemplate>
+                                <Grid   HorizontalAlignment="Stretch" Width="auto">
+                                    <Grid.Resources>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="MinWidth" Value="250" />
+                                        </Style>
+
+                                        <Style TargetType="TextBox">
+                                            <Setter Property="Width" Value="100" />
+                                            <Setter Property="TextAlignment" Value="Center" />
+                                        </Style>
+
+                                        <Style TargetType="Grid">
+                                            <Setter Property="Visibility">
+                                                <Setter.Value>
+                                                    <MultiBinding  Converter="{StaticResource CameraRegisterVisibiltyConverter}">
+                                                        <Binding Path="CameraRegister.Visibilty" />
+                                                        <Binding Path="SelectedItem"  ElementName="VisibiltySelector" />
+                                                    </MultiBinding>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Style>
+                                    </Grid.Resources>
+
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="200" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Grid.Column="0" Text="{Binding Name}" />
+                                    <TextBox  Grid.Column="1" Text="{Binding CameraRegister.Value, UpdateSourceTrigger=PropertyChanged}">
+                                        <TextBox.InputBindings>
+                                            <KeyBinding Key="Return" Command="{Binding SetValueCommand}" />
+                                        </TextBox.InputBindings>
+                                    </TextBox>
+                                </Grid>
+                            </DataTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </MultiDataTrigger>
+
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition Binding="{Binding IsParent}" Value="False" />
+                        <Condition Binding="{Binding CameraRegister.Enumeration, Converter={StaticResource EnumerationVisibiltyConverter}}" Value="True" />
+                    </MultiDataTrigger.Conditions>
+                    <Setter Property="ContentTemplate" TargetName="ContentControl">
+                        <Setter.Value>
+                            <DataTemplate>
+                                <Grid   HorizontalAlignment="Stretch" Width="auto">
+                                    <Grid.Resources>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="MinWidth" Value="250" />
+                                        </Style>
+
+                                        <Style TargetType="TextBox">
+                                            <Setter Property="Width" Value="100" />
+                                            <Setter Property="TextAlignment" Value="Center" />
+                                        </Style>
+
+                                        <Style TargetType="ComboBox">
+                                            <Setter Property="Width" Value="100" />
+                                            <Setter Property="HorizontalContentAlignment" Value="Center" />
+                                        </Style>
+
+                                        <Style TargetType="ComboBoxItem">
+                                            <Setter Property="Width" Value="100" />
+                                            <Setter Property="HorizontalContentAlignment" Value="Center" />
+                                        </Style>
+
+                                        <Style TargetType="Grid">
+                                            <Setter Property="Visibility">
+                                                <Setter.Value>
+                                                    <MultiBinding  Converter="{StaticResource CameraRegisterVisibiltyConverter}">
+                                                        <Binding Path="CameraRegister.Visibilty" />
+                                                        <Binding Path="SelectedItem"  ElementName="VisibiltySelector" />
+                                                    </MultiBinding>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Style>
+                                    </Grid.Resources>
+
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="200" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Grid.Column="0" Text="{Binding Name}" />
+                                    <ComboBox Grid.Column="1" ItemsSource="{Binding CameraRegister.Enumeration}" SelectedItem="{Binding CameraRegister.Value}">
+                                        <i:Interaction.Triggers>
+                                            <i:EventTrigger EventName="SelectionChanged">
+                                                <i:InvokeCommandAction Command="{Binding SetValueCommand}" />
+                                            </i:EventTrigger>
+                                        </i:Interaction.Triggers>
+                                    </ComboBox>
+                                </Grid>
+                            </DataTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </MultiDataTrigger>
+            </HierarchicalDataTemplate.Triggers>
+        </HierarchicalDataTemplate>
+    </UserControl.Resources>
+
+    <!--Container-->
     <Grid>
-        <TreeView  ItemsSource="{Binding CameraRegisterGroup}">
-            <TextBlock Text="{Binding Comment}" />
-            <TreeView.ItemTemplate>
-                <HierarchicalDataTemplate  ItemsSource="{Binding CameraRegisters}">
-                    <Grid>
-                        <TreeViewItem Header="{Binding Name}" />
-                    </Grid>
-                </HierarchicalDataTemplate>
-            </TreeView.ItemTemplate>
-        </TreeView>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="30" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="100" />
+        </Grid.RowDefinitions>
+        <!--Header-->
+        <Border Grid.Row="0" Background="#ccc"  Padding="3">
+            <Grid VerticalAlignment="Center">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Column="0" Text="header" />
+                    <ComboBox Grid.Column="1" x:Name="VisibiltySelector" SelectedIndex="0" ItemsSource="{Binding Source={StaticResource CameraRegisterVisibiltyList}}" />
+                    <Button Grid.Column="2"  Content="Expand All" Command="{Binding ExpandCommand}" />
+                </Grid>
+            </Grid>
+        </Border>
+
+        <!--Body-->
+        <ScrollViewer Grid.Row="1">
+            <TreeView   ItemTemplate="{StaticResource Registers}"  ItemsSource="{Binding CameraRegisterGroupDTOList}" HorizontalAlignment="Stretch">
+                <TreeView.ItemContainerStyle>
+                    <Style TargetType="TreeViewItem">
+                        <Setter Property="IsExpanded" Value="{Binding IsExpanded,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    </Style>
+                </TreeView.ItemContainerStyle>
+            </TreeView>
+        </ScrollViewer>
+
+        <!--Footer-->
+        <Border Grid.Row="2" Background="#ccc"  Padding="3">
+            <Grid>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <ContentControl x:Name="FooterContent"  Grid.Column="0" Content="{Binding}" />
+                </Grid>
+            </Grid>
+        </Border>
     </Grid>
 </UserControl>
