@@ -94,7 +94,9 @@ namespace GigeVision.Core.Models
         {
             int packetID = 0;
             int bufferLength = 0;
-            byte[] singlePacket = new byte[10000];
+            byte[] singlePacketBuf = new byte[10000];
+            Span<byte> singlePacket = new Span<byte>(singlePacketBuf);
+            Span<byte> cameraRawPacket = new Span<byte>(Camera.rawBytes);
             try
             {
                 int length = socketRxRaw.Receive(singlePacket);
@@ -108,11 +110,13 @@ namespace GigeVision.Core.Models
                         if (packetID < finalPacketID) //Check for final packet because final packet length maybe lesser than the regular packets
                         {
                             bufferLength = length - 8;
-                            Buffer.BlockCopy(singlePacket, 8, Camera.rawBytes, (packetID - 1) * bufferLength, bufferLength);
+                            var slicedRowInImage = new Span<byte>(Camera.rawBytes, (packetID - 1) * bufferLength, bufferLength);
+                            singlePacket.Slice(8, bufferLength).CopyTo(slicedRowInImage);
                         }
                         else
                         {
-                            Buffer.BlockCopy(singlePacket, 8, Camera.rawBytes, (packetID - 1) * bufferLength, length - 8);
+                            var slicedRowInImage = new Span<byte>(Camera.rawBytes, (packetID - 1) * bufferLength, length - 8);
+                            singlePacket.Slice(8, length - 8).CopyTo(slicedRowInImage);
                         }
                     }
                     else if (length == 16) //Trailer packet size=16, Header Packet Size=44
