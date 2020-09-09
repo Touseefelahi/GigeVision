@@ -43,6 +43,12 @@ namespace GigeVision.Core.Interfaces
         Dictionary<string, CameraRegister> RegistersDictionary { get; set; }
 
         /// <summary>
+        /// Dictionary for registers groups
+        /// </summary>
+
+        Dictionary<string, CameraRegisterGroup> RegistersGroupDictionary { get; set; }
+
+        /// <summary>
         /// Write Register: it will send the GVCP command to the specified socket
         /// </summary>
         /// <param name="socket">Socket already connected with the camera IP</param>
@@ -197,6 +203,29 @@ namespace GigeVision.Core.Interfaces
         /// </summary>
         /// <returns>Acknowledgement</returns>
         Task<GvcpReply> ReadRegisterAsync(string[] registerAddresses);
+
+        /// <summary>
+        /// Read Memory Address
+        /// </summary>
+        /// <param name="ip"></param>
+        /// <param name="memoryAddress"></param>
+        /// <returns></returns>
+        Task<GvcpReply> ReadMemoryAsync(string ip, byte[] memoryAddress);
+
+        /// <summary>
+        /// Read Memory Address
+        /// </summary>
+        /// <param name="memoryAddressOrKey"></param>
+        /// <returns></returns>
+        Task<GvcpReply> ReadMemoryAsync(string memoryAddressOrKey);
+
+        /// <summary>
+        /// Write Memory
+        /// </summary>
+        /// <param name="registerAddress"></param>
+        /// <param name="valueToWrite"></param>
+        /// <returns></returns>
+        Task<GvcpReply> WriteMemoryAsync(string memoryAddress, uint valueToWrite);
 
         /// <summary>
         /// Read all Register
