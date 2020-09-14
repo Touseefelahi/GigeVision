@@ -10,14 +10,15 @@
              xmlns:enums="clr-namespace:GigeVision.Core.Enums;assembly=GigeVision.Core"
              xmlns:converters="clr-namespace:GigeVision.Wpf.Converters"
              xmlns:System="clr-namespace:System;assembly=mscorlib"
-             d:DesignHeight="600" d:DesignWidth="200"
+             d:DesignHeight="800" d:DesignWidth="200"
              xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity">
     <UserControl.Resources>
 
         <!--Converters-->
         <converters:TextBoxReadOnlyConverter x:Key="AccessModeConverter" />
         <converters:CameraRegisterVisibiltyConverter x:Key="CameraRegisterVisibiltyConverter" />
-        <converters:EnumerationVisibiltyConverter x:Key="EnumerationVisibiltyConverter" />
+        <converters:ListCheckConverter x:Key="ListCheckConverter" />
+        <converters:EnumerationIndexConverter x:Key="EnumerationIndexConverter" />
 
         <!--Enums-->
         <ObjectDataProvider x:Key="CameraRegisterVisibiltyList" MethodName="GetValues"
@@ -27,186 +28,421 @@
             </ObjectDataProvider.MethodParameters>
         </ObjectDataProvider>
 
+        <!--Style-->
+
+        <Style TargetType="TextBlock">
+            <Setter Property="MinWidth" Value="250" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0" />
+        </Style>
+
+        <Style TargetType="TextBox">
+            <Setter Property="Width" Value="100" />
+            <Setter Property="TextAlignment" Value="Center" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+
+        <Style TargetType="ComboBox">
+            <Setter Property="Width" Value="100" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+        </Style>
+
+        <Style TargetType="ComboBoxItem">
+            <Setter Property="Width" Value="100" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+        </Style>
+
+        <Style TargetType="DataGrid">
+            <Setter Property="BorderBrush" Value="#bbb" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="GridLinesVisibility" Value="None" />
+            <Setter Property="MinRowHeight" Value="25" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Width" Value="auto" />
+        </Style>
+
+        <Style TargetType="TreeView">
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+
+        <Style TargetType="Label">
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+        </Style>
+
         <!--TreeView Template-->
-        <HierarchicalDataTemplate   x:Key="Registers"   ItemsSource="{Binding Child}">
-            <ContentControl  x:Name="ContentControl" Content="{Binding}" />
+        <HierarchicalDataTemplate  x:Key="Registers" ItemsSource="{Binding Child}">
+
+            <!--Placeholder for Triggers Conditions-->
+            <StackPanel Orientation="Vertical">
+                <ContentControl  x:Name="ContentControl" Content="{Binding}" />
+            </StackPanel>
 
             <HierarchicalDataTemplate.Triggers>
-
                 <!--Check if current object  is parent-->
-                <DataTrigger Binding="{Binding IsParent}" Value="True">
+
+                <!--If parent is true will display its' name only-->
+                <DataTrigger Binding="{Binding CameraRegisters, Converter={StaticResource ListCheckConverter}}" Value="False">
                     <Setter Property="ContentTemplate" TargetName="ContentControl">
                         <Setter.Value>
                             <DataTemplate>
-
                                 <TextBlock Text="{Binding Name}" />
                             </DataTemplate>
                         </Setter.Value>
                     </Setter>
                 </DataTrigger>
 
-                <DataTrigger Binding="{Binding IsParent}" Value="False">
+                <!--If parent is false will display its' registers-->
+                <DataTrigger Binding="{Binding CameraRegisters, Converter={StaticResource ListCheckConverter}}" Value="True">
                     <Setter Property="ContentTemplate" TargetName="ContentControl">
                         <Setter.Value>
                             <DataTemplate>
-                                <Grid   HorizontalAlignment="Stretch" Width="auto">
-                                    <Grid.Resources>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="MinWidth" Value="250" />
-                                        </Style>
+                                <TreeViewItem Header="{Binding Name}">
 
-                                        <Style TargetType="TextBox">
-                                            <Setter Property="Width" Value="100" />
-                                            <Setter Property="TextAlignment" Value="Center" />
-                                        </Style>
+                                    <DataGrid   AutoGenerateColumns="False" HorizontalContentAlignment="Stretch" IsReadOnly="True" HeadersVisibility="None"  ItemsSource="{Binding CameraRegisters, Mode=OneWay}" SelectionMode="Single" SelectedItem="{Binding DataContext.SelectedRegister, RelativeSource={RelativeSource AncestorType=UserControl}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
+                                        <DataGrid.Resources>
+                                            <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#333" />
+                                            <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="White" />
+                                            <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="#ccc" />
+                                            <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="Black" />
+                                        </DataGrid.Resources>
 
-                                        <Style TargetType="Grid">
-                                            <Setter Property="Visibility">
-                                                <Setter.Value>
-                                                    <MultiBinding  Converter="{StaticResource CameraRegisterVisibiltyConverter}">
-                                                        <Binding Path="CameraRegister.Visibilty" />
-                                                        <Binding Path="SelectedItem"  ElementName="VisibiltySelector" />
-                                                    </MultiBinding>
-                                                </Setter.Value>
-                                            </Setter>
-                                        </Style>
-                                    </Grid.Resources>
+                                        <DataGrid.Columns>
+                                            <DataGridTextColumn Binding="{Binding CameraRegister.Name,Mode=OneWay}" MinWidth="200" />
+                                            <DataGridTemplateColumn>
+                                                <DataGridTemplateColumn.CellTemplate>
 
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="200" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
+                                                    <DataTemplate>
+                                                        <ContentControl  x:Name="InputType" Content="{Binding}" />
 
-                                    <TextBlock Grid.Column="0" Text="{Binding Name}" />
-                                    <ContentControl  x:Name="InputType" Grid.Column="1" Content="{Binding}" />
-                                </Grid>
+                                                        <!--Register could be either Textbox or Combobox-->
+                                                        <DataTemplate.Triggers>
+
+                                                            <!--For Textbox Type-->
+                                                            <DataTrigger Binding="{Binding CameraRegister.Enumeration, Converter={StaticResource ListCheckConverter}}" Value="False">
+                                                                <Setter Property="ContentTemplate" TargetName="InputType">
+                                                                    <Setter.Value>
+                                                                        <DataTemplate>
+                                                                            <TextBox  Grid.Column="1" Text="{Binding CameraRegister.Value, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding CameraRegister.AccessMode, Converter={StaticResource AccessModeConverter}}">
+                                                                                <i:Interaction.Triggers>
+                                                                                    <i:EventTrigger EventName="LostFocus">
+                                                                                        <i:InvokeCommandAction Command="{Binding Path=Item.SetValueToWrite, RelativeSource={RelativeSource AncestorLevel=1,AncestorType=DataGridRow}, Converter={StaticResource EnumerationIndexConverter}}" />
+                                                                                    </i:EventTrigger>
+                                                                                </i:Interaction.Triggers>
+                                                                                <TextBox.InputBindings>
+                                                                                    <KeyBinding Key="Return" Command="{Binding Path=Item.SetValueToWrite, RelativeSource={RelativeSource AncestorLevel=1,AncestorType=DataGridRow}, Converter={StaticResource EnumerationIndexConverter}, Mode=OneWay}" />
+                                                                                </TextBox.InputBindings>
+                                                                            </TextBox>
+                                                                        </DataTemplate>
+                                                                    </Setter.Value>
+                                                                </Setter>
+                                                            </DataTrigger>
+
+                                                            <!--For Combobox Type-->
+                                                            <DataTrigger Binding="{Binding CameraRegister.Enumeration, Converter={StaticResource ListCheckConverter}}" Value="True">
+                                                                <Setter Property="ContentTemplate" TargetName="InputType">
+                                                                    <Setter.Value>
+                                                                        <DataTemplate>
+                                                                            <ComboBox Grid.Column="1" ItemsSource="{Binding CameraRegister.Enumeration}" DisplayMemberPath="Key"  SelectedValue="{Binding CameraRegister.Value, UpdateSourceTrigger=PropertyChanged}" SelectedIndex="{Binding Path=Item.CameraRegister, RelativeSource={RelativeSource AncestorLevel=1,AncestorType=DataGridRow}, Converter={StaticResource EnumerationIndexConverter}, Mode=OneWay}">
+                                                                                <i:Interaction.Triggers>
+                                                                                    <i:EventTrigger EventName="SelectionChanged">
+                                                                                        <!--<i:InvokeCommandAction Command="{Binding Path=Item.SetValueCommand, RelativeSource={RelativeSource AncestorLevel=2,AncestorType=DataGridRow}, Converter={StaticResource EnumerationIndexConverter}}" />-->
+                                                                                        <i:InvokeCommandAction Command="{Binding SetValueCommand}" />
+                                                                                    </i:EventTrigger>
+                                                                                </i:Interaction.Triggers>
+                                                                            </ComboBox>
+                                                                        </DataTemplate>
+                                                                    </Setter.Value>
+                                                                </Setter>
+                                                            </DataTrigger>
+
+                                                            <!--For Command(button) Type-->
+                                                            <DataTrigger Binding="{Binding CameraRegister.IsCommand}" Value="True">
+                                                                <Setter Property="ContentTemplate" TargetName="InputType">
+                                                                    <Setter.Value>
+                                                                        <DataTemplate>
+                                                                            <Button Grid.Column="1" Content="{Binding CameraRegister.Name}" Command="{Binding SetValueCommand}" />
+                                                                        </DataTemplate>
+                                                                    </Setter.Value>
+                                                                </Setter>
+                                                            </DataTrigger>
+                                                        </DataTemplate.Triggers>
+                                                    </DataTemplate>
+                                                </DataGridTemplateColumn.CellTemplate>
+                                            </DataGridTemplateColumn>
+                                        </DataGrid.Columns>
+                                        <DataGrid.RowStyle>
+                                            <Style TargetType="DataGridRow">
+                                                <Setter Property="Visibility">
+                                                    <Setter.Value>
+                                                        <MultiBinding  Converter="{StaticResource CameraRegisterVisibiltyConverter}">
+                                                            <Binding Path="CameraRegister.Visibilty" />
+                                                            <Binding Path="SelectedItem"  ElementName="VisibiltySelector" />
+                                                        </MultiBinding>
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </Style>
+                                        </DataGrid.RowStyle>
+                                    </DataGrid>
+                                </TreeViewItem>
                             </DataTemplate>
                         </Setter.Value>
                     </Setter>
+                </DataTrigger>
+            </HierarchicalDataTemplate.Triggers>
+        </HierarchicalDataTemplate>
 
-                    <!--ToDo:: Bind CameraRegistre to the Footer content-->
+        <DataTemplate x:Key="RegisterItem">
+
+            <ContentControl  x:Name="ItemContentControl0" Content="{Binding}" />
+
+            <DataTemplate.Triggers>
+
+                <!--If parent is false will display its' registers-->
+
+                <DataTrigger  Binding="{Binding Child, Converter={StaticResource ListCheckConverter}}" Value="True">
+                    <Setter Property="ContentTemplate" TargetName="ItemContentControl0">
+                        <Setter.Value>
+                            <DataTemplate>
+                                <TreeViewItem ItemTemplate="{StaticResource Registers}" Header="{Binding Name}" ItemsSource="{Binding Child}" />
+                            </DataTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </DataTrigger>
+
+                <DataTrigger Binding="{Binding CameraRegisters, Converter={StaticResource ListCheckConverter}}" Value="True">
+                    <Setter Property="ContentTemplate" TargetName="ItemContentControl0">
+                        <Setter.Value>
+                            <DataTemplate>
+                                <StackPanel>
+
+                                    <TreeViewItem Header="{Binding Name}">
+                                        <DataGrid   AutoGenerateColumns="False" HorizontalContentAlignment="Stretch" IsReadOnly="True" HeadersVisibility="None"  ItemsSource="{Binding CameraRegisters, Mode=OneWay}" SelectionMode="Single" SelectedItem="{Binding DataContext.SelectedRegister, RelativeSource={RelativeSource AncestorType=UserControl}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
+                                            <DataGrid.Resources>
+                                                <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#333" />
+                                                <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="White" />
+                                                <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="#ccc" />
+                                                <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="Black" />
+                                            </DataGrid.Resources>
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Binding="{Binding CameraRegister.Name,Mode=OneWay}" MinWidth="200" />
+                                                <DataGridTemplateColumn>
+                                                    <DataGridTemplateColumn.CellTemplate>
+
+                                                        <DataTemplate>
+                                                            <ContentControl  x:Name="InputType" Content="{Binding}" />
+
+                                                            <!--Register could be either Textbox or Combobox-->
+
+                                                            <DataTemplate.Triggers>
+
+                                                                <!--For Textbox Type-->
+
+                                                                <DataTrigger Binding="{Binding CameraRegister.Enumeration, Converter={StaticResource ListCheckConverter}}" Value="False">
+                                                                    <Setter Property="ContentTemplate" TargetName="InputType">
+                                                                        <Setter.Value>
+                                                                            <DataTemplate>
+                                                                                <TextBox  Grid.Column="1" Text="{Binding CameraRegister.Value, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding CameraRegister.AccessMode, Converter={StaticResource AccessModeConverter}}">
+                                                                                    <i:Interaction.Triggers>
+                                                                                        <i:EventTrigger EventName="LostFocus">
+                                                                                            <i:InvokeCommandAction Command="{Binding Path=Item.SetValueToWrite, RelativeSource={RelativeSource AncestorLevel=1,AncestorType=DataGridRow}, Converter={StaticResource EnumerationIndexConverter}}" />
+                                                                                        </i:EventTrigger>
+                                                                                    </i:Interaction.Triggers>
+                                                                                    <TextBox.InputBindings>
+                                                                                        <KeyBinding Key="Return" Command="{Binding Path=Item.SetValueToWrite, RelativeSource={RelativeSource AncestorLevel=1,AncestorType=DataGridRow}, Converter={StaticResource EnumerationIndexConverter}, Mode=OneWay}" />
+                                                                                    </TextBox.InputBindings>
+                                                                                </TextBox>
+                                                                            </DataTemplate>
+                                                                        </Setter.Value>
+                                                                    </Setter>
+                                                                </DataTrigger>
+
+                                                                <!--For Combobox Type-->
+
+                                                                <DataTrigger Binding="{Binding CameraRegister.Enumeration, Converter={StaticResource ListCheckConverter}}" Value="True">
+                                                                    <Setter Property="ContentTemplate" TargetName="InputType">
+                                                                        <Setter.Value>
+                                                                            <DataTemplate>
+                                                                                <ComboBox Grid.Column="1" ItemsSource="{Binding CameraRegister.Enumeration}"  DisplayMemberPath="Key"   SelectedValue="{Binding CameraRegister.Value, UpdateSourceTrigger=PropertyChanged}" SelectedIndex="{Binding Path=Item.CameraRegister, RelativeSource={RelativeSource AncestorLevel=1,AncestorType=DataGridRow}, Converter={StaticResource EnumerationIndexConverter}, Mode=OneWay}">
+                                                                                    <i:Interaction.Triggers>
+                                                                                        <i:EventTrigger EventName="SelectionChanged">
+
+                                                                                            <i:InvokeCommandAction Command="{Binding Path=Item.SetValueCommand, RelativeSource={RelativeSource AncestorLevel=2,AncestorType=DataGridRow}, Converter={StaticResource EnumerationIndexConverter}}" />
+
+                                                                                            <i:InvokeCommandAction Command="{Binding SetValueCommand}" />
+                                                                                        </i:EventTrigger>
+                                                                                    </i:Interaction.Triggers>
+                                                                                </ComboBox>
+                                                                            </DataTemplate>
+                                                                        </Setter.Value>
+                                                                    </Setter>
+                                                                </DataTrigger>
+
+                                                                <!--For Command(button) Type-->
+
+                                                                <DataTrigger Binding="{Binding CameraRegister.IsCommand}" Value="True">
+                                                                    <Setter Property="ContentTemplate" TargetName="InputType">
+                                                                        <Setter.Value>
+                                                                            <DataTemplate>
+                                                                                <Button Grid.Column="1" Content="{Binding CameraRegister.Name}" Command="{Binding SetValueCommand}" />
+                                                                            </DataTemplate>
+                                                                        </Setter.Value>
+                                                                    </Setter>
+                                                                </DataTrigger>
+                                                            </DataTemplate.Triggers>
+                                                        </DataTemplate>
+                                                    </DataGridTemplateColumn.CellTemplate>
+                                                </DataGridTemplateColumn>
+                                            </DataGrid.Columns>
+                                            <DataGrid.RowStyle>
+                                                <Style TargetType="DataGridRow">
+                                                    <Setter Property="Visibility">
+                                                        <Setter.Value>
+                                                            <MultiBinding  Converter="{StaticResource CameraRegisterVisibiltyConverter}">
+                                                                <Binding Path="CameraRegister.Visibilty" />
+                                                                <Binding Path="SelectedItem"  ElementName="VisibiltySelector" />
+                                                            </MultiBinding>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </Style>
+                                            </DataGrid.RowStyle>
+                                        </DataGrid>
+                                    </TreeViewItem>
+                                </StackPanel>
+                            </DataTemplate>
+                        </Setter.Value>
+                    </Setter>
                 </DataTrigger>
 
                 <MultiDataTrigger>
                     <MultiDataTrigger.Conditions>
-                        <Condition Binding="{Binding IsParent}" Value="False" />
-                        <Condition Binding="{Binding CameraRegister.Enumeration, Converter={StaticResource EnumerationVisibiltyConverter}}" Value="False" />
+                        <Condition Binding="{Binding Child, Converter={StaticResource ListCheckConverter}}" Value="True" />
+                        <Condition Binding="{Binding CameraRegisters, Converter={StaticResource ListCheckConverter}}" Value="True" />
                     </MultiDataTrigger.Conditions>
-                    <Setter Property="ContentTemplate" TargetName="ContentControl">
+
+                    <Setter Property="ContentTemplate" TargetName="ItemContentControl0">
                         <Setter.Value>
                             <DataTemplate>
-                                <Grid   HorizontalAlignment="Stretch" Width="auto">
-                                    <Grid.Resources>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="MinWidth" Value="250" />
-                                        </Style>
+                                <StackPanel>
 
-                                        <Style TargetType="TextBox">
-                                            <Setter Property="Width" Value="100" />
-                                            <Setter Property="TextAlignment" Value="Center" />
-                                        </Style>
+                                    <TreeViewItem Header="{Binding Name}">
+                                        <DataGrid   AutoGenerateColumns="False" HorizontalContentAlignment="Stretch" IsReadOnly="True" HeadersVisibility="None"  ItemsSource="{Binding CameraRegisters, Mode=OneWay}" SelectionMode="Single" SelectedItem="{Binding DataContext.SelectedRegister, RelativeSource={RelativeSource AncestorType=UserControl}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
+                                            <DataGrid.Resources>
+                                                <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#333" />
+                                                <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="White" />
+                                                <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="#ccc" />
+                                                <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="Black" />
+                                            </DataGrid.Resources>
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Binding="{Binding CameraRegister.Name,Mode=OneWay}" MinWidth="200" />
+                                                <DataGridTemplateColumn>
+                                                    <DataGridTemplateColumn.CellTemplate>
 
-                                        <Style TargetType="Grid">
-                                            <Setter Property="Visibility">
-                                                <Setter.Value>
-                                                    <MultiBinding  Converter="{StaticResource CameraRegisterVisibiltyConverter}">
-                                                        <Binding Path="CameraRegister.Visibilty" />
-                                                        <Binding Path="SelectedItem"  ElementName="VisibiltySelector" />
-                                                    </MultiBinding>
-                                                </Setter.Value>
-                                            </Setter>
-                                        </Style>
-                                    </Grid.Resources>
+                                                        <DataTemplate>
+                                                            <ContentControl  x:Name="InputType" Content="{Binding}" />
 
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="200" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
+                                                            <!--Register could be either Textbox or Combobox-->
 
-                                    <TextBlock Grid.Column="0" Text="{Binding Name}" />
-                                    <TextBox  Grid.Column="1" Text="{Binding CameraRegister.Value, UpdateSourceTrigger=PropertyChanged}">
-                                        <TextBox.InputBindings>
-                                            <KeyBinding Key="Return" Command="{Binding SetValueCommand}" />
-                                        </TextBox.InputBindings>
-                                    </TextBox>
-                                </Grid>
+                                                            <DataTemplate.Triggers>
+
+                                                                <!--For Textbox Type-->
+
+                                                                <DataTrigger Binding="{Binding CameraRegister.Enumeration, Converter={StaticResource ListCheckConverter}}" Value="False">
+                                                                    <Setter Property="ContentTemplate" TargetName="InputType">
+                                                                        <Setter.Value>
+                                                                            <DataTemplate>
+                                                                                <TextBox  Grid.Column="1" Text="{Binding CameraRegister.Value, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding CameraRegister.AccessMode, Converter={StaticResource AccessModeConverter}}">
+                                                                                    <i:Interaction.Triggers>
+                                                                                        <i:EventTrigger EventName="LostFocus">
+                                                                                            <i:InvokeCommandAction Command="{Binding Path=Item.SetValueToWrite, RelativeSource={RelativeSource AncestorLevel=1,AncestorType=DataGridRow}, Converter={StaticResource EnumerationIndexConverter}}" />
+                                                                                        </i:EventTrigger>
+                                                                                    </i:Interaction.Triggers>
+                                                                                    <TextBox.InputBindings>
+                                                                                        <KeyBinding Key="Return" Command="{Binding Path=Item.SetValueToWrite, RelativeSource={RelativeSource AncestorLevel=1,AncestorType=DataGridRow}, Converter={StaticResource EnumerationIndexConverter}, Mode=OneWay}" />
+                                                                                    </TextBox.InputBindings>
+                                                                                </TextBox>
+                                                                            </DataTemplate>
+                                                                        </Setter.Value>
+                                                                    </Setter>
+                                                                </DataTrigger>
+
+                                                                <!--For Combobox Type-->
+
+                                                                <DataTrigger Binding="{Binding CameraRegister.Enumeration, Converter={StaticResource ListCheckConverter}}" Value="True">
+                                                                    <Setter Property="ContentTemplate" TargetName="InputType">
+                                                                        <Setter.Value>
+                                                                            <DataTemplate>
+                                                                                <ComboBox Grid.Column="1" ItemsSource="{Binding CameraRegister.Enumeration}"  DisplayMemberPath="Key"   SelectedValue="{Binding CameraRegister.Value,  UpdateSourceTrigger=PropertyChanged}" SelectedIndex="{Binding Path=Item.CameraRegister, RelativeSource={RelativeSource AncestorLevel=1,AncestorType=DataGridRow}, Converter={StaticResource EnumerationIndexConverter}, Mode=OneWay}">
+                                                                                    <i:Interaction.Triggers>
+                                                                                        <i:EventTrigger EventName="SelectionChanged">
+
+                                                                                            <i:InvokeCommandAction Command="{Binding Path=Item.SetValueCommand, RelativeSource={RelativeSource AncestorLevel=2,AncestorType=DataGridRow}, Converter={StaticResource EnumerationIndexConverter}}" />
+
+                                                                                            <i:InvokeCommandAction Command="{Binding SetValueCommand}" />
+                                                                                        </i:EventTrigger>
+                                                                                    </i:Interaction.Triggers>
+                                                                                </ComboBox>
+                                                                            </DataTemplate>
+                                                                        </Setter.Value>
+                                                                    </Setter>
+                                                                </DataTrigger>
+
+                                                                <!--For Command(button) Type-->
+
+                                                                <DataTrigger Binding="{Binding CameraRegister.IsCommand}" Value="True">
+                                                                    <Setter Property="ContentTemplate" TargetName="InputType">
+                                                                        <Setter.Value>
+                                                                            <DataTemplate>
+                                                                                <Button Grid.Column="1" Content="{Binding CameraRegister.Name}" Command="{Binding SetValueCommand}" />
+                                                                            </DataTemplate>
+                                                                        </Setter.Value>
+                                                                    </Setter>
+                                                                </DataTrigger>
+                                                            </DataTemplate.Triggers>
+                                                        </DataTemplate>
+                                                    </DataGridTemplateColumn.CellTemplate>
+                                                </DataGridTemplateColumn>
+                                            </DataGrid.Columns>
+                                            <DataGrid.RowStyle>
+                                                <Style TargetType="DataGridRow">
+                                                    <Setter Property="Visibility">
+                                                        <Setter.Value>
+                                                            <MultiBinding  Converter="{StaticResource CameraRegisterVisibiltyConverter}">
+                                                                <Binding Path="CameraRegister.Visibilty" />
+                                                                <Binding Path="SelectedItem"  ElementName="VisibiltySelector" />
+                                                            </MultiBinding>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </Style>
+                                            </DataGrid.RowStyle>
+                                        </DataGrid>
+                                        <TreeView ItemTemplate="{StaticResource Registers}" ItemsSource="{Binding Child}" />
+                                    </TreeViewItem>
+                                </StackPanel>
                             </DataTemplate>
                         </Setter.Value>
                     </Setter>
                 </MultiDataTrigger>
-
-                <MultiDataTrigger>
-                    <MultiDataTrigger.Conditions>
-                        <Condition Binding="{Binding IsParent}" Value="False" />
-                        <Condition Binding="{Binding CameraRegister.Enumeration, Converter={StaticResource EnumerationVisibiltyConverter}}" Value="True" />
-                    </MultiDataTrigger.Conditions>
-                    <Setter Property="ContentTemplate" TargetName="ContentControl">
-                        <Setter.Value>
-                            <DataTemplate>
-                                <Grid   HorizontalAlignment="Stretch" Width="auto">
-                                    <Grid.Resources>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="MinWidth" Value="250" />
-                                        </Style>
-
-                                        <Style TargetType="TextBox">
-                                            <Setter Property="Width" Value="100" />
-                                            <Setter Property="TextAlignment" Value="Center" />
-                                        </Style>
-
-                                        <Style TargetType="ComboBox">
-                                            <Setter Property="Width" Value="100" />
-                                            <Setter Property="HorizontalContentAlignment" Value="Center" />
-                                        </Style>
-
-                                        <Style TargetType="ComboBoxItem">
-                                            <Setter Property="Width" Value="100" />
-                                            <Setter Property="HorizontalContentAlignment" Value="Center" />
-                                        </Style>
-
-                                        <Style TargetType="Grid">
-                                            <Setter Property="Visibility">
-                                                <Setter.Value>
-                                                    <MultiBinding  Converter="{StaticResource CameraRegisterVisibiltyConverter}">
-                                                        <Binding Path="CameraRegister.Visibilty" />
-                                                        <Binding Path="SelectedItem"  ElementName="VisibiltySelector" />
-                                                    </MultiBinding>
-                                                </Setter.Value>
-                                            </Setter>
-                                        </Style>
-                                    </Grid.Resources>
-
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="200" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-
-                                    <TextBlock Grid.Column="0" Text="{Binding Name}" />
-                                    <ComboBox Grid.Column="1" ItemsSource="{Binding CameraRegister.Enumeration}" SelectedItem="{Binding CameraRegister.Value}">
-                                        <i:Interaction.Triggers>
-                                            <i:EventTrigger EventName="SelectionChanged">
-                                                <i:InvokeCommandAction Command="{Binding SetValueCommand}" />
-                                            </i:EventTrigger>
-                                        </i:Interaction.Triggers>
-                                    </ComboBox>
-                                </Grid>
-                            </DataTemplate>
-                        </Setter.Value>
-                    </Setter>
-                </MultiDataTrigger>
-            </HierarchicalDataTemplate.Triggers>
-        </HierarchicalDataTemplate>
+            </DataTemplate.Triggers>
+        </DataTemplate>
     </UserControl.Resources>
+
+    <i:Interaction.Triggers>
+        <i:EventTrigger EventName="Loaded">
+            <i:InvokeCommandAction Command="{Binding Path=LoadedWindowCommand}" />
+        </i:EventTrigger>
+    </i:Interaction.Triggers>
 
     <!--Container-->
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="30" />
             <RowDefinition Height="*" />
-            <RowDefinition Height="100" />
+            <RowDefinition Height="120" />
         </Grid.RowDefinitions>
         <!--Header-->
-        <Border Grid.Row="0" Background="#ccc"  Padding="3">
+        <Border Grid.Row="0" Background="#ddd"  Padding="3">
             <Grid VerticalAlignment="Center">
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -224,27 +460,55 @@
 
         <!--Body-->
         <ScrollViewer Grid.Row="1">
-            <TreeView   ItemTemplate="{StaticResource Registers}"  ItemsSource="{Binding CameraRegisterGroupDTOList}" HorizontalAlignment="Stretch">
+            <TreeView  ItemTemplate="{StaticResource RegisterItem}" ItemsSource="{Binding CameraRegisterGroupDTOList}" HorizontalAlignment="Stretch">
                 <TreeView.ItemContainerStyle>
                     <Style TargetType="TreeViewItem">
                         <Setter Property="IsExpanded" Value="{Binding IsExpanded,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                     </Style>
                 </TreeView.ItemContainerStyle>
+                <TreeView.Resources>
+                    <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}"
+                      Color="Transparent" />
+                    <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}"
+                      Color="Black" />
+                    <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}"
+                      Color="Transparent" />
+                    <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}"
+                      Color="Black" />
+                </TreeView.Resources>
             </TreeView>
         </ScrollViewer>
 
         <!--Footer-->
-        <Border Grid.Row="2" Background="#ccc"  Padding="3">
-            <Grid>
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition />
-                        <ColumnDefinition />
-                        <ColumnDefinition />
-                    </Grid.ColumnDefinitions>
-                    <ContentControl x:Name="FooterContent"  Grid.Column="0" Content="{Binding}" />
-                </Grid>
-            </Grid>
+        <Border Grid.Row="2" Background="#ddd"  Padding="3" HorizontalAlignment="Stretch">
+            <ScrollViewer>
+                <StackPanel>
+                    
+                <StackPanel>
+                    <Label FontSize="16" Content="{Binding SelectedRegister.CameraRegister.Name, Mode=TwoWay}"  FontWeight="Bold"/>
+                    <TextBlock Text="{Binding SelectedRegister.CameraRegister.Descrption}" TextWrapping="WrapWithOverflow" Margin="0,5" />
+                </StackPanel>
+
+                    <StackPanel Orientation="Vertical" Margin="0,10">
+
+                        <StackPanel Orientation="Horizontal">
+                            <Label  Content="Type" />
+                            <TextBlock Text="{Binding SelectedRegister.CameraRegister.Type}" Margin="5, 0" FontWeight="Bold" />
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal">
+                            <Label  Content="Visibilty" />
+                            <TextBlock  Text="{Binding SelectedRegister.CameraRegister.Visibilty}"  Margin="5,0" FontWeight="Bold" />
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal">
+                            <Label  Content="Streamable"  />
+                            <TextBlock Text="{Binding SelectedRegister.CameraRegister.IsStreamable}"  Margin="5,0" FontWeight="Bold" />
+                        </StackPanel>
+                    
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
         </Border>
     </Grid>
 </UserControl>
