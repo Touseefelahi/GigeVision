@@ -20,42 +20,28 @@ namespace GigeVision.Wpf.ViewModels
     {
         #region Properties
 
-        private ObservableCollection<CameraRegisterGroupDTO> cameraRegisterGroupDTOList;
-
-        public ObservableCollection<CameraRegisterGroupDTO> CameraRegisterGroupDTOList
-        {
-            get => cameraRegisterGroupDTOList;
-            set
-            {
-                cameraRegisterGroupDTOList = value;
-                SetProperty(ref cameraRegisterGroupDTOList, value);
-            }
-        }
-
-        private Dictionary<string, CameraRegister> filteredRegistersDictionary;
-        public Dictionary<string, CameraRegister> FilteredRegistersDictionary { get => filteredRegistersDictionary; set => filteredRegistersDictionary = value; }
+        public ObservableCollection<CameraRegisterGroupDTO> CameraRegisterGroupDTOList { get; set; }
+        public Dictionary<string, CameraRegister> FilteredRegistersDictionary { get; set; }
+        private List<CameraRegisterDTO> CameraRegistersList { get; set; }
 
         public ICamera Camera { get; }
         public ICommand LoadedWindowCommand { get; }
 
-        private CameraRegisterVisibilty cameraRegisterVisibilty;
-
         public CameraRegisterVisibilty CameraRegisterVisibilty
         {
-            get
-            {
-                return cameraRegisterVisibilty;
-            }
-            set
-            {
-                cameraRegisterVisibilty = value;
-            }
+            get;
+            set;
         }
 
         public bool IsBusy { get; set; }
 
-        private bool isExpanded = false;
-        public bool IsExpanded { get { return isExpanded; } set { IsExpanded = value; SetProperty(ref isExpanded, value); } }
+        public bool IsExpanded { get; set; }
+
+        public CameraRegisterDTO SelectedRegister
+        {
+            get;
+            set;
+        }
 
         #endregion Properties
 
@@ -63,6 +49,7 @@ namespace GigeVision.Wpf.ViewModels
 
         public DelegateCommand TestDataTriggerCommand { get; }
         public DelegateCommand ExpandCommand { get; }
+        public DelegateCommand<CameraRegisterDTO> SelectRegisterCommand { get; }
 
         #endregion Commands
 
@@ -72,6 +59,12 @@ namespace GigeVision.Wpf.ViewModels
             LoadedWindowCommand = new DelegateCommand(WindowLoaded);
             TestDataTriggerCommand = new DelegateCommand(CreateCameraRegistersGroupCollection);
             ExpandCommand = new DelegateCommand(ExecuteExpandCommand);
+            SelectRegisterCommand = new DelegateCommand<CameraRegisterDTO>(ExecuteSelectRegisterCommand);
+        }
+
+        private void ExecuteSelectRegisterCommand(CameraRegisterDTO cameraRegister)
+        {
+            SelectedRegister = cameraRegister;
         }
 
         private void WindowLoaded()
@@ -82,20 +75,6 @@ namespace GigeVision.Wpf.ViewModels
 
         #region Methods
 
-        private async void CreateCameraRegistersGroupCollection()
-        {
-            await ReadDeviceControlRegisters();
-
-            cameraRegisterGroupDTOList = new ObservableCollection<CameraRegisterGroupDTO>();
-
-            foreach (var groupName in Camera.Gvcp.RegistersGroupDictionary["Root"].Category)
-            {
-                var child = await GetChild(groupName);
-                if (child != null)
-                    cameraRegisterGroupDTOList.Add(child);
-            }
-        }
-
         /// <summary>
         /// this method reads all device control registres values
         /// </summary>
@@ -103,7 +82,7 @@ namespace GigeVision.Wpf.ViewModels
         {
             var chunkSize = 100;
             var skipSize = 0;
-            FilteredRegistersDictionary = Camera.Gvcp.RegistersDictionary.Where(x => x.Value.AccessMode != CameraRegisterAccessMode.WO && x.Value.IsStreamable).ToDictionary(x => x.Key, x => x.Value);
+            FilteredRegistersDictionary = Camera.Gvcp.RegistersDictionary;
 
             while (FilteredRegistersDictionary.Count > skipSize)
             {
@@ -123,39 +102,96 @@ namespace GigeVision.Wpf.ViewModels
             }
         }
 
+        private async void CreateCameraRegistersGroupCollection()
+        {
+            await ReadDeviceControlRegisters();
+            CameraRegistersList = new List<CameraRegisterDTO>();
+
+            CameraRegisterGroupDTOList = new ObservableCollection<CameraRegisterGroupDTO>();
+            foreach (var categoryFeature in Camera.Gvcp.RegistersGroupDictionary["Root"].Category)
+            {
+                var child = await GetChild(categoryFeature);
+                if (child != null)
+                {
+                    if (child.Child != null)
+                    {
+                        if (child.Child.Count == 0)
+                            child.Child = null;
+                    }
+
+                    child.CameraRegisters = CameraRegistersList;
+
+                    CameraRegisterGroupDTOList.Add(child);
+                    CameraRegistersList = new List<CameraRegisterDTO>();
+                }
+            }
+        }
+
         /// <summary>
         /// Helper method to reorgnaize camera registers structure
         /// </summary>
-        /// <param name="group"></param>
+        /// <param name="categoryFeature"></param>
         /// <returns></returns>
-        private async Task<CameraRegisterGroupDTO> GetChild(string group)
+
+        private async Task<CameraRegisterGroupDTO> GetChild(string categoryFeature)
         {
             CameraRegister cameraRegister = null;
-            List<CameraRegister> cameraRegisters = new List<CameraRegister>();
-            List<CameraRegisterGroupDTO> cameraRegisterGroupDTOs = new List<CameraRegisterGroupDTO>();
+            ObservableCollection<CameraRegisterGroupDTO> cameraRegisterGroupDTOs = new ObservableCollection<CameraRegisterGroupDTO>();
 
-            if (Camera.Gvcp.RegistersGroupDictionary.ContainsKey(group))
+            //Look for parent (group)
+            if (Camera.Gvcp.RegistersGroupDictionary.ContainsKey(categoryFeature))
             {
-                foreach (var feature in Camera.Gvcp.RegistersGroupDictionary[group].Category)
+                foreach (var feature in Camera.Gvcp.RegistersGroupDictionary[categoryFeature].Category)
                 {
-                    var child = await GetChild(feature);
-                    if (child != null)
-                        cameraRegisterGroupDTOs.Add(child);
-                }
+                    var x = "null";
+                    if (feature.Equals("LensType"))
+                        x = feature;
 
-                return new CameraRegisterGroupDTO(Camera, group, cameraRegisterGroupDTOs, true);
+                    //When you find it look for its` children
+                    //child might be ethier parent of other children or child
+                    var child = await GetChild(feature);
+
+                    //check if child is a parent
+                    if (child != null)
+                    {
+                        if (child.Child.Count == 0)
+                        {
+                            child.Child = null;
+                        }
+                        if (CameraRegistersList.Count > 0)
+                        {
+                            child.CameraRegisters = CameraRegistersList;
+
+                            cameraRegisterGroupDTOs.Add(child);
+                            CameraRegistersList = new List<CameraRegisterDTO>();
+                        }
+                        else
+                        {
+                            cameraRegisterGroupDTOs.Add(child);
+                        }
+                    }
+                }
+                //return parent
+                if (Camera.Gvcp.RegistersGroupDictionary["Root"].Category.Contains(categoryFeature))
+                    return new CameraRegisterGroupDTO(Camera, categoryFeature, cameraRegisterGroupDTOs);
+
+                return new CameraRegisterGroupDTO(Camera, categoryFeature, cameraRegisterGroupDTOs);
             }
             else
             {
+                //Look for Child (register)
                 var isNull = true;
-                if (FilteredRegistersDictionary.ContainsKey(group))
+                if (FilteredRegistersDictionary.ContainsKey(categoryFeature))
                 {
                     try
                     {
-                        if (FilteredRegistersDictionary[group].Type == CameraRegisterType.String)
+                        //Some of registers have (Reg) as a postfix and some of them have not
+                        //Check first if register name is without postfix
+                        // If it exists hold it
+                        if (FilteredRegistersDictionary[categoryFeature].Type == CameraRegisterType.String)
                         {
-                            FilteredRegistersDictionary[group].Value = Encoding.ASCII.GetString((await Camera.Gvcp.ReadMemoryAsync(Camera.Gvcp.RegistersDictionary[group].Address)).MemoryValue);
-                            cameraRegister = Camera.Gvcp.RegistersDictionary[group];
+                            FilteredRegistersDictionary[categoryFeature].Value = Encoding.ASCII.GetString((await Camera.Gvcp.ReadMemoryAsync(Camera.Gvcp.RegistersDictionary[categoryFeature].Address)).MemoryValue);
+                            cameraRegister = Camera.Gvcp.RegistersDictionary[categoryFeature];
                             isNull = false;
                         }
                     }
@@ -164,11 +200,14 @@ namespace GigeVision.Wpf.ViewModels
                     }
                 }
 
-                if (FilteredRegistersDictionary.ContainsKey($"{group}Reg"))
+                //Then check if register name is with a postfix
+                // If it exists replace it
+                if (FilteredRegistersDictionary.ContainsKey($"{categoryFeature}Reg"))
                 {
                     try
                     {
-                        cameraRegister = FilteredRegistersDictionary[$"{group}Reg"];
+                        cameraRegister = FilteredRegistersDictionary[$"{categoryFeature}Reg"];
+                        cameraRegister.Name = cameraRegister.Name.Replace("Reg", "");
                         isNull = false;
                     }
                     catch
@@ -179,11 +218,15 @@ namespace GigeVision.Wpf.ViewModels
                 if (isNull)
                     return null;
 
-                cameraRegisters.Add(cameraRegister);
-                return new CameraRegisterGroupDTO(Camera, group, cameraRegisterGroupDTOs, false, cameraRegister);
+                CameraRegistersList.Add(new CameraRegisterDTO(Camera, cameraRegister));
+
+                return null;
             }
         }
 
+        /// <summary>
+        /// Expand Tree View
+        /// </summary>
         private void ExecuteExpandCommand()
         {
             if (IsExpanded)
