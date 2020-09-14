@@ -14,10 +14,15 @@ namespace GigeVision.Wpf.Converters
     {
         public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
         {
-            if ((uint)((CameraRegisterVisibilty)values[0]) > (uint)((CameraRegisterVisibilty)values[1]))
-            {
-                return Visibility.Collapsed;
-            }
+            if (values[0] is CameraRegisterVisibilty cameraRegisterVisibilty)
+                if (values[1] is CameraRegisterVisibilty cameraRegisterVisibilty1)
+                    if ((uint)cameraRegisterVisibilty > (uint)cameraRegisterVisibilty1)
+                        return Visibility.Collapsed;
+
+            //if ((uint)((CameraRegisterVisibilty)values[0]) > (uint)((CameraRegisterVisibilty)values[1]))
+            //{
+            //    return Visibility.Collapsed;
+            //}
 
             return Visibility.Visible;
         }
