@@ -6,7 +6,11 @@ namespace GigeVision.Core.Enums
 {
     public enum CameraRegisterType
     {
+        Integer,
+        Flaot,
         String,
-        Integer
+        Enumeration,
+        Command,
+        Boolean
     }
 }
