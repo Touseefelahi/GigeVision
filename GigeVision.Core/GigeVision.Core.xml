@@ -510,7 +510,7 @@
         </member>
         <member name="P:GigeVision.Core.Interfaces.ICamera.IsUsingExternalBuffer">
             <summary>
-            If we set the external buffer using <see cref="!:SetBuffer(ref byte[])"/> this will be set
+            If we set the external buffer using <see cref="M:GigeVision.Core.Interfaces.ICamera.SetBuffer(System.Byte[])"/> this will be set
             true and software will copy stream on this buffer
             </summary>
         </member>
@@ -600,7 +600,7 @@
         </member>
         <member name="P:GigeVision.Core.Interfaces.IGvcp.ElapsedOneSecond">
             <summary>
-            It can be for any thing, to update fps to check devices
+            It can be used for any thing, to update fps to check devices (library use this for Heartbeat)
             </summary>
         </member>
         <member name="P:GigeVision.Core.Interfaces.IGvcp.CameraIpChanged">
@@ -1120,7 +1120,7 @@
         </member>
         <member name="F:GigeVision.Core.Models.Camera.externalBuffer">
             <summary>
-            External buffer it has to set from externally using <see cref="!:SetBuffer(IntPtr)"/>
+            External buffer it has to set from externally using <see cref="M:GigeVision.Core.Models.Camera.SetBuffer(System.Byte[])"/>
             </summary>
         </member>
         <member name="M:GigeVision.Core.Models.Camera.#ctor(GigeVision.Core.Interfaces.IGvcp)">
@@ -1216,7 +1216,7 @@
         </member>
         <member name="P:GigeVision.Core.Models.Camera.IsUsingExternalBuffer">
             <summary>
-            If we set the external buffer using <see cref="!:SetBuffer(ref byte[])"/> this will be set
+            If we set the external buffer using <see cref="M:GigeVision.Core.Models.Camera.SetBuffer(System.Byte[])"/> this will be set
             true and software will copy stream on this buffer
             </summary>
         </member>

@@ -29,7 +29,7 @@ namespace GigeVision.Core.Models
         internal byte[] rawBytes;
 
         /// <summary>
-        /// External buffer it has to set from externally using <see cref="SetBuffer(IntPtr)"/>
+        /// External buffer it has to set from externally using <see cref="SetBuffer(byte[])"/>
         /// </summary>
         internal IntPtr externalBuffer;
 
@@ -164,7 +164,11 @@ namespace GigeVision.Core.Models
         public string IP
         {
             get => Gvcp.CameraIp;
-            set => Gvcp.CameraIp = value;
+            set
+            {
+                Gvcp.CameraIp = value;
+                OnPropertyChanged(nameof(IP));
+            }
         }
 
         /// <summary>
@@ -188,7 +192,7 @@ namespace GigeVision.Core.Models
         public bool IsUsingCppForRx { get; set; }
 
         /// <summary>
-        /// If we set the external buffer using <see cref="SetBuffer(ref byte[])"/> this will be set
+        /// If we set the external buffer using <see cref="SetBuffer(byte[])"/> this will be set
         /// true and software will copy stream on this buffer
         /// </summary>
         public bool IsUsingExternalBuffer { get; set; }

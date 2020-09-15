@@ -72,11 +72,16 @@ namespace GigeVision.Core.Models
                             catch (Exception)
                             {
                             }
-
-                            ControlSocket = new UdpClient(cameraIP, PortGvcp);
-                            ControlSocket.Client.ReceiveTimeout = 1000;
-                            ControlSocket.Client.SendTimeout = 500;
-                            CameraIpChanged?.Invoke(null, null);
+                            try
+                            {
+                                ControlSocket = new UdpClient(cameraIP, PortGvcp);
+                                ControlSocket.Client.ReceiveTimeout = 1000;
+                                ControlSocket.Client.SendTimeout = 500;
+                                CameraIpChanged?.Invoke(null, null);
+                            }
+                            catch (Exception)
+                            {
+                            }
                         }
                         catch (Exception)
                         {

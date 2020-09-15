@@ -11,12 +11,12 @@
     <PackageTags>GigeVision, GeniCam, GVSP, GVCP</PackageTags>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>1.3.0</Version>
+    <Version>1.3.3</Version>
     <PackageLicenseFile>License.txt</PackageLicenseFile>
     <PackageIcon>gige.png</PackageIcon>
     <PackageIconUrl />
     <Platforms>AnyCPU;x64;x86</Platforms>
-    <PackageReleaseNotes>Improved GVSP Reception using raw sockets</PackageReleaseNotes>
+    <PackageReleaseNotes>Improved GVSP Reception using raw sockets and Span&lt;byte&gt;</PackageReleaseNotes>
     <LangVersion>8.0</LangVersion>
     <Configurations>Debug;Release;PublishLocally</Configurations>
   </PropertyGroup>

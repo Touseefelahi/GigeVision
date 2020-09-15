@@ -91,7 +91,7 @@ namespace GigeVision.Core.Interfaces
         bool IsRawFrame { get; set; }
 
         /// <summary>
-        /// If we set the external buffer using <see cref="SetBuffer(ref byte[])"/> this will be set
+        /// If we set the external buffer using <see cref="SetBuffer(byte[])"/> this will be set
         /// true and software will copy stream on this buffer
         /// </summary>
         bool IsUsingExternalBuffer { get; set; }
