@@ -232,7 +232,7 @@ namespace GigeVision.Core.Models
             {
                 CalculateSingleRowPayload();
             }
-            if (Gvcp.RegistersDictionary.ContainsKey(nameof(RegisterName.AcquisitionStartReg)))
+            if (Gvcp.RegistersDictionary.ContainsKey(nameof(RegisterName.AcquisitionStart)))
             {
                 if (await Gvcp.TakeControl(true).ConfigureAwait(false))
                 {
@@ -248,7 +248,7 @@ namespace GigeVision.Core.Models
                     {
                         await Gvcp.WriteRegisterAsync(GvcpRegister.SCDA, Converter.IpToNumber(rxIP)).ConfigureAwait(false);
                         await Gvcp.WriteRegisterAsync(GvcpRegister.SCPSPacketSize, Payload).ConfigureAwait(false);
-                        string startReg = Gvcp.RegistersDictionary[nameof(RegisterName.AcquisitionStartReg)].Address;
+                        string startReg = Gvcp.RegistersDictionary[nameof(RegisterName.AcquisitionStart)].Register.Address;
                         if ((await Gvcp.WriteRegisterAsync(startReg, 1).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS)
                         {
                             IsStreaming = true;
@@ -301,8 +301,8 @@ namespace GigeVision.Core.Models
             {
                 await Gvcp.TakeControl().ConfigureAwait(false);
                 string[] registers = new string[2];
-                registers[0] = Gvcp.RegistersDictionary[nameof(RegisterName.WidthReg)].Address;
-                registers[1] = Gvcp.RegistersDictionary[nameof(RegisterName.HeightReg)].Address;
+                registers[0] = Gvcp.RegistersDictionary[nameof(RegisterName.Width)].Register.Address;
+                registers[1] = Gvcp.RegistersDictionary[nameof(RegisterName.Height)].Register.Address;
                 uint[] valueToWrite = new uint[] { width, height };
                 bool status = (await Gvcp.WriteRegisterAsync(registers, valueToWrite).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS;
                 GvcpReply reply = await Gvcp.ReadRegisterAsync(registers).ConfigureAwait(false);
@@ -373,8 +373,8 @@ namespace GigeVision.Core.Models
                 await Gvcp.TakeControl().ConfigureAwait(false);
             }
             string[] registers = new string[2];
-            registers[0] = Gvcp.RegistersDictionary[nameof(RegisterName.OffsetXReg)].Address;
-            registers[1] = Gvcp.RegistersDictionary[nameof(RegisterName.OffsetYReg)].Address;
+            registers[0] = Gvcp.RegistersDictionary[nameof(RegisterName.OffsetX)].Register.Address;
+            registers[1] = Gvcp.RegistersDictionary[nameof(RegisterName.OffsetY)].Register.Address;
             uint[] valueToWrite = new uint[] { offsetX, offsetY };
             bool status = (await Gvcp.WriteRegisterAsync(registers, valueToWrite).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS;
             GvcpReply reply = await Gvcp.ReadRegisterAsync(registers).ConfigureAwait(false);
@@ -431,19 +431,20 @@ namespace GigeVision.Core.Models
         {
             try
             {
-                await Gvcp.ReadAllRegisterAddressFromCameraAsync().ConfigureAwait(false);
+                await Gvcp.ReadAllRegisterAddressFromCameraAsync(Gvcp).ConfigureAwait(false);
                 if (Gvcp.RegistersDictionary.Count == 0)
                 {
                     return false;
                 }
+                var test = Gvcp.RegistersDictionary[nameof(RegisterName.Width)].Register.Address;
 
                 string[] registersToRead = new string[]
                 {
-                    Gvcp.RegistersDictionary[nameof(RegisterName.WidthReg)].Address,
-                    Gvcp.RegistersDictionary[nameof(RegisterName.HeightReg)].Address,
-                    Gvcp.RegistersDictionary[nameof(RegisterName.OffsetXReg)].Address,
-                    Gvcp.RegistersDictionary[nameof(RegisterName.OffsetYReg)].Address,
-                    Gvcp.RegistersDictionary[nameof(RegisterName.PixelFormatReg)].Address,
+                    Gvcp.RegistersDictionary[nameof(RegisterName.Width)].Register.Address,
+                    Gvcp.RegistersDictionary[nameof(RegisterName.Height)].Register.Address,
+                    Gvcp.RegistersDictionary[nameof(RegisterName.OffsetX)].Register.Address,
+                    Gvcp.RegistersDictionary[nameof(RegisterName.OffsetY)].Register.Address,
+                    Gvcp.RegistersDictionary[nameof(RegisterName.PixelFormat)].Register.Address,
                 };
 
                 GvcpReply reply2 = await Gvcp.ReadRegisterAsync(registersToRead);
