@@ -19,15 +19,15 @@ namespace GigeVision.Wpf.Views
     /// </summary>
     public partial class DeviceControl : UserControl
     {
-        //public CameraRegisterVisibilty CameraRegisterVisibilty
+        //public CameraRegisterVisibility CameraRegisterVisibility
         //{
-        //    get { return (CameraRegisterVisibilty)GetValue(CameraRegisterVisibiltyProperty); }
-        //    set { SetValue(CameraRegisterVisibiltyProperty, value); }
+        //    get { return (CameraRegisterVisibility)GetValue(CameraRegisterVisibilityProperty); }
+        //    set { SetValue(CameraRegisterVisibilityProperty, value); }
         //}
 
-        //// Using a DependencyProperty as the backing store for CameraRegisterVisibilty.  This enables animation, styling, binding, etc...
-        //public static readonly DependencyProperty CameraRegisterVisibiltyProperty =
-        //    DependencyProperty.Register("CameraRegisterVisibilty", typeof(CameraRegisterVisibilty), typeof(DeviceControl), new PropertyMetadata(CameraRegisterVisibilty.Beginner));
+        //// Using a DependencyProperty as the backing store for CameraRegisterVisibility.  This enables animation, styling, binding, etc...
+        //public static readonly DependencyProperty CameraRegisterVisibilityProperty =
+        //    DependencyProperty.Register("CameraRegisterVisibility", typeof(CameraRegisterVisibility), typeof(DeviceControl), new PropertyMetadata(CameraRegisterVisibility.Beginner));
 
         //public ICommand LoadedWindowCommand
         //{

@@ -26,7 +26,7 @@ namespace GigeVision.Wpf
             Container = containerRegistry.GetContainer();
             containerRegistry.RegisterSingleton<ICamera, Camera>();
 
-            Container.Resolve<ICamera>().Gvcp.CameraIp = "192.168.10.167";
+            Container.Resolve<ICamera>().Gvcp.CameraIp = "192.168.10.172";
             ;
         }
     }
