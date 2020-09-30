@@ -9,7 +9,7 @@ namespace GigeVision.Wpf.ViewModels
 {
     public class MainWindowViewModel : BindableBase
     {
-        private string _title = "Prism Application";
+        private string _title = "GigE Device Control";
 
         public string Title
         {
