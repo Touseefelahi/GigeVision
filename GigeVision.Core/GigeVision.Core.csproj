@@ -20,6 +20,10 @@
     <LangVersion>8.0</LangVersion>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DocumentationFile>C:\Users\f.fagihi\source\repos\GigeVision\GigeVision.Core\GigeVision.Core.xml</DocumentationFile>
+  </PropertyGroup>
+
   <ItemGroup>
     <None Include="build\GigeVision.Core.targets">
       <PackagePath>build/</PackagePath>
