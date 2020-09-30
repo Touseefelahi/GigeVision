@@ -11,13 +11,14 @@ namespace GigeVision.Wpf.Converters
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value is CameraRegister cameraRegister)
+            if (value is Enumeration enumeration)
             {
                 int index = 0;
-                foreach (var enumValue in cameraRegister.Enumeration.Values)
+                foreach (var enumValue in enumeration.Entry)
                 {
-                    if (enumValue == (uint)cameraRegister.Value)
-                        return index;
+                    if (enumeration.Register.Value != null)
+                        if (enumValue.Value == (uint)enumeration.Register.Value)
+                            return index;
 
                     index++;
                 };
