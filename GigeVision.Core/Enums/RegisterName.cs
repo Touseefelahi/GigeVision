@@ -2,31 +2,31 @@
 {
     public enum RegisterName
     {
-        AcquisitionStartReg,
-        AcquisitionStopReg,
+        AcquisitionStart,
+        AcquisitionStop,
 
-        WidthReg,
-        HeightReg,
+        Width,
+        Height,
 
-        OffsetXReg,
-        OffsetYReg,
+        OffsetX,
+        OffsetY,
 
-        PixelFormatReg,
+        PixelFormat,
 
-        ZoomInReg,
-        ZoomTeleFullReg,
+        ZoomIn,
+        ZoomTeleFull,
 
-        ZoomOutReg,
-        ZoomWideFullReg,
+        ZoomOut,
+        ZoomWideFull,
 
-        ZoomStopReg,
+        ZoomStop,
 
-        FocusNearReg,
-        FocusFarReg,
-        FocusStopReg,
+        FocusNear,
+        FocusFar,
+        FocusStop,
 
-        IrisOpenReg,
-        IrisCloseReg,
-        IrisStopReg
+        IrisOpen,
+        IrisClose,
+        IrisStop
     }
 }

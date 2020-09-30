@@ -7,8 +7,8 @@ namespace GigeVision.Core.Enums
     public enum CameraRegisterType
     {
         Integer,
-        Flaot,
-        String,
+        Float,
+        StringReg,
         Enumeration,
         Command,
         Boolean
