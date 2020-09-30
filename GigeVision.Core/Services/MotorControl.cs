@@ -201,7 +201,7 @@ namespace GigeVision.Core.Models
             return false;
         }
 
-        internal void CheckMotorControl(Dictionary<string, CameraRegister> registersDictionary)
+        internal void CheckMotorControl(Dictionary<string, CameraRegisterContainer> registersDictionary)
         {
             try
             {
@@ -280,7 +280,7 @@ namespace GigeVision.Core.Models
             }
         }
 
-        private bool AddLensRegister(string[] lookFor, string[] skipThese, LensCommand lensCommand, Dictionary<string, CameraRegister> registersDictionary)
+        private bool AddLensRegister(string[] lookFor, string[] skipThese, LensCommand lensCommand, Dictionary<string, CameraRegisterContainer> registersDictionary)
         {
             List<string> totalKeys = new List<string>();
             foreach (string item in lookFor)
@@ -304,9 +304,9 @@ namespace GigeVision.Core.Models
                 }
                 if (totalKeys.Count > 0)
                 {
-                    if (!string.IsNullOrEmpty(registersDictionary[totalKeys.FirstOrDefault()].Address))
+                    if (!string.IsNullOrEmpty(registersDictionary[totalKeys.FirstOrDefault()].Register.Address))
                     {
-                        LensControl.Add(lensCommand, registersDictionary[totalKeys.FirstOrDefault()].Address);
+                        LensControl.Add(lensCommand, registersDictionary[totalKeys.FirstOrDefault()].Register.Address);
                         return true;
                     }
                 }
