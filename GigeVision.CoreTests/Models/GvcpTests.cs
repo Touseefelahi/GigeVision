@@ -22,13 +22,13 @@ namespace GigeVision.Core.Models.Tests
         {
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
-            Dictionary<string, CameraRegister> registers = await gvcp.ReadAllRegisterAddressFromCameraAsync().ConfigureAwait(false);
+            Dictionary<string, CameraRegisterContainer> registers = await gvcp.ReadAllRegisterAddressFromCameraAsync().ConfigureAwait(false);
             stopwatch.Stop();
             long timeTook = stopwatch.ElapsedMilliseconds;
             if (registers.Count > 10)
             {
-                bool isTrue = registers.ContainsKey("AcquisitionStartReg");
-                string startRegister = registers["AcquisitionStartReg"].Address;
+                bool isTrue = registers.ContainsKey("AcquisitionStart");
+                string startRegister = registers["AcquisitionStart"].Register.Address;
                 Assert.IsTrue(isTrue);
             }
         }

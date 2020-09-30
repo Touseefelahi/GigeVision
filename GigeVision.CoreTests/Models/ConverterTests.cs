@@ -31,20 +31,22 @@ namespace GigeVision.Core.Models.Tests
         [TestMethod()]
         public void StringFormulaToMathematicalExpression()
         {
-            var formula = "((varible1/ varible2)/varible1+8)*8";
             Dictionary<string, uint> registers = new Dictionary<string, uint>();
-            registers.Add("varible1", 5);
+            var formula = "((varible1/ varible2)+2)*3)";
+            registers.Add("varible1", 100);
             registers.Add("varible2", 5);
+            //var formula = "(SEL = 0) ? 0x0000B824 : ((SEL = 1) ? 0x0000B82C : (0xFFFFFFFF))";
+            //registers.Add("SEL", 0);
 
+            formula = formula.Replace(" ", "");
             foreach (var character in formula.ToCharArray())
             {
-                List<char> opreations = new List<char> { '(', '+', '-', '/', '*', ')' };
+                List<char> opreations = new List<char> { '(', '+', '-', '/', '*', '=', '?', ':', ')' };
                 if (opreations.Where(x => x == character).Count() > 0)
                 {
                     formula = formula.Replace($"{character}", $" {character} ");
                 }
             }
-
             foreach (var word in formula.Split())
             {
                 foreach (var register in registers)
@@ -54,44 +56,71 @@ namespace GigeVision.Core.Models.Tests
                 }
             }
 
+            //object can be ethier double for register value  or string for register address
             var r = Evaluate(formula);
         }
 
-        private double Evaluate(string expression)
+        private object Evaluate(string expression)
         {
-            expression = expression.Replace(" ", "");
-            expression = "(" + expression + ")";
+            expression = "( " + expression + " )";
             Stack<string> opreators = new Stack<string>();
             Stack<double> values = new Stack<double>();
+            string number = string.Empty;
+            double tempNumber = 0;
+            bool tempBoolean = false;
+            string tempAddress = string.Empty;
 
-            for (int i = 0; i < expression.Length; i++)
+            foreach (var word in expression.Split())
             {
-                string letter = expression.Substring(i, 1);
-                if (letter.Equals("(")) { }
-                else if (letter.Equals("+")) opreators.Push(letter);
-                else if (letter.Equals("-")) opreators.Push(letter);
-                else if (letter.Equals("*")) opreators.Push(letter);
-                else if (letter.Equals("/")) opreators.Push(letter);
-                else if (letter.Equals("sqrt")) opreators.Push(letter);
-                else if (letter.Equals(")"))
+                if (double.TryParse(word, out tempNumber))
                 {
-                    int count = opreators.Count;
-                    while (count > 0)
+                    number += word;
+                }
+                else if (tempBoolean)
+                {
+                    if (word.StartsWith("0x") && word.Length == 10)
+                        return word;
+                }
+                else if (word.StartsWith("0x") && word.Length == 10)
+                    tempAddress = word;
+                else
+                {
+                    if (number != string.Empty)
                     {
-                        string opreator = opreators.Pop();
-                        double value = values.Pop();
-                        if (opreator.Equals("+")) value = values.Pop() + value;
-                        else if (opreator.Equals("-")) value = values.Pop() - value;
-                        else if (opreator.Equals("*")) value = values.Pop() * value;
-                        else if (opreator.Equals("/")) value = values.Pop() / value;
-                        else if (opreator.Equals("sqrt")) value = Math.Sqrt(value);
-                        values.Push(value);
+                        values.Push(double.Parse(number));
+                        number = string.Empty;
+                    }
 
-                        count--;
+                    if (word.Equals("(")) { }
+                    else if (word.Equals("+")) opreators.Push(word);
+                    else if (word.Equals("-")) opreators.Push(word);
+                    else if (word.Equals("*")) opreators.Push(word);
+                    else if (word.Equals("/")) opreators.Push(word);
+                    else if (word.Equals("=")) opreators.Push(word);
+                    else if (word.Equals("?")) opreators.Push(word);
+                    else if (word.Equals(":")) opreators.Push(word);
+                    else if (word.Equals(")"))
+                    {
+                        int count = opreators.Count;
+                        while (count > 0)
+                        {
+                            string opreator = opreators.Pop();
+                            double value = values.Pop();
+                            if (opreator.Equals("+")) value = values.Pop() + value;
+                            else if (opreator.Equals("-")) value = values.Pop() - value;
+                            else if (opreator.Equals("*")) value = values.Pop() * value;
+                            else if (opreator.Equals("/")) value = values.Pop() / value;
+                            else if (opreator.Equals("=")) if (value == values.Pop()) tempBoolean = true;
+
+                            values.Push(value);
+
+                            count--;
+                        }
                     }
                 }
-                else values.Push(double.Parse(letter));
             }
+            if (tempAddress != string.Empty)
+                return tempAddress;
             return values.Pop();
         }
     }
