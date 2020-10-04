@@ -1,5 +1,8 @@
 ﻿namespace GigeVision.Core.Enums
 {
+    /// <summary>
+    /// GVCP command status : (As it is from GigE vision 1.2 protocol)
+    /// </summary>
     public enum GvcpStatus
     {
         /// <summary>
