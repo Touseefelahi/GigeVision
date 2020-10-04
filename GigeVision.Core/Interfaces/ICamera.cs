@@ -36,6 +36,11 @@ namespace GigeVision.Core.Interfaces
         IGvcp Gvcp { get; }
 
         /// <summary>
+        /// Rx port for GVSP Stream. If not set software will take any available port
+        /// </summary>
+        int PortRx { get; set; }
+
+        /// <summary>
         /// Event for frame ready
         /// </summary>
         EventHandler<byte[]> FrameReady { get; set; }
@@ -174,5 +179,11 @@ namespace GigeVision.Core.Interfaces
         /// </summary>
         /// <param name="externalBuffer"></param>
         void SetBuffer(byte[] externalBuffer);
+
+        /// <summary>
+        /// It reads all the parameters from the camera
+        /// </summary>
+        /// <returns></returns>
+        Task<bool> SyncParameters();
     }
 }

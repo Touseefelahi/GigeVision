@@ -14,11 +14,6 @@ namespace GigeVision.Core.Models
     public class Camera : BaseNotifyPropertyChanged, ICamera
     {
         /// <summary>
-        /// Rx port
-        /// </summary>
-        public int port = 0;
-
-        /// <summary>
         /// frame ready action
         /// </summary>
         public Action<byte[]> frameReadyAction;
@@ -34,8 +29,12 @@ namespace GigeVision.Core.Models
         internal IntPtr externalBuffer;
 
         private uint width, height, offsetX, offsetY, bytesPerPixel;
+
         private bool isStreaming;
+
         private StreamReceiver streamReceiver;
+
+        private bool isMulticast;
 
         /// <summary>
         /// Camera constructor with initialized Gvcp Controller
@@ -44,7 +43,7 @@ namespace GigeVision.Core.Models
         public Camera(IGvcp gvcp)
         {
             Gvcp = gvcp;
-            Task.Run(async () => await ReadParameters().ConfigureAwait(false));
+            Task.Run(async () => await SyncParameters().ConfigureAwait(false));
             Init();
         }
 
@@ -56,6 +55,11 @@ namespace GigeVision.Core.Models
             Gvcp = new Gvcp();
             Init();
         }
+
+        /// <summary>
+        /// Rx port
+        /// </summary>
+        public int PortRx { get; set; }
 
         /// <summary>
         /// Camera stream status
@@ -179,7 +183,11 @@ namespace GigeVision.Core.Models
         /// <summary>
         /// Multicast Option
         /// </summary>
-        public bool IsMulticast { get; set; }
+        public bool IsMulticast
+        {
+            get { return isMulticast; }
+            set { isMulticast = value; OnPropertyChanged(nameof(IsMulticast)); }
+        }
 
         /// <summary>
         /// Gets the raw data from the camera. Set false to get RGB frame instead of BayerGR8
@@ -227,7 +235,7 @@ namespace GigeVision.Core.Models
             {
                 if (Gvcp.RegistersDictionary.Count == 0)
                 {
-                    await ReadParameters().ConfigureAwait(false);
+                    await SyncParameters().ConfigureAwait(false);
                 }
             }
             catch
@@ -239,14 +247,14 @@ namespace GigeVision.Core.Models
             }
             if (rxPort == 0)
             {
-                if (port == 0)
+                if (PortRx == 0)
                 {
-                    port = new Random().Next(5000, 6000);
+                    PortRx = new Random().Next(5000, 6000);
                 }
             }
             else
             {
-                port = rxPort;
+                PortRx = rxPort;
             }
             if (Payload == 0)
             {
@@ -260,15 +268,8 @@ namespace GigeVision.Core.Models
             {
                 if (await Gvcp.TakeControl(true).ConfigureAwait(false))
                 {
-                    if (IsUsingCppForRx)
-                    {
-                        streamReceiver.StartRxCppThread();
-                    }
-                    else
-                    {
-                        streamReceiver.StartRxThread();
-                    }
-                    if ((await Gvcp.WriteRegisterAsync(GvcpRegister.SCPHostPort, (uint)port).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS)
+                    SetupRxThread();
+                    if ((await Gvcp.WriteRegisterAsync(GvcpRegister.SCPHostPort, (uint)PortRx).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS)
                     {
                         await Gvcp.WriteRegisterAsync(GvcpRegister.SCDA, Converter.IpToNumber(rxIP)).ConfigureAwait(false);
                         await Gvcp.WriteRegisterAsync(GvcpRegister.SCPSPacketSize, Payload).ConfigureAwait(false);
@@ -283,6 +284,18 @@ namespace GigeVision.Core.Models
                         }
                     }
                 }
+                else
+                {
+                    if (IsMulticast)
+                    {
+                        SetupRxThread();
+                        IsStreaming = true;
+                    }
+                }
+            }
+            else
+            {
+                Updates?.Invoke(this,"Fatal Error: Aquisition Start Register Not Found");
             }
             return IsStreaming;
         }
@@ -431,7 +444,7 @@ namespace GigeVision.Core.Models
         /// <returns>Command Status</returns>
         public async Task<bool> ReadRegisters()
         {
-            return await ReadParameters().ConfigureAwait(false);
+            return await SyncParameters().ConfigureAwait(false);
         }
 
         /// <summary>
@@ -449,38 +462,11 @@ namespace GigeVision.Core.Models
             }
         }
 
-        private void SetRxBuffer()
-        {
-            if (rawBytes != null)
-                Array.Clear(rawBytes, 0, rawBytes.Length);
-            if (!IsRawFrame && PixelFormat.ToString().Contains("Bayer"))
-            {
-                rawBytes = new byte[Width * Height * 3];
-            }
-            else
-            {
-                rawBytes = new byte[Width * Height * bytesPerPixel];
-            }
-        }
-
-        private void Init()
-        {
-            MotorController = new MotorControl();
-            streamReceiver = new StreamReceiver(this);
-            Gvcp.CameraIpChanged += CameraIpChanged;
-        }
-
-        private void CalculateSingleRowPayload()
-        {
-            Payload = 8 + 28 + (Width * bytesPerPixel);
-        }
-
-        private async void CameraIpChanged(object sender, EventArgs e)
-        {
-            await ReadParameters().ConfigureAwait(false);
-        }
-
-        private async Task<bool> ReadParameters()
+        /// <summary>
+        /// It reads all the parameters from the camera
+        /// </summary>
+        /// <returns></returns>
+        public async Task<bool> SyncParameters()
         {
             try
             {
@@ -518,6 +504,49 @@ namespace GigeVision.Core.Models
                 MotorController.CheckMotorControl(Gvcp.RegistersDictionary);
             }
             return true;
+        }
+
+        private void SetupRxThread()
+        {
+            if (IsUsingCppForRx)
+            {
+                streamReceiver.StartRxCppThread();
+            }
+            else
+            {
+                streamReceiver.StartRxThread();
+            }
+        }
+
+        private void SetRxBuffer()
+        {
+            if (rawBytes != null)
+                Array.Clear(rawBytes, 0, rawBytes.Length);
+            if (!IsRawFrame && PixelFormat.ToString().Contains("Bayer"))
+            {
+                rawBytes = new byte[Width * Height * 3];
+            }
+            else
+            {
+                rawBytes = new byte[Width * Height * bytesPerPixel];
+            }
+        }
+
+        private void Init()
+        {
+            MotorController = new MotorControl();
+            streamReceiver = new StreamReceiver(this);
+            Gvcp.CameraIpChanged += CameraIpChanged;
+        }
+
+        private void CalculateSingleRowPayload()
+        {
+            Payload = 8 + 28 + (Width * bytesPerPixel);
+        }
+
+        private async void CameraIpChanged(object sender, EventArgs e)
+        {
+            await SyncParameters().ConfigureAwait(false);
         }
 
         private string GetMyIp()

@@ -4,6 +4,11 @@
         <name>GigeVision.Core</name>
     </assembly>
     <members>
+        <member name="T:GigeVision.Core.Enums.CameraStatus">
+            <summary>
+            GigE Camera status
+            </summary>
+        </member>
         <member name="F:GigeVision.Core.Enums.CameraStatus.Available">
             <summary>
             Camera Available in network and its not in Control/Streaming
@@ -22,6 +27,11 @@
         <member name="T:GigeVision.Core.Enums.GvcpRegister">
             <summary>
             They are fixed GigeVision Registers
+            </summary>
+        </member>
+        <member name="T:GigeVision.Core.Enums.GvcpStatus">
+            <summary>
+            GVCP command status : (As it is from GigE vision 1.2 protocol)
             </summary>
         </member>
         <member name="F:GigeVision.Core.Enums.GvcpStatus.GEV_STATUS_SUCCESS">
@@ -147,6 +157,91 @@
              <summary>
             Generic error. Try to avoid and use a more descriptive status code from list above.
              </summary>
+        </member>
+        <member name="T:GigeVision.Core.Enums.LensCommand">
+            <summary>
+            General Lens commands
+            </summary>
+        </member>
+        <member name="F:GigeVision.Core.Enums.LensCommand.ZoomIn">
+            <summary>
+            Zoom in
+            </summary>
+        </member>
+        <member name="F:GigeVision.Core.Enums.LensCommand.ZoomOut">
+            <summary>
+            Zoom out
+            </summary>
+        </member>
+        <member name="F:GigeVision.Core.Enums.LensCommand.ZoomStop">
+            <summary>
+            Zoom stop for continous zoom lens
+            </summary>
+        </member>
+        <member name="F:GigeVision.Core.Enums.LensCommand.ZoomSpeed">
+            <summary>
+            Set zoom speed
+            </summary>
+        </member>
+        <member name="F:GigeVision.Core.Enums.LensCommand.ZoomValue">
+            <summary>
+            Set particular zoom value
+            </summary>
+        </member>
+        <member name="F:GigeVision.Core.Enums.LensCommand.FocusFar">
+            <summary>
+            Focus far
+            </summary>
+        </member>
+        <member name="F:GigeVision.Core.Enums.LensCommand.FocusNear">
+            <summary>
+            Focus Stop        
+            </summary>
+        </member>
+        <member name="F:GigeVision.Core.Enums.LensCommand.FocusStop">
+            <summary>
+            Focus stop for continous focus
+            </summary>
+        </member>
+        <member name="F:GigeVision.Core.Enums.LensCommand.FocusSpeed">
+            <summary>
+            Set focus speed
+            </summary>
+        </member>
+        <member name="F:GigeVision.Core.Enums.LensCommand.FocusAuto">
+            <summary>
+            Set to auto focus
+            </summary>
+        </member>
+        <member name="F:GigeVision.Core.Enums.LensCommand.IrisOpen">
+            <summary>
+            Open iris
+            </summary>
+        </member>
+        <member name="F:GigeVision.Core.Enums.LensCommand.IrisClose">
+            <summary>
+            Clos iris
+            </summary>
+        </member>
+        <member name="F:GigeVision.Core.Enums.LensCommand.IrisStop">
+            <summary>
+            Stop iris motor for continous iris
+            </summary>
+        </member>
+        <member name="F:GigeVision.Core.Enums.LensCommand.IrisSpeed">
+            <summary>
+            Set iris speed
+            </summary>
+        </member>
+        <member name="F:GigeVision.Core.Enums.LensCommand.IrisAuto">
+            <summary>
+            Set Auto Iris
+            </summary>
+        </member>
+        <member name="F:GigeVision.Core.Enums.LensCommand.FocusValue">
+            <summary>
+            Set particular focus value
+            </summary>
         </member>
         <member name="T:GigeVision.Core.Enums.PixelFormat">
             <summary>
@@ -423,6 +518,46 @@
             GVSP_PIX_RGB16_PACKED
             </summary>
         </member>
+        <member name="T:GigeVision.Core.Enums.RegisterName">
+            <summary>
+            General Register names
+            </summary>
+        </member>
+        <member name="F:GigeVision.Core.Enums.RegisterName.AcquisitionStartReg">
+            <summary>
+            Start stream
+            </summary>
+        </member>
+        <member name="F:GigeVision.Core.Enums.RegisterName.AcquisitionStopReg">
+            <summary>
+            Stop Stream
+            </summary>
+        </member>
+        <member name="F:GigeVision.Core.Enums.RegisterName.WidthReg">
+            <summary>
+            Current Width Get/Set
+            </summary>
+        </member>
+        <member name="F:GigeVision.Core.Enums.RegisterName.HeightReg">
+            <summary>
+            Current height Get/Set
+            </summary>
+        </member>
+        <member name="F:GigeVision.Core.Enums.RegisterName.OffsetXReg">
+            <summary>
+            Current offset X Get/Set
+            </summary>
+        </member>
+        <member name="F:GigeVision.Core.Enums.RegisterName.OffsetYReg">
+            <summary>
+            Current offset Y Get/Set
+            </summary>
+        </member>
+        <member name="F:GigeVision.Core.Enums.RegisterName.PixelFormatReg">
+            <summary>
+            Pixel format 
+            </summary>
+        </member>
         <member name="T:GigeVision.Core.Interfaces.ICamera">
             <summary>
             Camera class is responsible to initilize the stream and receive the stream
@@ -451,6 +586,11 @@
         <member name="P:GigeVision.Core.Interfaces.ICamera.Gvcp">
             <summary>
             GVCP controller
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Interfaces.ICamera.PortRx">
+            <summary>
+            Rx port for GVSP Stream. If not set software will take any available port
             </summary>
         </member>
         <member name="P:GigeVision.Core.Interfaces.ICamera.FrameReady">
@@ -592,6 +732,12 @@
             Set External Raw bytes buffer
             </summary>
             <param name="externalBuffer"></param>
+        </member>
+        <member name="M:GigeVision.Core.Interfaces.ICamera.SyncParameters">
+            <summary>
+            It reads all the parameters from the camera
+            </summary>
+            <returns></returns>
         </member>
         <member name="T:GigeVision.Core.Interfaces.IGvcp">
             <summary>
@@ -1103,11 +1249,6 @@
             Camera class is responsible to initilize the stream and receive the stream
             </summary>
         </member>
-        <member name="F:GigeVision.Core.Models.Camera.port">
-            <summary>
-            Rx port
-            </summary>
-        </member>
         <member name="F:GigeVision.Core.Models.Camera.frameReadyAction">
             <summary>
             frame ready action
@@ -1132,6 +1273,11 @@
         <member name="M:GigeVision.Core.Models.Camera.#ctor">
             <summary>
             Default camera constructor initializes the controller
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.Camera.PortRx">
+            <summary>
+            Rx port
             </summary>
         </member>
         <member name="P:GigeVision.Core.Models.Camera.IsStreaming">
@@ -1298,6 +1444,12 @@
             Sets the buffer from external source
             </summary>
             <param name="externalRawBytes"></param>
+        </member>
+        <member name="M:GigeVision.Core.Models.Camera.SyncParameters">
+            <summary>
+            It reads all the parameters from the camera
+            </summary>
+            <returns></returns>
         </member>
         <member name="T:GigeVision.Core.Models.Converter">
             <summary>
