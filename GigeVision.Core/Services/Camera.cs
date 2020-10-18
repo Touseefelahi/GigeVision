@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace GigeVision.Core.Models
 {
     /// <summary>
-    /// Camera class is responsible to initilize the stream and receive the stream
+    /// Camera class is responsible to initialize the stream and receive the stream
     /// </summary>
     public class Camera : BaseNotifyPropertyChanged, ICamera
     {

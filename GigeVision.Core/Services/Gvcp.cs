@@ -117,7 +117,7 @@ namespace GigeVision.Core.Models
         public EventHandler ElapsedOneSecond { get; set; }
 
         /// <summary>
-        /// Event fired whenever camera ip changed: used to get registers
+        /// Event fired whenever camera IP changed: used to get registers
         /// </summary>
         public EventHandler CameraIpChanged { get; set; }
 
@@ -346,18 +346,18 @@ namespace GigeVision.Core.Models
 
             List<string> registresList = new List<string>();
 
-            //loading the xml file
+            //loading the XML file
             XmlDocument xml = new XmlDocument();
             xml.Load(await GetXmlFileFromCamera(cameraIp).ConfigureAwait(false));
             if (RegistersDictionary.Count > 0)
             {
                 RegistersDictionary.Clear();
             }
-            //handeling the namespace of the xml file to cover all the cases
+            //handling the name-space of the XML file to cover all the cases
             Dictionary<string, CameraRegisterContainer> registersDictionary = null;
             Dictionary<string, CameraRegisterGroup> registerGroupDictionary = null;
-            new XmlHelper(out registersDictionary, out registerGroupDictionary, "Group", xml);
-            //finding the nodes and thier values
+            new XmlHelper(this, out registersDictionary, out registerGroupDictionary, "Group", xml);
+            //finding the nodes and their values
             RegistersDictionary = registersDictionary;
             RegistersGroupDictionary = registerGroupDictionary;
             return RegistersDictionary;
@@ -378,18 +378,18 @@ namespace GigeVision.Core.Models
 
             List<string> registresList = new List<string>();
 
-            //loading the xml file
+            //loading the XML file
             XmlDocument xml = new XmlDocument();
             xml.Load(await GetXmlFileFromCamera(gvcp.CameraIp).ConfigureAwait(false));
             if (RegistersDictionary.Count > 0)
             {
                 RegistersDictionary.Clear();
             }
-            //handeling the namespace of the xml file to cover all the cases
+            //handling the name-space of the XML file to cover all the cases
             Dictionary<string, CameraRegisterContainer> registersDictionary = null;
             Dictionary<string, CameraRegisterGroup> registerGroupDictionary = null;
             new XmlHelper(gvcp, out registersDictionary, out registerGroupDictionary, "Group", xml);
-            //finding the nodes and thier values
+            //finding the nodes and their values
             RegistersDictionary = registersDictionary;
             RegistersGroupDictionary = registerGroupDictionary;
             return RegistersDictionary;
@@ -417,7 +417,7 @@ namespace GigeVision.Core.Models
                 Array.Reverse(requestID);
             }
 
-            //praparing the header for sending
+            //preparing the header for sending
             byte[] gvcpHeader = { 0x42, 0x01, 0x00, 0x84, 0x00, 0x08, requestID[0], requestID[1], 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x02, 0x00 };
 
             return gvcpHeader;
@@ -439,15 +439,15 @@ namespace GigeVision.Core.Models
                     //sending the packet
                     //  client.Send(commandCCP, commandCCP.Length);
                     Task.Delay(100);
-                    //praparing the header for sending
+                    //preparing the header for sending
                     byte[] gvcpHeader = GetReadMessageHeader(0x0200); //GevFirstURL = 0x0200
 
                     //sending the packet
                     client.Send(gvcpHeader, gvcpHeader.Length);
                     gvcpRequestID++;
 
-                    int packetSize = 512 + 24; //512 for the orginal payload size and 24  for  the header
-                    byte[] count = { 0x02, 0x18 }; //Number of bytes to read fom device memory it must be multiple of 4 bytes
+                    int packetSize = 512 + 24; //512 for the original payload size and 24  for  the header
+                    byte[] count = { 0x02, 0x18 }; //Number of bytes to read from device memory it must be multiple of 4 bytes
 
                     IPEndPoint server = new IPEndPoint(IPAddress.Parse(IP), PortGvcp);
                     byte[] recivedData = client.Receive(ref server);
@@ -512,7 +512,7 @@ namespace GigeVision.Core.Models
 
         private async Task<Stream> GetXmlFileFromCamera(string ip)
         {
-            //intilaizing the varibles
+            // initializing the variables
             Stream unZipFile = new MemoryStream();
 
             //loop to get the zip file data in bytes
