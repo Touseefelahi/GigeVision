@@ -11,13 +11,13 @@ namespace GigeVision.Wpf.DTO
 {
     public class CameraRegisterDTO
     {
-        public ICamera Camera { get; }
+        public IGvcp Gvcp { get; }
         public CameraRegisterContainer CameraRegisterContainer { get; set; }
         public DelegateCommand<object> SetValueCommand { get; set; }
 
-        public CameraRegisterDTO(ICamera camera, CameraRegisterContainer cameraRegisterContainer)
+        public CameraRegisterDTO(IGvcp gvcp, CameraRegisterContainer cameraRegisterContainer)
         {
-            Camera = camera;
+            Gvcp = gvcp;
             CameraRegisterContainer = cameraRegisterContainer;
             SetValueCommand = new DelegateCommand<object>(WriteValue);
         }
@@ -31,14 +31,14 @@ namespace GigeVision.Wpf.DTO
 
             if (newValue != CameraRegisterContainer.Register.Value)
             {
-                await Camera.Gvcp.TakeControl(false);
+                await Gvcp.TakeControl(false);
                 switch (CameraRegisterContainer.Type)
                 {
                     case CameraRegisterType.Integer:
                         var integerRegister = CameraRegisterContainer.TypeValue as IntegerRegister;
                         try
                         {
-                            gvcpReply = (await Camera.Gvcp.WriteRegisterAsync(integerRegister.Register.Address, uint.Parse((string)newValue)));
+                            gvcpReply = (await Gvcp.WriteRegisterAsync(integerRegister.Register.Address, uint.Parse((string)newValue)));
                         }
                         catch (Exception ex)
                         {
@@ -52,23 +52,23 @@ namespace GigeVision.Wpf.DTO
                     case CameraRegisterType.StringReg:
                         var stringRegister = CameraRegisterContainer.TypeValue as CameraRegister;
                         //gvcpReply = (await Camera.Gvcp.WriteRegisterAsync(stringRegister.Address, uint.Parse((string)stringRegister.Value)));
-                        gvcpReply = (await Camera.Gvcp.WriteMemoryAsync(stringRegister.Address, BitConverter.ToUInt32(Encoding.ASCII.GetBytes((string)stringRegister.Value), 0)));
+                        gvcpReply = (await Gvcp.WriteMemoryAsync(stringRegister.Address, BitConverter.ToUInt32(Encoding.ASCII.GetBytes((string)stringRegister.Value), 0)));
                         break;
 
                     case CameraRegisterType.Enumeration:
                         var enumeration = CameraRegisterContainer.TypeValue as Enumeration;
-                        gvcpReply = (await Camera.Gvcp.WriteRegisterAsync(enumeration.Register.Address, ((KeyValuePair<string, uint>)enumeration.Register.Value).Value));
+                        gvcpReply = (await Gvcp.WriteRegisterAsync(enumeration.Register.Address, ((KeyValuePair<string, uint>)enumeration.Register.Value).Value));
 
                         break;
 
                     case CameraRegisterType.Command:
                         var command = CameraRegisterContainer.TypeValue as CommandRegister;
-                        gvcpReply = (await Camera.Gvcp.WriteRegisterAsync(command.Register.Address, (uint)command.Register.Value));
+                        gvcpReply = (await Gvcp.WriteRegisterAsync(command.Register.Address, (uint)command.Register.Value));
                         break;
 
                     case CameraRegisterType.Boolean:
                         var boolean = CameraRegisterContainer.TypeValue as BooleanRegister;
-                        gvcpReply = (await Camera.Gvcp.WriteRegisterAsync(boolean.Register.Address, (uint)newValue));
+                        gvcpReply = (await Gvcp.WriteRegisterAsync(boolean.Register.Address, (uint)newValue));
                         break;
 
                     default:

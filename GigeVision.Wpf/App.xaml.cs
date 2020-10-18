@@ -24,10 +24,9 @@ namespace GigeVision.Wpf
         protected override void RegisterTypes(IContainerRegistry containerRegistry)
         {
             Container = containerRegistry.GetContainer();
-            containerRegistry.RegisterSingleton<ICamera, Camera>();
+            containerRegistry.RegisterSingleton<IGvcp, Gvcp>();
 
-            Container.Resolve<ICamera>().Gvcp.CameraIp = "192.168.10.172";
-            ;
+            Container.Resolve<IGvcp>().CameraIp = "192.168.10.244";
         }
     }
 }

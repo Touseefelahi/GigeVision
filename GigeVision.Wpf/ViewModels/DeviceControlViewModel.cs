@@ -25,7 +25,7 @@ namespace GigeVision.Wpf.ViewModels
         public Dictionary<string, CameraRegisterContainer> FilteredRegistersDictionary { get; set; }
         private List<CameraRegisterDTO> CameraRegistersList { get; set; }
 
-        public ICamera Camera { get; }
+        public IGvcp Gvcp { get; }
         public ICommand LoadedWindowCommand { get; }
 
         public CameraRegisterVisibility CameraRegisterVisibility
@@ -54,9 +54,10 @@ namespace GigeVision.Wpf.ViewModels
 
         #endregion Commands
 
-        public DeviceControlViewModel(ICamera camera)
+        public DeviceControlViewModel(IGvcp gvcp)
         {
-            Camera = camera;
+            Gvcp = gvcp;
+            Task.Run(async () => await Gvcp.ReadAllRegisterAddressFromCameraAsync().ConfigureAwait(false));
             LoadedWindowCommand = new DelegateCommand(WindowLoaded);
             TestDataTriggerCommand = new DelegateCommand(CreateCameraRegistersGroupCollection);
             ExpandCommand = new DelegateCommand(ExecuteExpandCommand);
@@ -77,24 +78,24 @@ namespace GigeVision.Wpf.ViewModels
         #region Methods
 
         /// <summary>
-        /// this method reads all device control registres values
+        /// this method reads all device control registers values
         /// </summary>
         private async Task ReadDeviceControlRegisters()
         {
             var chunkSize = 30;
             var skipSize = 0;
-            FilteredRegistersDictionary = Camera.Gvcp.RegistersDictionary.Where(x => x.Value.Register != null && x.Value.Visibility != CameraRegisterVisibility.Invisible).ToDictionary(x => x.Key, x => x.Value);
+            FilteredRegistersDictionary = Gvcp.RegistersDictionary.Where(x => x.Value.Register != null && x.Value.Visibility != CameraRegisterVisibility.Invisible).ToDictionary(x => x.Key, x => x.Value);
             var readableRegisters = FilteredRegistersDictionary.Where(x => x.Value.Register.Address != null && x.Value.Register.AccessMode != CameraRegisterAccessMode.WO).ToDictionary(x => x.Key, x => x.Value);
             while (readableRegisters.Count > skipSize)
             {
                 var packetOfRegisters = readableRegisters.Skip(skipSize).Take(chunkSize).Select(x => x.Value.Register.Address).ToList();
-                var values = (await Camera.Gvcp.ReadRegisterAsync(packetOfRegisters.ToArray()));
+                var values = (await Gvcp.ReadRegisterAsync(packetOfRegisters.ToArray()));
                 if (values.Status == GvcpStatus.GEV_STATUS_SUCCESS)
                 {
                     int index = 0;
                     foreach (var register in readableRegisters.Skip(skipSize).Take(chunkSize).Select(x => x.Key))
                     {
-                        Camera.Gvcp.RegistersDictionary[register].Register.Value = values.RegisterValues[index];
+                        Gvcp.RegistersDictionary[register].Register.Value = values.RegisterValues[index];
                         index++;
                     }
 
@@ -103,7 +104,7 @@ namespace GigeVision.Wpf.ViewModels
             }
         }
 
-        private async void CreateCameraRegistersGroupCollection()
+        public async void CreateCameraRegistersGroupCollection()
         {
             //var test1 = await Camera.Gvcp.ReadRegisterAsync(Camera.Gvcp.RegistersDictionary["Width"]);
             //var test2 = await Camera.Gvcp.ReadRegisterAsync(Camera.Gvcp.RegistersDictionary["TimerGranularityFactor"]);
@@ -111,7 +112,7 @@ namespace GigeVision.Wpf.ViewModels
             CameraRegistersList = new List<CameraRegisterDTO>();
 
             CameraRegisterGroupDTOList = new ObservableCollection<CameraRegisterGroupDTO>();
-            foreach (var categoryFeature in Camera.Gvcp.RegistersGroupDictionary["Root"].Category)
+            foreach (var categoryFeature in Gvcp.RegistersGroupDictionary["Root"].Category)
             {
                 var child = await GetChild(categoryFeature);
                 if (child != null)
@@ -142,12 +143,12 @@ namespace GigeVision.Wpf.ViewModels
             ObservableCollection<CameraRegisterGroupDTO> cameraRegisterGroupDTOs = new ObservableCollection<CameraRegisterGroupDTO>();
 
             //Look for parent (group)
-            if (Camera.Gvcp.RegistersGroupDictionary.ContainsKey(categoryFeature))
+            if (Gvcp.RegistersGroupDictionary.ContainsKey(categoryFeature))
             {
-                foreach (var feature in Camera.Gvcp.RegistersGroupDictionary[categoryFeature].Category)
+                foreach (var feature in Gvcp.RegistersGroupDictionary[categoryFeature].Category)
                 {
                     //When you find it look for its` children
-                    //child might be ethier parent of other children or child
+                    //child might be either parent of other children or child
                     var child = await GetChild(feature);
 
                     //check if child is a parent
@@ -171,10 +172,10 @@ namespace GigeVision.Wpf.ViewModels
                     }
                 }
                 //return parent
-                if (Camera.Gvcp.RegistersGroupDictionary["Root"].Category.Contains(categoryFeature))
-                    return new CameraRegisterGroupDTO(Camera, categoryFeature, cameraRegisterGroupDTOs);
+                if (Gvcp.RegistersGroupDictionary["Root"].Category.Contains(categoryFeature))
+                    return new CameraRegisterGroupDTO(Gvcp, categoryFeature, cameraRegisterGroupDTOs);
 
-                return new CameraRegisterGroupDTO(Camera, categoryFeature, cameraRegisterGroupDTOs);
+                return new CameraRegisterGroupDTO(Gvcp, categoryFeature, cameraRegisterGroupDTOs);
             }
             else
             {
@@ -185,7 +186,7 @@ namespace GigeVision.Wpf.ViewModels
                     try
                     {
                         if (FilteredRegistersDictionary[categoryFeature].Type == CameraRegisterType.StringReg)
-                            FilteredRegistersDictionary[categoryFeature].Register.Value = Encoding.ASCII.GetString((await Camera.Gvcp.ReadMemoryAsync(FilteredRegistersDictionary[categoryFeature].Register.Address)).MemoryValue);
+                            FilteredRegistersDictionary[categoryFeature].Register.Value = Encoding.ASCII.GetString((await Gvcp.ReadMemoryAsync(FilteredRegistersDictionary[categoryFeature].Register.Address)).MemoryValue);
 
                         cameraRegisterContainer = FilteredRegistersDictionary[categoryFeature];
                         isNull = false;
@@ -198,7 +199,7 @@ namespace GigeVision.Wpf.ViewModels
                 if (isNull)
                     return null;
 
-                CameraRegistersList.Add(new CameraRegisterDTO(Camera, cameraRegisterContainer));
+                CameraRegistersList.Add(new CameraRegisterDTO(Gvcp, cameraRegisterContainer));
 
                 return null;
             }
