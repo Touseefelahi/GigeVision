@@ -1,0 +1,81 @@
+﻿<UserControl x:Name="root" x:Class="GigeVision.Wpf.Views.DeviceControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:GigeVision.Wpf.Views"
+              xmlns:prism="http://prismlibrary.com/"
+             prism:ViewModelLocator.AutoWireViewModel="True"
+             mc:Ignorable="d"
+             xmlns:enums="clr-namespace:GigeVision.Wpf.Enums"
+             xmlns:converters="clr-namespace:GigeVision.Wpf.Converters"
+             xmlns:System="clr-namespace:System;assembly=mscorlib"
+             xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
+             d:DesignHeight="800" d:DesignWidth="200">
+
+    <i:Interaction.Triggers>
+        <i:EventTrigger EventName="Loaded">
+            <i:InvokeCommandAction Command="{Binding Path=LoadedWindowCommand}" />
+        </i:EventTrigger>
+    </i:Interaction.Triggers>
+
+    <!--Container-->
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="30" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="auto" />
+        </Grid.RowDefinitions>
+        <!--Header-->
+        <Border Grid.Row="0" Background="#bbb"  Padding="3">
+            <Grid VerticalAlignment="Center">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+
+                    <ComboBox Grid.Column="2" x:Name="VisibilitySelector" SelectedIndex="0" ItemsSource="{Binding Source={StaticResource CameraRegisterVisibilityList}}" />
+                    <!--<Button Grid.Column="2"  Content="Expand All" Command="{Binding ExpandCommand}" HorizontalContentAlignment="Center" />-->
+                    <!--<CheckBox Grid.Column="0" Content="Expand All" IsChecked="True" HorizontalAlignment="Left" Padding="2 0 5 0 "   VerticalAlignment="Center" />-->
+                </Grid>
+            </Grid>
+        </Border>
+
+        <!--Body-->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <TreeView ItemTemplate="{StaticResource RegisterItem}"  ItemsSource="{Binding CameraRegisterGroupDTOList}" Margin="0,0,0,0" />
+        </ScrollViewer>
+
+        <!--Footer-->
+        <Border Grid.Row="2" Background="#bbb"  Padding="3" HorizontalAlignment="Stretch" Visibility="{Binding SelectedRegister, Converter={StaticResource FooterVisibilityConverter}}">
+            <ScrollViewer>
+                <StackPanel>
+                    <StackPanel>
+                        <Label FontSize="16" Content="{Binding SelectedRegister.CameraRegisterContainer.Name, Mode=TwoWay}"  FontWeight="Bold" />
+                        <TextBlock Text="{Binding SelectedRegister.CameraRegisterContainer.Descrption}" TextWrapping="WrapWithOverflow" Margin="0,5" />
+                    </StackPanel>
+
+                    <StackPanel Orientation="Vertical" Margin="0,10">
+
+                        <StackPanel Orientation="Horizontal">
+                            <Label  Content="Type" />
+                            <TextBlock Text="{Binding SelectedRegister.CameraRegisterContainer.Type}" Margin="5, 0" FontWeight="Bold" />
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal">
+                            <Label  Content="Visibility" />
+                            <TextBlock  Text="{Binding SelectedRegister.CameraRegisterContainer.Visibility}"  Margin="5,0" FontWeight="Bold" />
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal">
+                            <Label  Content="Streamable" />
+                            <TextBlock Text="{Binding SelectedRegister.CameraRegisterContainer.IsStreamable}"  Margin="5,0" FontWeight="Bold" />
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+    </Grid>
+</UserControl>

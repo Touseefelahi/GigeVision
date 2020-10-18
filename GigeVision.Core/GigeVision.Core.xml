@@ -4,9 +4,30 @@
         <name>GigeVision.Core</name>
     </assembly>
     <members>
-        <member name="T:GigeVision.Core.Enums.CameraStatus">
+
+        <member name="T:GigeVision.Core.Enums.CameraRegisterVisibility">
             <summary>
-            GigE Camera status
+            Camera Registrer Visibility
+            </summary>
+        </member>
+        <member name="F:GigeVision.Core.Enums.CameraRegisterVisibility.Beginner">
+            <summary>
+            Beginner (First Level)
+            </summary>
+        </member>
+        <member name="F:GigeVision.Core.Enums.CameraRegisterVisibility.Expert">
+            <summary>
+            Expert(Second Level)
+            </summary>
+        </member>
+        <member name="F:GigeVision.Core.Enums.CameraRegisterVisibility.Guru">
+            <summary>
+            Guru (Third Level)
+            </summary>
+        </member>
+        <member name="F:GigeVision.Core.Enums.CameraRegisterVisibility.Invisible">
+            <summary>
+            this level ment to be hidden    
             </summary>
         </member>
         <member name="F:GigeVision.Core.Enums.CameraStatus.Available">
@@ -774,6 +795,11 @@
             Dictionary for registers
             </summary>
         </member>
+        <member name="P:GigeVision.Core.Interfaces.IGvcp.RegistersGroupDictionary">
+            <summary>
+            Dictionary for registers groups
+            </summary>
+        </member>
         <member name="M:GigeVision.Core.Interfaces.IGvcp.WriteRegisterAsync(System.Net.Sockets.UdpClient,System.Byte[],System.UInt32)">
             <summary>
             Write Register: it will send the GVCP command to the specified socket
@@ -930,6 +956,36 @@
             </summary>
             <returns>Acknowledgement</returns>
         </member>
+        <member name="M:GigeVision.Core.Interfaces.IGvcp.ReadRegisterAsync(GigeVision.Core.Models.CameraRegisterContainer)">
+            <summary>
+            Read Register Container
+            </summary>
+            <param name="cameraRegisterContainer"></param>
+            <returns></returns>
+        </member>
+        <member name="M:GigeVision.Core.Interfaces.IGvcp.ReadMemoryAsync(System.String,System.Byte[])">
+            <summary>
+            Read Memory Address
+            </summary>
+            <param name="ip"></param>
+            <param name="memoryAddress"></param>
+            <returns></returns>
+        </member>
+        <member name="M:GigeVision.Core.Interfaces.IGvcp.ReadMemoryAsync(System.String)">
+            <summary>
+            Read Memory Address
+            </summary>
+            <param name="memoryAddressOrKey"></param>
+            <returns></returns>
+        </member>
+        <member name="M:GigeVision.Core.Interfaces.IGvcp.WriteMemoryAsync(System.String,System.UInt32)">
+            <summary>
+            Write Memory
+            </summary>
+            <param name="registerAddress"></param>
+            <param name="valueToWrite"></param>
+            <returns></returns>
+        </member>
         <member name="M:GigeVision.Core.Interfaces.IGvcp.ReadAllRegisterAddressFromCameraAsync(System.String)">
             <summary>
             Read all Register
@@ -941,6 +997,13 @@
             Read all Register
             </summary>
             <returns>Dictionary of registers</returns>
+        </member>
+        <member name="M:GigeVision.Core.Interfaces.IGvcp.ReadAllRegisterAddressFromCameraAsync(GigeVision.Core.Interfaces.IGvcp)">
+            <summary>
+            Read all Register
+            </summary>
+            <param name="gvcp"></param>
+            <returns></returns>
         </member>
         <member name="M:GigeVision.Core.Interfaces.IGvcp.ForceIPAsync(System.Byte[],System.String)">
             <summary>
@@ -1206,6 +1269,11 @@
             For Multiple register reading
             </summary>
         </member>
+        <member name="P:GigeVision.Core.Models.GvcpReply.MemoryValue">
+            <summary>
+            Memory Value
+            </summary>
+        </member>
         <member name="P:GigeVision.Core.Models.GvcpReply.AcknowledgementID">
             <summary>
             acknowledgement id
@@ -1244,9 +1312,366 @@
             </summary>
             <param name="buffer"></param>
         </member>
+        <member name="T:GigeVision.Core.Models.BooleanRegister">
+            <summary>
+            Boolean Register
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.BooleanRegister.Register">
+            <summary>
+            Camera Register has boolean address, length and access mode
+            </summary>
+        </member>
+        <member name="M:GigeVision.Core.Models.BooleanRegister.#ctor(GigeVision.Core.Models.CameraRegister)">
+            <summary>
+            the main method
+            </summary>
+            <param name="cameraRegister">camera Register has boolean address, length and access mode</param>
+        </member>
+        <member name="T:GigeVision.Core.Models.CameraRegister">
+            <summary>
+            Camera Register is used in all Register types to hold their registers' information;
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.CameraRegister.Address">
+            <summary>
+            Register Address in hex format
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.CameraRegister.AddressParameter">
+            <summary>
+            Address Parameter
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.CameraRegister.Length">
+            <summary>
+            Reister Length
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.CameraRegister.AccessMode">
+            <summary>
+            Register Access Mode
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.CameraRegister.Value">
+            <summary>
+            Register Value
+            </summary>
+        </member>
+        <member name="M:GigeVision.Core.Models.CameraRegister.#ctor(System.String,System.UInt32,GigeVision.Core.Enums.CameraRegisterAccessMode,System.Object,GigeVision.Core.Models.IntSwissKnife)">
+            <summary>
+            Main Method
+            </summary>
+            <param name="address"></param>
+            <param name="length"></param>
+            <param name="registerAccessMode"></param>
+            <param name="value"></param>
+            <param name="addressParameter"></param>
+        </member>
+        <member name="T:GigeVision.Core.Models.CameraRegisterContainer">
+            <summary>
+            the main class that contains all register types
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.CameraRegisterContainer.Name">
+            <summary>
+            Register Name
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.CameraRegisterContainer.Descrption">
+            <summary>
+            Register Description
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.CameraRegisterContainer.Visibility">
+            <summary>
+            Register Visibility Level
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.CameraRegisterContainer.IsStreamable">
+            <summary>
+            Indicates whether the register is streamable or not
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.CameraRegisterContainer.Type">
+            <summary>
+            Register Type
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.CameraRegisterContainer.TypeValue">
+            <summary>
+            Register Type Value
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.CameraRegisterContainer.Register">
+            <summary>
+            The Register Information of the Register Type
+            </summary>
+        </member>
+        <member name="M:GigeVision.Core.Models.CameraRegisterContainer.#ctor(System.String,System.String,System.Nullable{GigeVision.Core.Enums.CameraRegisterVisibility},System.Boolean,GigeVision.Core.Enums.CameraRegisterType,System.Object)">
+            <summary>
+            Main Method
+            </summary>
+            <param name="registerName"></param>
+            <param name="description"></param>
+            <param name="registerVisibility"></param>
+            <param name="isStreamable"></param>
+            <param name="registerType"></param>
+            <param name="typeValue"></param>
+        </member>
+        <member name="T:GigeVision.Core.Models.CameraRegisterGroup">
+            <summary>
+            Register Group
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.CameraRegisterGroup.Comment">
+            <summary>
+            Group Comment
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.CameraRegisterGroup.Category">
+            <summary>
+            Group Category List that have all the features parameters of the group
+            </summary>
+        </member>
+        <member name="M:GigeVision.Core.Models.CameraRegisterGroup.#ctor(System.String,System.Collections.Generic.List{System.String})">
+            <summary>
+            Main Method
+            </summary>
+            <param name="comment"></param>
+            <param name="cameraRegisters"></param>
+        </member>
+        <member name="T:GigeVision.Core.Models.CommandRegister">
+            <summary>
+            Command Register
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.CommandRegister.Value">
+            <summary>
+            Command Value
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.CommandRegister.Register">
+            <summary>
+            Camera Register has Command address, length and access mode
+            </summary>
+        </member>
+        <member name="M:GigeVision.Core.Models.CommandRegister.#ctor(System.UInt32,GigeVision.Core.Models.CameraRegister)">
+            <summary>
+            Main Method
+            </summary>
+            <param name="value"></param>
+            <param name="cameraRegister"></param>
+        </member>
+        <member name="T:GigeVision.Core.Models.Enumeration">
+            <summary>
+            Enumeration Register
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.Enumeration.Entry">
+            <summary>
+            Enumeration Entry List
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.Enumeration.Register">
+            <summary>
+             Camera Register has Enumeration address, length and access mode
+            </summary>
+        </member>
+        <member name="M:GigeVision.Core.Models.Enumeration.#ctor(System.Collections.Generic.Dictionary{System.String,System.UInt32},GigeVision.Core.Models.CameraRegister)">
+            <summary>
+            Main Method
+            </summary>
+            <param name="entry"></param>
+            <param name="register"></param>
+        </member>
+        <member name="T:GigeVision.Core.Models.FloatRegister">
+            <summary>
+            Float Register
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.FloatRegister.MinParameter">
+            <summary>
+            Float Minimum Parameter
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.FloatRegister.MaxParameter">
+            <summary>
+            Float Maximum Parameter
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.FloatRegister.ValueParameter">
+            <summary>
+            Float Value Parameter
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.FloatRegister.PhysicalUnit">
+            <summary>
+            Float Physical Unit
+            </summary>
+        </member>
+        <member name="M:GigeVision.Core.Models.FloatRegister.#ctor(GigeVision.Core.Models.IntSwissKnife,GigeVision.Core.Models.IntSwissKnife,GigeVision.Core.Models.IntSwissKnife,System.Nullable{GigeVision.Core.Enums.PhysicalUnit})">
+            <summary>
+            Main Method
+            </summary>
+            <param name="pValue"></param>
+            <param name="pMin"></param>
+            <param name="pMax"></param>
+            <param name="physicalUnit"></param>
+        </member>
+        <member name="T:GigeVision.Core.Models.IntegerRegister">
+            <summary>
+            Integer Register
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.IntegerRegister.Value">
+            <summary>
+            Integer Value
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.IntegerRegister.Min">
+            <summary>
+            Integer Minimum Value
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.IntegerRegister.Max">
+            <summary>
+            Integer Maximum Value
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.IntegerRegister.Inc">
+            <summary>
+            Integer Increment Value
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.IntegerRegister.MinParameter">
+            <summary>
+            Integer Minimum Parameter
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.IntegerRegister.MaxParameter">
+            <summary>
+            Integer Maximum Parameter
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.IntegerRegister.ValueParameter">
+            <summary>
+            Integer Value Parameter
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.IntegerRegister.Register">
+            <summary>
+            Camera Register has Integer address, length and access mode
+            </summary>
+        </member>
+        <member name="M:GigeVision.Core.Models.IntegerRegister.#ctor(System.Nullable{System.Double},System.Nullable{System.Double},System.Nullable{System.Double},System.Nullable{System.Double},GigeVision.Core.Models.CameraRegister,System.Object,GigeVision.Core.Models.IntSwissKnife,GigeVision.Core.Models.IntSwissKnife)">
+            <summary>
+            Main Method
+            </summary>
+            <param name="min"></param>
+            <param name="max"></param>
+            <param name="inc"></param>
+            <param name="value"></param>
+            <param name="register"></param>
+            <param name="pValue"></param>
+            <param name="pMin"></param>
+            <param name="pMax"></param>
+        </member>
+        <member name="T:GigeVision.Core.Models.IntSwissKnife">
+            <summary>
+            this is a mathematical calss for register parameter computations
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.IntSwissKnife.VariableParameter">
+            <summary>
+            Math Variable Parameter
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.IntSwissKnife.Formula">
+            <summary>
+            Formula Expression
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.IntSwissKnife.Value">
+            <summary>
+            Formula Result
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.IntSwissKnife.Gvcp">
+            <summary>
+            Gvcp is here for reading variable parameter (registers)
+            </summary>
+        </member>
+        <member name="M:GigeVision.Core.Models.IntSwissKnife.#ctor(GigeVision.Core.Interfaces.IGvcp,System.String,System.Object,System.Nullable{System.Double})">
+            <summary>
+            Main Method that calculate the given formula
+            </summary>
+            <param name="gvcp"></param>
+            <param name="formula"></param>
+            <param name="pVarible"></param>
+            <param name="value"></param>
+        </member>
+        <member name="M:GigeVision.Core.Models.IntSwissKnife.ExecuteFormula(GigeVision.Core.Models.IntSwissKnife)">
+            <summary>
+            this method calculates the formula and returns the result
+            </summary>
+            <param name="intSwissKnife"></param>
+            <returns></returns>
+        </member>
+        <member name="M:GigeVision.Core.Models.IntSwissKnife.Evaluate(System.String)">
+            <summary>
+            this method evaluate the formula expression
+            </summary>
+            <param name="expression"></param>
+            <returns></returns>
+        </member>
+        <member name="T:GigeVision.Core.Models.MaskedIntReg">
+            <summary>
+            different class for Integer Register type
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.MaskedIntReg.Address">
+            <summary>
+            Integer Register Address
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.MaskedIntReg.AddressParameter">
+            <summary>
+            Integer Register Address Parameter
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.MaskedIntReg.Length">
+            <summary>
+            Integer Register Length
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.MaskedIntReg.AccessMode">
+            <summary>
+            Integer Register Access Mode
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.MaskedIntReg.Value">
+            <summary>
+            Integer Register Value
+            </summary>
+        </member>
+        <member name="P:GigeVision.Core.Models.MaskedIntReg.Register">
+            <summary>
+            Camera Register has Integer address, length and access mode
+            </summary>
+        </member>
+        <member name="M:GigeVision.Core.Models.MaskedIntReg.#ctor(GigeVision.Core.Models.IntSwissKnife,System.String,System.UInt32,GigeVision.Core.Enums.CameraRegisterAccessMode)">
+            <summary>
+            Main Method
+            </summary>
+            <param name="pAddress"></param>
+            <param name="address"></param>
+            <param name="length"></param>
+            <param name="accessMode"></param>
+        </member>
         <member name="T:GigeVision.Core.Models.Camera">
             <summary>
-            Camera class is responsible to initilize the stream and receive the stream
+            Camera class is responsible to initialize the stream and receive the stream
             </summary>
         </member>
         <member name="F:GigeVision.Core.Models.Camera.frameReadyAction">
@@ -1544,7 +1969,7 @@
         </member>
         <member name="P:GigeVision.Core.Models.Gvcp.CameraIpChanged">
             <summary>
-            Event fired whenever camera ip changed: used to get registers
+            Event fired whenever camera IP changed: used to get registers
             </summary>
         </member>
         <member name="M:GigeVision.Core.Models.Gvcp.CheckCameraStatusAsync(System.String)">
@@ -1728,6 +2153,20 @@
             </summary>
             <returns>Command Status</returns>
         </member>
+        <member name="M:GigeVision.Core.Models.Gvcp.WriteMemory(System.Net.Sockets.UdpClient,GigeVision.Core.Models.GvcpCommand)">
+            <summary>
+            Write Memory
+            </summary>
+            <param name="socket"></param>
+            <param name="gvcpCommand"></param>
+            <returns></returns>
+        </member>
+        <member name="M:GigeVision.Core.Models.Gvcp.WriteMemoryAsync(System.String,System.UInt32)">
+            <summary>
+            Write Memory
+            </summary>
+            <returns>Command Status</returns>
+        </member>
         <member name="M:GigeVision.Core.Models.Gvcp.TakeControl(System.Boolean)">
             <summary>
             Takes control of the devices
@@ -1827,6 +2266,30 @@
             <summary>
             Start Rx thread using .Net
             </summary>
+        </member>
+        <member name="T:GigeVision.Core.Services.XmlHelper">
+            <summary>
+            this class helpes Gvcp to read all the registers from xml file
+            </summary>
+        </member>
+        <member name="M:GigeVision.Core.Services.XmlHelper.#ctor(System.Collections.Generic.Dictionary{System.String,GigeVision.Core.Models.CameraRegisterContainer}@,System.Collections.Generic.Dictionary{System.String,GigeVision.Core.Models.CameraRegisterGroup}@,System.String,System.Xml.XmlDocument)">
+            <summary>
+            the main method to read xml file
+            </summary>
+            <param name="registerDictionary"> Regiser Dictionary </param>
+            <param name="regisetrGroupDictionary"> Register Group Dictionary</param>
+            <param name="tagName"> First Parent Tag Name</param>
+            <param name="xmlDocument"> Xml File </param>
+        </member>
+        <member name="M:GigeVision.Core.Services.XmlHelper.#ctor(GigeVision.Core.Interfaces.IGvcp,System.Collections.Generic.Dictionary{System.String,GigeVision.Core.Models.CameraRegisterContainer}@,System.Collections.Generic.Dictionary{System.String,GigeVision.Core.Models.CameraRegisterGroup}@,System.String,System.Xml.XmlDocument)">
+            <summary>
+            the main method to read xml file
+            </summary>
+            <param name="gvcp"> Gvcp </param>
+            <param name="registerDictionary"> Regiser Dictionary </param>
+            <param name="regisetrGroupDictionary"> Register Group Dictionary</param>
+            <param name="tagName"> First Parent Tag Name</param>
+            <param name="xmlDocument"> Xml File </param>>
         </member>
     </members>
 </doc>

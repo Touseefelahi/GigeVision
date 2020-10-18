@@ -15,7 +15,7 @@ namespace GigeVision.Core.Models.Tests
         [TestMethod()]
         public void GenerateCommandTest()
         {
-            GvcpCommand gvcpCommand = new GvcpCommand(Converter.RegisterStringToByteArray(GvcpRegister.CCP.ToString("X")), GvcpCommandType.Read);
+            GvcpCommand gvcpCommand = new GvcpCommand(Converter.RegisterStringToByteArray(GvcpRegister.CCP.ToString("X")), GvcpCommandType.ReadReg);
         }
 
         [TestMethod()]

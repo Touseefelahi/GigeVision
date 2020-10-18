@@ -1,6 +1,7 @@
 ﻿using GigeVision.Core.Enums;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace GigeVision.Core.Models
 {
@@ -66,6 +67,11 @@ namespace GigeVision.Core.Models
         public List<uint> RegisterValues { get; set; }
 
         /// <summary>
+        /// Memory Value
+        /// </summary>
+        public byte[] MemoryValue { get; set; }
+
+        /// <summary>
         /// acknowledgement id
         /// </summary>
         public ushort AcknowledgementID { get; set; }
@@ -83,7 +89,7 @@ namespace GigeVision.Core.Models
         /// <summary>
         /// GEV_Status
         /// </summary>
-        public GvcpStatus Status { get; set; }
+        public GvcpStatus Status { get; set; } = GvcpStatus.GEV_STATUS_ERROR;
 
         /// <summary>
         /// Sets the reply
@@ -131,10 +137,10 @@ namespace GigeVision.Core.Models
                     case GvcpCommandType.Discovery:
                         break;
 
-                    case GvcpCommandType.Read:
+                    case GvcpCommandType.ReadReg:
                         break;
 
-                    case GvcpCommandType.ReadAck:
+                    case GvcpCommandType.ReadRegAck:
                         if (buffer?.Length < 13)//Single Register reply
                         {
                             RegisterValue = (uint)((buffer[8] << 24) | (buffer[9] << 16) | (buffer[10] << 8) | (buffer[11]));
@@ -154,10 +160,16 @@ namespace GigeVision.Core.Models
                         }
                         break;
 
-                    case GvcpCommandType.Write:
+                    case GvcpCommandType.WriteReg:
                         break;
 
-                    case GvcpCommandType.WriteAck:
+                    case GvcpCommandType.WriteRegAck:
+                        break;
+
+                    case GvcpCommandType.ReadMemAck:
+                        MemoryValue = new byte[buffer.Length - 12];
+
+                        Array.Copy(buffer, 12, MemoryValue, 0, buffer.Length - 12);
                         break;
 
                     case GvcpCommandType.Invalid:

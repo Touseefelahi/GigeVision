@@ -182,10 +182,10 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="GigeVision.Core">
-      <Version>1.2.5</Version>
+      <Version>1.2.7</Version>
     </PackageReference>
     <PackageReference Include="Stira.WpfCore">
-      <Version>1.0.2</Version>
+      <Version>1.0.1</Version>
     </PackageReference>
     <PackageReference Include="Stira.WpfFlatStyle">
       <Version>1.5.0</Version>
