@@ -1140,11 +1140,6 @@
             GEV_Status
             </summary>
         </member>
-        <member name="P:GigeVision.Core.Models.GvcpReply.CameraRegisterContainer">
-            <summary>
-            Camera Register Container
-            </summary>
-        </member>
         <member name="M:GigeVision.Core.Models.GvcpReply.SetReply(System.Byte[])">
             <summary>
             Sets the reply
@@ -1522,7 +1517,7 @@
         </member>
         <member name="T:GigeVision.Core.Models.Camera">
             <summary>
-            Camera class is responsible to initilize the stream and receive the stream
+            Camera class is responsible to initialize the stream and receive the stream
             </summary>
         </member>
         <member name="F:GigeVision.Core.Models.Camera.port">
@@ -1797,7 +1792,7 @@
         </member>
         <member name="P:GigeVision.Core.Models.Gvcp.CameraIpChanged">
             <summary>
-            Event fired whenever camera ip changed: used to get registers
+            Event fired whenever camera IP changed: used to get registers
             </summary>
         </member>
         <member name="M:GigeVision.Core.Models.Gvcp.CheckCameraStatusAsync(System.String)">
@@ -1902,13 +1897,6 @@
             Read Register
             </summary>
             <returns>Command Reply</returns>
-        </member>
-        <member name="M:GigeVision.Core.Models.Gvcp.ReadRegisterAsync(GigeVision.Core.Models.CameraRegisterContainer)">
-            <summary>
-            Read Register Container
-            </summary>
-            <param name="cameraRegisterContainer"></param>
-            <returns></returns>
         </member>
         <member name="M:GigeVision.Core.Models.Gvcp.WriteRegisterAsync(System.Net.Sockets.UdpClient,System.Byte[],System.UInt32)">
             <summary>
