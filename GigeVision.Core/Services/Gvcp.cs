@@ -72,11 +72,16 @@ namespace GigeVision.Core.Models
                             catch (Exception)
                             {
                             }
-
-                            ControlSocket = new UdpClient(cameraIP, PortGvcp);
-                            ControlSocket.Client.ReceiveTimeout = 1000;
-                            ControlSocket.Client.SendTimeout = 500;
-                            CameraIpChanged?.Invoke(null, null);
+                            try
+                            {
+                                ControlSocket = new UdpClient(cameraIP, PortGvcp);
+                                ControlSocket.Client.ReceiveTimeout = 1000;
+                                ControlSocket.Client.SendTimeout = 500;
+                                CameraIpChanged?.Invoke(null, null);
+                            }
+                            catch (Exception)
+                            {
+                            }
                         }
                         catch (Exception)
                         {
@@ -346,6 +351,7 @@ namespace GigeVision.Core.Models
             //loading the xml file
             XmlDocument xml = new XmlDocument();
             xml.Load(await GetXmlFileFromCamera(cameraIp).ConfigureAwait(false));
+
             if (RegistersDictionary.Count > 0)
             {
                 RegistersDictionary.Clear();
@@ -468,11 +474,6 @@ namespace GigeVision.Core.Models
                     //connecting to the server
                     client.Connect(IP, PortGvcp);
 
-                    byte[] commandCCP = new byte[] { 0x42, 0x00, 0x00, 0x82, 0x00, 0x08, 0x10, 0x01, 0x00, 0x00, 0x0a, 0x00, 0x00, 0x00, 0x00, 0x02 };
-
-                    //sending the packet
-                    //  client.Send(commandCCP, commandCCP.Length);
-                    Task.Delay(100);
                     //praparing the header for sending
                     byte[] gvcpHeader = GetReadMessageHeader(0x0200); //GevFirstURL = 0x0200
 
@@ -495,10 +496,10 @@ namespace GigeVision.Core.Models
 
                     if (lastPacket % 4 != 0)
                     {
-                        fileLength = fileLength - lastPacket;
+                        fileLength -= lastPacket;
                         double tempLastPcaket = ((double)lastPacket / 4);
                         lastPacket = (int)(Math.Ceiling(tempLastPcaket) * 4);
-                        fileLength = fileLength + lastPacket;
+                        fileLength += lastPacket;
                     }
                     byte[] encodedZipFile = new byte[fileLength];
 
@@ -537,9 +538,9 @@ namespace GigeVision.Core.Models
                     }
                     return encodedZipFile;
                 }
-                catch (Exception ex)
+                catch
                 {
-                    throw ex;
+                    throw;
                 }
             }).ConfigureAwait(false);
         }
@@ -550,6 +551,7 @@ namespace GigeVision.Core.Models
             Stream unZipFile = new MemoryStream();
 
             //loop to get the zip file data in bytes
+
             var encodedZipFile = await GetRawXmlFileFromCamera(ip).ConfigureAwait(false);
             //converting the zip file from bytes to stream
             if (encodedZipFile.Length != 0)
@@ -567,13 +569,14 @@ namespace GigeVision.Core.Models
                         }
                     }
                 }
-                catch (Exception ex)
+                catch
                 {
                     throw;
                 }
             }
 
             gvcpRequestID++;
+
             return unZipFile;
         }
 
