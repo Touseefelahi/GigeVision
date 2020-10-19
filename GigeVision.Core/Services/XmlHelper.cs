@@ -235,7 +235,7 @@ namespace GigeVision.Core.Services
 
                 foreach (XmlNode child in swissKnifNode.ChildNodes)
                 {
-                    //child could be ethier pVariable or Formula
+                    //child could be either pVariable or Formula
                     var nodeName = child.Attributes["Name"] != null ? child.Attributes["Name"].Value : string.Empty;
                     if (child.Name.Equals("pVariable"))
                     {
@@ -243,9 +243,7 @@ namespace GigeVision.Core.Services
                         var pVariableValue = ReadPNode(swissKnifNode.ParentNode, pVariable);
 
                         if (pVariableValue is null)
-                        {
                             pVariableValue = ReadPNode(LookForChildInsideAllParents(XmlDocument.DocumentElement, pVariable).ParentNode, pVariable);
-                        }
 
                         //pVariable could be IntSwissKnife, SwissKnife, Integer, IntReg, Float, FloatReg,
                         if (pVariableValue is IntSwissKnife intSwissKnife)
@@ -276,12 +274,15 @@ namespace GigeVision.Core.Services
 
                 foreach (XmlNode child in intSwissKnifNode.ChildNodes)
                 {
-                    //child could be ethier pVariable or Formula
+                    //child could be either pVariable or Formula
                     var nodeName = child.Attributes["Name"] != null ? child.Attributes["Name"].Value : string.Empty;
                     if (child.Name.Equals("pVariable"))
                     {
                         var pVariable = child.InnerText;
                         var pVariableValue = ReadPNode(intSwissKnifNode.ParentNode, pVariable);
+
+                        if (pVariableValue is null)
+                            pVariableValue = ReadPNode(LookForChildInsideAllParents(XmlDocument.DocumentElement, pVariable).ParentNode, pVariable);
 
                         //pVariable could be IntSwissKnife, SwissKnife, Integer, IntReg, Float, FloatReg,
                         if (pVariableValue is IntSwissKnife intSwissKnife)
@@ -312,11 +313,9 @@ namespace GigeVision.Core.Services
                     return new IntSwissKnife(Gvcp, formula, null);
                 }
             }
-
-            if (GetNodeByAttirbuteValue(parentNode, "Integer", pNode) is XmlNode integerNode)
+            else if (GetNodeByAttirbuteValue(parentNode, "Integer", pNode) is XmlNode integerNode)
                 return GetCameraRegisterContainerFromNode(integerNode);
-
-            if (GetNodeByAttirbuteValue(parentNode, "MaskedIntReg", pNode) is XmlNode maskedIntRegNode)
+            else if (GetNodeByAttirbuteValue(parentNode, "MaskedIntReg", pNode) is XmlNode maskedIntRegNode)
             {
                 var pAddress = maskedIntRegNode.SelectSingleNode(NamespacePrefix + "pAddress", XmlNamespaceManager) != null ?
                     maskedIntRegNode.SelectSingleNode(NamespacePrefix + "pAddress", XmlNamespaceManager).InnerText : null;
@@ -327,6 +326,7 @@ namespace GigeVision.Core.Services
                 var accessMode = (CameraRegisterAccessMode)Enum.Parse(typeof(CameraRegisterAccessMode), maskedIntRegNode.SelectSingleNode(NamespacePrefix + "AccessMode", XmlNamespaceManager).InnerText);
                 return new MaskedIntReg(pAddressValue, address, length, accessMode);
             }
+
             return null;
         }
 
@@ -399,6 +399,7 @@ namespace GigeVision.Core.Services
                             case "pMax":
                                 pNode = node.InnerText;
                                 pMax = ReadPNode(xmlNode.ParentNode, pNode) as IntSwissKnife;
+
                                 break;
 
                             case "Inc":

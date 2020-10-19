@@ -1,5 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using GigeVision.Wpf.ViewModels;
+using DeviceControl.Wpf.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Text;

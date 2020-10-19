@@ -32,32 +32,45 @@ namespace GigeVision.Core.Models.Tests
         public void StringFormulaToMathematicalExpression()
         {
             Dictionary<string, uint> registers = new Dictionary<string, uint>();
-            var formula = "((varible1/ varible2)+2)*3)";
-            registers.Add("varible1", 100);
-            registers.Add("varible2", 5);
+            //var formula = "((varible1/ varible2)+2)*3)";
+            var formula = "(VAR_GETMINMAXVERTSIZE & 0xFFFF0000) >> 16";
+            registers.Add("VAR_GETMINMAXVERTSIZE", 749600);
+
+            //registers.Add("varible1", 100);
+            //registers.Add("varible2", 5);
+
             //var formula = "(SEL = 0) ? 0x0000B824 : ((SEL = 1) ? 0x0000B82C : (0xFFFFFFFF))";
             //registers.Add("SEL", 0);
 
-            formula = formula.Replace(" ", "");
+            var newFormula = formula.Replace(" ", "");
+            int counter = 0;
             foreach (var character in formula.ToCharArray())
             {
-                List<char> opreations = new List<char> { '(', '+', '-', '/', '*', '=', '?', ':', ')' };
+                List<char> opreations = new List<char> { '(', '+', '-', '/', '*', '=', '?', ':', ')', '&', '>' };
                 if (opreations.Where(x => x == character).Count() > 0)
                 {
-                    formula = formula.Replace($"{character}", $" {character} ");
+                    if (counter > 0)
+                        newFormula = newFormula.Replace($"{character}", $"{character}");
+                    else
+                        newFormula = newFormula.Replace($"{character}", $" {character} ");
+                    counter++;
+                }
+                else
+                {
+                    counter = 0;
                 }
             }
-            foreach (var word in formula.Split())
+            foreach (var word in newFormula.Split())
             {
                 foreach (var register in registers)
                 {
                     if (register.Key.Equals(word))
-                        formula = formula.Replace(word, $"{register.Value}");
+                        newFormula = newFormula.Replace(word, $"{register.Value}");
                 }
             }
 
-            //object can be ethier double for register value  or string for register address
-            var r = Evaluate(formula);
+            //object can be either double for register value  or string for register address
+            var r = Evaluate(newFormula);
         }
 
         private object Evaluate(string expression)
@@ -99,6 +112,10 @@ namespace GigeVision.Core.Models.Tests
                     else if (word.Equals("=")) opreators.Push(word);
                     else if (word.Equals("?")) opreators.Push(word);
                     else if (word.Equals(":")) opreators.Push(word);
+                    else if (word.Equals("&"))
+                        opreators.Push(word);
+                    else if (word.Equals(">"))
+                        opreators.Push(word);
                     else if (word.Equals(")"))
                     {
                         int count = opreators.Count;
@@ -110,7 +127,26 @@ namespace GigeVision.Core.Models.Tests
                             else if (opreator.Equals("-")) value = values.Pop() - value;
                             else if (opreator.Equals("*")) value = values.Pop() * value;
                             else if (opreator.Equals("/")) value = values.Pop() / value;
-                            else if (opreator.Equals("=")) if (value == values.Pop()) tempBoolean = true;
+                            else if (opreator.Equals("="))
+                            {
+                                if (value == values.Pop()) tempBoolean = true;
+                            }
+                            else if (opreator.Equals("&"))
+                            {
+                                var byte1 = Int32.Parse(value.ToString());
+                                var byte2 = Int32.Parse(tempAddress.Substring(2), System.Globalization.NumberStyles.HexNumber);
+                                value = (byte1 & byte2);
+                                tempAddress = string.Empty;
+                            }
+                            else if (opreator.Equals(">"))
+                            {
+                                if (opreators.Peek().Equals(">"))
+                                {
+                                    opreators.Pop();
+                                    count--;
+                                    value = ((int)values.Pop() >> (byte)value);
+                                }
+                            }
 
                             values.Push(value);
 
