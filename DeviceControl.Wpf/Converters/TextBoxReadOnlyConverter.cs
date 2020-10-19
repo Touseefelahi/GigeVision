@@ -10,9 +10,9 @@ namespace DeviceControl.Wpf.Converters
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             if ((CameraRegisterAccessMode)value == CameraRegisterAccessMode.RO)
-                return true;
+                return false;
 
-            return false;
+            return true;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
