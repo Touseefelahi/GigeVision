@@ -47,7 +47,7 @@ namespace GigeVision.Core.Models
             //Prepare Expression
 
             Formula = Formula.Replace(" ", "");
-            List<char> opreations = new List<char> { '(', '+', '-', '/', '*', '=', '?', ':', ')' };
+            List<char> opreations = new List<char> { '(', '+', '-', '/', '*', '=', '?', ':', ')', '>', '&' };
             foreach (var character in opreations)
             {
                 if (opreations.Where(x => x == character).Count() > 0)
@@ -59,47 +59,6 @@ namespace GigeVision.Core.Models
             ExecuteFormula(this).ConfigureAwait(false);
         }
 
-        //private async Task<object> ReadRegisterParameter(object pVariable)
-        //{
-        //    double? value = null;
-
-        //    if (pVariable is IntSwissKnife intSwissKnife)
-        //    {
-        //        var formulaValue = await ExecuteFormula(intSwissKnife);
-        //        if (formulaValue is string addressValue)
-        //            value = (await ReadRegisterAsync(addressValue)).RegisterValue;
-        //        if (formulaValue is double doubleValue)
-        //            value = doubleValue;
-        //    }
-
-        //    if (pVariable is CameraRegister cameraRegister)
-        //        value = (await ReadRegisterAsync(cameraRegister.Address)).RegisterValue;
-
-        //    return value;
-        //}
-
-        //private async Task ReadIntSwissKnifeVariables(IntSwissKnife intSwissKnife)
-        //{
-        //    if (intSwissKnife.VariableParameter is Dictionary<string, string> pVariablesCameraRegister)
-        //    {
-        //        foreach (var pVariable in pVariablesCameraRegister)
-        //        {
-        //            RegistersDictionary.Where(x => x.Value.Register != null).Where(x => x.Value.Register.Address == pVariable.Value).First().Value.Register.Value = (await ReadRegisterAsync(pVariable.Value)).RegisterValue;
-        //        }
-        //    }
-        //    else if (intSwissKnife.VariableParameter is Dictionary<string, IntSwissKnife> pVariableIntSwissKnifeDictionary)
-        //    {
-        //        foreach (var item in pVariableIntSwissKnifeDictionary.Values)
-        //        {
-        //            await ReadIntSwissKnifeVariables(item);
-        //        }
-        //    }
-        //    else if (intSwissKnife.VariableParameter is IntSwissKnife pVariableIntSwissKnife)
-        //    {
-        //        await ReadIntSwissKnifeVariables(pVariableIntSwissKnife);
-        //    }
-        //}
-
         /// <summary>
         /// this method calculates the formula and returns the result
         /// </summary>
@@ -109,7 +68,7 @@ namespace GigeVision.Core.Models
         {
             if (intSwissKnife.VariableParameter is Dictionary<string, string> pVariableCameraAddress)
             {
-                foreach (var register in pVariableCameraAddress)
+                foreach (KeyValuePair<string, string> register in pVariableCameraAddress)
                 {
                     string tempWord = string.Empty;
                     string tempValue = string.Empty;
@@ -118,7 +77,7 @@ namespace GigeVision.Core.Models
                         if (register.Key.Equals(word) && !tempWord.Equals(word))
                         {
                             tempWord = word;
-                            tempValue = $"{(Gvcp.ReadRegisterAsync(register.Value).Result.RegisterValue)}";
+                            tempValue = $"{(await Gvcp.ReadRegisterAsync(register.Value)).RegisterValue}";
                             intSwissKnife.Formula = intSwissKnife.Formula.Replace(word, tempValue);
                         }
                         else if (word.Equals(tempWord) && tempValue != string.Empty)
@@ -161,7 +120,7 @@ namespace GigeVision.Core.Models
                             else if (!tempWord.Equals(word))
                             {
                                 tempWord = word;
-                                tempValue = $"{(Gvcp.ReadRegisterAsync(pVarible.Value.Register.Address).Result.RegisterValue)}";
+                                tempValue = $"{(await Gvcp.ReadRegisterAsync(pVarible.Value.Register.Address)).RegisterValue}";
                                 intSwissKnife.Formula = intSwissKnife.Formula.Replace(word, tempValue);
                             }
                             else if (word.Equals(tempWord) && tempValue != string.Empty)
@@ -225,6 +184,12 @@ namespace GigeVision.Core.Models
                     else if (word.Equals("*")) opreators.Push(word);
                     else if (word.Equals("/")) opreators.Push(word);
                     else if (word.Equals("=")) opreators.Push(word);
+                    else if (word.Equals("?")) opreators.Push(word);
+                    else if (word.Equals(":")) opreators.Push(word);
+                    else if (word.Equals("&"))
+                        opreators.Push(word);
+                    else if (word.Equals(">"))
+                        opreators.Push(word);
                     else if (word.Equals(")"))
                     {
                         int count = opreators.Count;
@@ -238,8 +203,23 @@ namespace GigeVision.Core.Models
                             else if (opreator.Equals("/")) value = values.Pop() / value;
                             else if (opreator.Equals("="))
                             {
-                                if (value == values.Pop())
-                                    tempBoolean = true;
+                                if (value == values.Pop()) tempBoolean = true;
+                            }
+                            else if (opreator.Equals("&"))
+                            {
+                                var byte1 = Int32.Parse(value.ToString());
+                                var byte2 = Int32.Parse(tempAddress.Substring(2), System.Globalization.NumberStyles.HexNumber);
+                                value = (byte1 & byte2);
+                                tempAddress = string.Empty;
+                            }
+                            else if (opreator.Equals(">"))
+                            {
+                                if (opreators.Peek().Equals(">"))
+                                {
+                                    opreators.Pop();
+                                    count--;
+                                    value = ((int)values.Pop() >> (byte)value);
+                                }
                             }
 
                             values.Push(value);
@@ -251,7 +231,6 @@ namespace GigeVision.Core.Models
             }
             if (tempAddress != string.Empty)
                 return tempAddress;
-
             return values.Pop();
         }
     }
