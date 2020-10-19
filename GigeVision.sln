@@ -26,6 +26,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GigeVision.WpfTests", "Gige
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeviceControl.Wpf", "DeviceControl.Wpf\DeviceControl.Wpf.csproj", "{6EBD3983-8BB0-4FD4-B1EC-04335D7AE962}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeviceControl.Test.Wpf", "DeviceControl.Test.Wpf\DeviceControl.Test.Wpf.csproj", "{A36160A9-16E4-4CE7-9DB1-19D4807314CA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -119,6 +121,18 @@ Global
 		{6EBD3983-8BB0-4FD4-B1EC-04335D7AE962}.Release|x64.Build.0 = Release|Any CPU
 		{6EBD3983-8BB0-4FD4-B1EC-04335D7AE962}.Release|x86.ActiveCfg = Release|Any CPU
 		{6EBD3983-8BB0-4FD4-B1EC-04335D7AE962}.Release|x86.Build.0 = Release|Any CPU
+		{A36160A9-16E4-4CE7-9DB1-19D4807314CA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A36160A9-16E4-4CE7-9DB1-19D4807314CA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A36160A9-16E4-4CE7-9DB1-19D4807314CA}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{A36160A9-16E4-4CE7-9DB1-19D4807314CA}.Debug|x64.Build.0 = Debug|Any CPU
+		{A36160A9-16E4-4CE7-9DB1-19D4807314CA}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{A36160A9-16E4-4CE7-9DB1-19D4807314CA}.Debug|x86.Build.0 = Debug|Any CPU
+		{A36160A9-16E4-4CE7-9DB1-19D4807314CA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A36160A9-16E4-4CE7-9DB1-19D4807314CA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A36160A9-16E4-4CE7-9DB1-19D4807314CA}.Release|x64.ActiveCfg = Release|Any CPU
+		{A36160A9-16E4-4CE7-9DB1-19D4807314CA}.Release|x64.Build.0 = Release|Any CPU
+		{A36160A9-16E4-4CE7-9DB1-19D4807314CA}.Release|x86.ActiveCfg = Release|Any CPU
+		{A36160A9-16E4-4CE7-9DB1-19D4807314CA}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -132,6 +146,7 @@ Global
 		{D66C9912-F614-4F53-980A-EE63BC3BDEA9} = {0307491D-B8FC-42AE-8EAB-69D2C072973B}
 		{60740260-6D52-4F9A-AAB7-4076B349EEC0} = {0307491D-B8FC-42AE-8EAB-69D2C072973B}
 		{6EBD3983-8BB0-4FD4-B1EC-04335D7AE962} = {B120F0DB-D7D6-4ABA-845B-32117EB4B1B2}
+		{A36160A9-16E4-4CE7-9DB1-19D4807314CA} = {0307491D-B8FC-42AE-8EAB-69D2C072973B}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C6692468-3D71-4CF6-BBB2-3E938FFB2E6F}
