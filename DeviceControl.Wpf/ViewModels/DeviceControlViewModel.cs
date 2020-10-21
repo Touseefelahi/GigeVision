@@ -39,7 +39,7 @@ namespace DeviceControl.Wpf.ViewModels
 
         public bool IsBusy { get; set; }
 
-        public bool IsExpanded { get; set; } = true;
+        public bool IsExpanded { get; set; } = false;
 
         public CameraRegisterDTO SelectedRegister
         {
@@ -187,14 +187,23 @@ namespace DeviceControl.Wpf.ViewModels
             {
                 //Look for Child (register)
                 var isNull = true;
-                if (FilteredRegistersDictionary.ContainsKey(categoryFeature))
+                if (Gvcp.RegistersDictionary.ContainsKey(categoryFeature))
                 {
                     try
                     {
-                        if (FilteredRegistersDictionary[categoryFeature].Type == CameraRegisterType.StringReg)
-                            FilteredRegistersDictionary[categoryFeature].Register.Value = Encoding.ASCII.GetString((await Gvcp.ReadMemoryAsync(FilteredRegistersDictionary[categoryFeature].Register.Address)).MemoryValue);
+                        if (Gvcp.RegistersDictionary[categoryFeature].Type == CameraRegisterType.StringReg)
+                            Gvcp.RegistersDictionary[categoryFeature].Register.Value = Encoding.ASCII.GetString((await Gvcp.ReadMemoryAsync(Gvcp.RegistersDictionary[categoryFeature].Register.Address)).MemoryValue);
 
-                        cameraRegisterContainer = FilteredRegistersDictionary[categoryFeature];
+                        cameraRegisterContainer = Gvcp.RegistersDictionary[categoryFeature];
+                        if (cameraRegisterContainer.Register is null)
+                        {
+                            if (cameraRegisterContainer.TypeValue is IntegerRegister integerRegister)
+                                cameraRegisterContainer.Register = new CameraRegister(null, 0, CameraRegisterAccessMode.RO, integerRegister.Value);
+                        }
+
+                        if (cameraRegisterContainer.Type == CameraRegisterType.Enumeration && cameraRegisterContainer.Register is null)
+                            cameraRegisterContainer.Register = new CameraRegister(null, 0, CameraRegisterAccessMode.RO);
+
                         isNull = false;
                     }
                     catch
