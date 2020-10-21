@@ -9,11 +9,18 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d"
              xmlns:local="clr-namespace:DeviceControl.Wpf.Style"
-             d:DesignHeight="400" d:DesignWidth="300">
+             d:DesignHeight="550" d:DesignWidth="270">
+
+    <i:Interaction.Triggers>
+        <i:EventTrigger EventName="Loaded">
+            <i:InvokeCommandAction Command="{Binding LoadedWindowCommand}" />
+        </i:EventTrigger>
+    </i:Interaction.Triggers>
 
     <!--Resources-->
     <UserControl.Resources>
         <!--Converters-->
+
         <converters:TextBoxReadOnlyConverter x:Key="AccessModeConverter" />
         <converters:CameraRegisterVisibilityConverter x:Key="CameraRegisterVisibilityConverter" />
         <converters:ListCheckConverter x:Key="ListCheckConverter" />
@@ -33,16 +40,18 @@
 
         <!--Style-->
 
-        <Style TargetType="DataGrid" x:Key="DataGridStyle">
+        <Style TargetType="DataGrid">
             <Setter Property="FontWeight" Value="Normal" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="BorderBrush" Value="#ccc" />
             <Setter Property="HorizontalGridLinesBrush" Value="#ccc" />
             <Setter Property="VerticalGridLinesBrush" Value="#ccc" />
+            <Setter Property="VerticalScrollBarVisibility" Value="Disabled" />
+            <Setter Property="HorizontalScrollBarVisibility" Value="Disabled" />
         </Style>
 
         <!--TreeView Style-->
-        <Style  TargetType="TreeView" x:Key="TreeViewStyle">
+        <Style  TargetType="TreeView">
             <Setter Property="OverridesDefaultStyle" Value="True" />
             <Setter Property="SnapsToDevicePixels" Value="True" />
             <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto" />
@@ -51,9 +60,9 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="TreeView">
                         <Border Name="Border"  Background="{TemplateBinding Background}">
-                            <ScrollViewer>
+                            <UniformGrid HorizontalAlignment="Stretch">
                                 <ItemsPresenter />
-                            </ScrollViewer>
+                            </UniformGrid>
                         </Border>
                     </ControlTemplate>
                 </Setter.Value>
@@ -83,31 +92,22 @@
                                     <VisualState x:Name="Indeterminate" />
                                 </VisualStateGroup>
                             </VisualStateManager.VisualStateGroups>
-                            <Path x:Name="Collapsed" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0" Data="M20 38 L20 36 L22 36 L22 34 L20 34 L20 32 L18 32 L18 34 L16 34 L16 36 L18 36 L18 38 Z" Stretch="Uniform">
-                                <Path.Fill>
-                                    <SolidColorBrush Color="Green" />
-                                </Path.Fill>
-                            </Path>
-                            <Path x:Name="Expanded"  HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0" Data="M22 36 L22 34 L16 34 L16 36 Z" Visibility="Hidden" Stretch="Uniform">
-                                <Path.Fill>
-                                    <SolidColorBrush Color="DarkRed" />
-                                </Path.Fill>
-                            </Path>
+                            <Path x:Name="Collapsed" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0" Data="M20 38 L20 36 L22 36 L22 34 L20 34 L20 32 L18 32 L18 34 L16 34 L16 36 L18 36 L18 38 Z" Stretch="Uniform" Fill="{TemplateBinding Foreground}" />
+                            <Path x:Name="Expanded"  HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0" Data="M22 36 L22 34 L16 34 L16 36 Z" Visibility="Hidden" Stretch="Uniform" Fill="{TemplateBinding Foreground}" />
                         </Grid>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
 
-        <Style TargetType="TreeViewItem" x:Key="TreeViewItemStyle">
+        <Style TargetType="TreeViewItem">
             <Setter Property="HorizontalContentAlignment" Value="Left" />
             <Setter Property="HorizontalAlignment" Value="Stretch" />
             <Setter Property="VerticalContentAlignment" Value="{Binding Path=VerticalContentAlignment, RelativeSource={RelativeSource AncestorType={x:Type ItemsControl}}}" />
             <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" />
-            <Setter Property="FocusVisualStyle" Value="{StaticResource TreeViewItemFocusVisual}" />
-            <Setter Property="Width" Value="{Binding Path=ActualWidth, RelativeSource={RelativeSource AncestorType={x:Type ScrollViewer}, Mode=FindAncestor}}" />
-            <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+            <Setter Property="Width" Value="{Binding Path=ActualWidth, RelativeSource={RelativeSource AncestorType={x:Type UniformGrid}, Mode=FindAncestor,AncestorLevel=3}}" />
             <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="IsExpanded" Value="{Binding  RelativeSource={RelativeSource AncestorType=UserControl}, Path=DataContext.IsExpanded}" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="TreeViewItem">
@@ -128,7 +128,7 @@
                                     <VisualState x:Name="Collapsed" />
                                 </VisualStateGroup>
                             </VisualStateManager.VisualStateGroups>
-                            <Border x:Name="Bd"   Background="#fff"  BorderThickness="0" Padding="3, 2 , 3 , 2" Margin="0">
+                            <Border x:Name="Bd"   Background="{TemplateBinding Background}"  BorderThickness="0" Padding="3, 2 , 3 , 2" Margin="0">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="auto" />
@@ -218,7 +218,9 @@
                     <Setter Property="ContentTemplate" TargetName="InputType">
                         <Setter.Value>
                             <DataTemplate>
-                                <ComboBox Grid.Column="1" ItemsSource="{Binding CameraRegisterContainer.TypeValue.Entry}" DisplayMemberPath="Key"  SelectedValue="{Binding CameraRegisterContainer.Register.Value, UpdateSourceTrigger=PropertyChanged}" SelectedIndex="{Binding Path=Item.CameraRegisterContainer.TypeValue, RelativeSource={RelativeSource AncestorLevel=1,AncestorType=DataGridRow}, Converter={StaticResource EnumerationIndexConverter}, Mode=OneWay}">
+                                <ComboBox  Grid.Column="1" ItemsSource="{Binding CameraRegisterContainer.TypeValue.Entry}" DisplayMemberPath="Key"  SelectedValue="{Binding CameraRegisterContainer.Register.Value, UpdateSourceTrigger=PropertyChanged}"
+                                           SelectedIndex="{Binding Path=Item.CameraRegisterContainer.TypeValue, RelativeSource={RelativeSource AncestorLevel=1,AncestorType=DataGridRow}, Converter={StaticResource EnumerationIndexConverter}, Mode=OneWay}"
+                                                                               IsEnabled="{Binding CameraRegisterContainer.Register.AccessMode, Converter={StaticResource AccessModeConverter}}">
                                     <i:Interaction.Triggers>
                                         <i:EventTrigger EventName="SelectionChanged">
                                             <!--<i:InvokeCommandAction Command="{Binding Path=Item.SetValueCommand, RelativeSource={RelativeSource AncestorLevel=2,AncestorType=DataGridRow}, Converter={StaticResource EnumerationIndexConverter}}" />-->
@@ -260,9 +262,7 @@
         <HierarchicalDataTemplate  x:Key="Registers" ItemsSource="{Binding Child}">
 
             <!--Placeholder for Triggers Conditions-->
-            <StackPanel Orientation="Vertical">
-                <ContentControl  x:Name="ContentControl" Content="{Binding}" />
-            </StackPanel>
+            <ContentControl  x:Name="ContentControl" Content="{Binding}" />
 
             <HierarchicalDataTemplate.Triggers>
                 <!--Check if current object  is parent-->
@@ -285,12 +285,12 @@
                             <DataTemplate>
                                 <TreeViewItem Header="{Binding Name}">
                                     <DataGrid   AutoGenerateColumns="False"  IsReadOnly="True" HeadersVisibility="None"  ItemsSource="{Binding CameraRegisters, Mode=OneWay}" SelectionMode="Single" SelectedItem="{Binding DataContext.SelectedRegister, RelativeSource={RelativeSource AncestorType=UserControl}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
-                                        <!--<DataGrid.Resources>
+                                        <DataGrid.Resources>
                                             <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#333" />
                                             <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="White" />
                                             <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="White" />
                                             <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="Black" />
-                                        </DataGrid.Resources>-->
+                                        </DataGrid.Resources>
 
                                         <DataGrid.Columns>
                                             <DataGridTextColumn  Binding="{Binding CameraRegisterContainer.Name,Mode=OneWay}" Width="*" />
@@ -342,12 +342,12 @@
 
                                     <TreeViewItem Header="{Binding Name}">
                                         <DataGrid   AutoGenerateColumns="False"  IsReadOnly="True" HeadersVisibility="None"  ItemsSource="{Binding CameraRegisters, Mode=OneWay}" SelectionMode="Single" SelectedItem="{Binding DataContext.SelectedRegister, RelativeSource={RelativeSource AncestorType=UserControl}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
-                                            <!--<DataGrid.Resources>
+                                            <DataGrid.Resources>
                                                 <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#333" />
                                                 <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="White" />
                                                 <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="#ccc" />
                                                 <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="Black" />
-                                            </DataGrid.Resources>-->
+                                            </DataGrid.Resources>
                                             <DataGrid.Columns>
                                                 <DataGridTextColumn Binding="{Binding CameraRegisterContainer.Name,Mode=OneWay}" Width="*" />
                                                 <DataGridTemplateColumn CellTemplate="{StaticResource InputsTemplate}" Width="150" />
@@ -384,15 +384,15 @@
                                 <StackPanel>
 
                                     <TreeViewItem Header="{Binding Name}">
-                                        <TreeView Style="{x:Null}" ItemTemplate="{StaticResource Registers}" ItemsSource="{Binding Child}"
-                                                      Background="Transparent"  BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" />
+                                        <TreeView ItemTemplate="{StaticResource Registers}"  ItemsSource="{Binding Child}"
+                                                      Background="Transparent"  BorderThickness="0" />
                                         <DataGrid   AutoGenerateColumns="False"  IsReadOnly="True" HeadersVisibility="None"  ItemsSource="{Binding CameraRegisters, Mode=OneWay}" SelectionMode="Single" SelectedItem="{Binding DataContext.SelectedRegister, RelativeSource={RelativeSource AncestorType=UserControl}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
-                                            <!--<DataGrid.Resources>
+                                            <DataGrid.Resources>
                                                 <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#333" />
                                                 <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="White" />
                                                 <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="#ccc" />
                                                 <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="Black" />
-                                            </DataGrid.Resources>-->
+                                            </DataGrid.Resources>
                                             <DataGrid.Columns>
                                                 <DataGridTextColumn Binding="{Binding CameraRegisterContainer.Name,Mode=OneWay}" Width="*" />
                                                 <DataGridTemplateColumn CellTemplate="{StaticResource InputsTemplate}" Width="150" />
@@ -425,54 +425,68 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="30" />
             <RowDefinition Height="*" />
-            <RowDefinition Height="120" />
+            <RowDefinition Height="140" />
         </Grid.RowDefinitions>
         <!--Header-->
-        <Border Grid.Row="0">
+        <Border Grid.Row="0" Background="#eee" BorderBrush="#aaa" BorderThickness="0 0 0 1">
             <Grid VerticalAlignment="Center">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition />
                         <ColumnDefinition />
                         <ColumnDefinition />
+                        <ColumnDefinition />
                     </Grid.ColumnDefinitions>
 
+                    <ToggleButton Grid.Column="0" IsChecked="{Binding IsExpanded, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  HorizontalContentAlignment="Center">
+                        <ToggleButton.Style>
+                            <Style TargetType="ToggleButton">
+                                <Style.Triggers>
+                                    <Trigger Property="IsChecked"  Value="True">
+                                        <Setter Property="Content" Value="UnExpand All" />
+                                    </Trigger>
+                                    <Trigger Property="IsChecked"  Value="False">
+                                        <Setter Property="Content" Value="Expand All" />
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ToggleButton.Style>
+                    </ToggleButton>
                     <ComboBox Grid.Column="2" x:Name="VisibilitySelector" SelectedIndex="0" ItemsSource="{Binding Source={StaticResource CameraRegisterVisibilityList}}" />
-                    <!--<Button Grid.Column="2"  Content="Expand All" Command="{Binding ExpandCommand}" HorizontalContentAlignment="Center" />-->
                     <!--<CheckBox Grid.Column="0" Content="Expand All" IsChecked="True" HorizontalAlignment="Left" Padding="2 0 5 0 "   VerticalAlignment="Center" />-->
                 </Grid>
             </Grid>
         </Border>
 
         <!--Body-->
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" local:TopMouseScrollPriorityBehavior.TopMouseScrollPriority="True">
             <TreeView ItemTemplate="{StaticResource RegisterItem}"  ItemsSource="{Binding CameraRegisterGroupDTOList}" />
         </ScrollViewer>
 
         <!--Footer-->
-        <Border Grid.Row="2">
+        <Border Grid.Row="2" Background="#eee">
             <ScrollViewer Visibility="{Binding SelectedRegister, Converter={StaticResource FooterVisibilityConverter}}">
                 <StackPanel>
                     <StackPanel>
-                        <Label Content="{Binding SelectedRegister.CameraRegisterContainer.Name, Mode=TwoWay}" />
+                        <Label Content="{Binding SelectedRegister.CameraRegisterContainer.Name, Mode=TwoWay}" FontWeight="Bold" FontSize="14" />
                         <TextBlock Text="{Binding SelectedRegister.CameraRegisterContainer.Descrption}" TextWrapping="WrapWithOverflow" />
                     </StackPanel>
 
                     <StackPanel Orientation="Vertical">
 
                         <StackPanel Orientation="Horizontal">
-                            <Label  Content="Type" />
-                            <TextBlock Text="{Binding SelectedRegister.CameraRegisterContainer.Type}" />
+                            <TextBlock Text="Type: " />
+                            <TextBlock Text="{Binding SelectedRegister.CameraRegisterContainer.Type}"  FontWeight="Bold" />
                         </StackPanel>
 
                         <StackPanel Orientation="Horizontal">
-                            <Label  Content="Visibility" />
-                            <TextBlock  Text="{Binding SelectedRegister.CameraRegisterContainer.Visibility}" />
+                            <TextBlock Text="Visibility: " />
+                            <TextBlock  Text="{Binding SelectedRegister.CameraRegisterContainer.Visibility}"  FontWeight="Bold" />
                         </StackPanel>
 
                         <StackPanel Orientation="Horizontal">
-                            <Label  Content="Streamable" />
-                            <TextBlock Text="{Binding SelectedRegister.CameraRegisterContainer.IsStreamable}" />
+                            <TextBlock Text="Streamable: " />
+                            <TextBlock Text="{Binding SelectedRegister.CameraRegisterContainer.IsStreamable}" FontWeight="Bold" />
                         </StackPanel>
                     </StackPanel>
                 </StackPanel>

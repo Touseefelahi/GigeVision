@@ -15,15 +15,7 @@ namespace DeviceControl.Wpf.Style
         public int Value
         {
             get { return (int)GetValue(ValueProperty); }
-            set
-            {
-                if (Value > Maximum)
-                    SetValue(ValueProperty, Maximum);
-                else if (Value < Minimum)
-                    SetValue(ValueProperty, Minimum);
-                else
-                    SetValue(ValueProperty, value);
-            }
+            set { SetValue(ValueProperty, value); }
         }
 
         // Using a DependencyProperty as the backing store for Value.  This enables animation, styling, binding, etc...
@@ -38,7 +30,7 @@ namespace DeviceControl.Wpf.Style
 
         // Using a DependencyProperty as the backing store for Maximum.  This enables animation, styling, binding, etc...
         public static readonly DependencyProperty MaximumProperty =
-            DependencyProperty.Register("Maximum", typeof(int), typeof(NumericUpDown), new PropertyMetadata(100));
+            DependencyProperty.Register("Maximum", typeof(int), typeof(NumericUpDown), new PropertyMetadata(int.MaxValue));
 
         public int Minimum
         {
@@ -63,16 +55,6 @@ namespace DeviceControl.Wpf.Style
         protected override void OnPropertyChanged(DependencyPropertyChangedEventArgs e)
         {
             base.OnPropertyChanged(e);
-
-            if (e.Property == NumericUpDown.ValueProperty)
-            {
-                if (Value > Maximum)
-                    SetValue(ValueProperty, Maximum);
-                else if (Value < Minimum)
-                    SetValue(ValueProperty, Minimum);
-                else
-                    SetValue(ValueProperty, Value);
-            }
         }
 
         protected void OnPropertyChanged([CallerMemberName] string name = null)
@@ -84,10 +66,12 @@ namespace DeviceControl.Wpf.Style
         {
             IncrementCommand = new DelegateCommand(GoUp);
             DecrementCommand = new DelegateCommand(GoDown);
+            WriteValueCommand = new DelegateCommand(WriteValue);
         }
 
         public DelegateCommand IncrementCommand { get; }
         public DelegateCommand DecrementCommand { get; }
+        public DelegateCommand WriteValueCommand { get; }
 
         private void GoUp()
         {
@@ -99,6 +83,15 @@ namespace DeviceControl.Wpf.Style
         {
             if ((Value -= Increment) < Minimum)
                 Value = Minimum;
+        }
+
+        private void WriteValue()
+        {
+            //if some how there is a entry error and the minimum property became greater than maximum property take the minimum value as first priority
+            if (Value < Minimum)
+                Value = Minimum;
+            else if (Value > Maximum)
+                Value = Maximum;
         }
     }
 }
