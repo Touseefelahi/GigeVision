@@ -6,6 +6,7 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/DeviceControl.Wpf;component/Style/NumericUpDown/NumericButton.xaml" />
                 <!--<ResourceDictionary Source="pack://application:,,,/FlatStyle;component/Style/Colors.xaml" />
                 <ResourceDictionary Source="pack://application:,,,/FlatStyle;component/Style/Fonts.xaml" />
                 <ResourceDictionary Source="pack://application:,,,/FlatStyle;component/Style/BaseStyle.xaml" />
@@ -22,7 +23,6 @@
                 <ResourceDictionary Source="pack://application:,,,/FlatStyle;component/Style/TabControl.xaml" />
                 <ResourceDictionary Source="pack://application:,,,/FlatStyle;component/Style/Slider.xaml" />
                 <ResourceDictionary Source="pack://application:,,,/FlatStyle;component/Style/WindowStyle.xaml" />-->
-                <ResourceDictionary Source="pack://application:,,,/DeviceControl.Wpf;component/Style/NumericButton.xaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>
