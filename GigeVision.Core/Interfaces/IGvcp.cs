@@ -13,7 +13,7 @@ namespace GigeVision.Core.Interfaces
     public interface IGvcp
     {
         /// <summary>
-        /// It can be for any thing, to update fps to check devices
+        /// It can be used for any thing, to update fps to check devices (library use this for Heartbeat)
         /// </summary>
         EventHandler ElapsedOneSecond { get; set; }
 

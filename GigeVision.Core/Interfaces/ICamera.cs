@@ -36,6 +36,11 @@ namespace GigeVision.Core.Interfaces
         IGvcp Gvcp { get; }
 
         /// <summary>
+        /// Rx port for GVSP Stream. If not set software will take any available port
+        /// </summary>
+        int PortRx { get; set; }
+
+        /// <summary>
         /// Event for frame ready
         /// </summary>
         EventHandler<byte[]> FrameReady { get; set; }
@@ -89,6 +94,12 @@ namespace GigeVision.Core.Interfaces
         /// Gets the raw data from the camera. Set false to get RGB frame instead of BayerGR8
         /// </summary>
         bool IsRawFrame { get; set; }
+
+        /// <summary>
+        /// If we set the external buffer using <see cref="SetBuffer(byte[])"/> this will be set
+        /// true and software will copy stream on this buffer
+        /// </summary>
+        bool IsUsingExternalBuffer { get; set; }
 
         /// <summary>
         /// This method will get current PC IP and Gets the Camera ip from Gvcp
@@ -162,5 +173,17 @@ namespace GigeVision.Core.Interfaces
         /// </summary>
         /// <returns>Command Status</returns>
         Task<bool> ReadRegisters();
+
+        /// <summary>
+        /// Set External Raw bytes buffer
+        /// </summary>
+        /// <param name="externalBuffer"></param>
+        void SetBuffer(byte[] externalBuffer);
+
+        /// <summary>
+        /// It reads all the parameters from the camera
+        /// </summary>
+        /// <returns></returns>
+        Task<bool> SyncParameters();
     }
 }
