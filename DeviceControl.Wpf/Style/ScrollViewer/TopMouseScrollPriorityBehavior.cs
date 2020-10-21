@@ -6,7 +6,7 @@ using System.Windows.Controls;
 
 namespace DeviceControl.Wpf.Style
 {
-    internal class TopMouseScrollPriorityBehavior
+    public class TopMouseScrollPriorityBehavior
     {
         public static bool GetTopMouseScrollPriority(DependencyObject obj)
         {
