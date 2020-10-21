@@ -9,6 +9,8 @@ namespace GigeVision.Core.Models
     /// </summary>
     public class IntegerRegister
     {
+        private double? max;
+
         /// <summary>
         /// Integer Value
         /// </summary>
@@ -22,7 +24,17 @@ namespace GigeVision.Core.Models
         /// <summary>
         /// Integer Maximum Value
         /// </summary>
-        public double? Max { get; private set; }
+        public double? Max
+        {
+            get
+            {
+                if (max is null)
+                    return uint.MaxValue;
+
+                return max;
+            }
+            private set => max = value;
+        }
 
         /// <summary>
         /// Integer Increment Value
@@ -62,7 +74,7 @@ namespace GigeVision.Core.Models
         /// <param name="pMax"></param>
         public IntegerRegister(double? min = null, double? max = null, double? inc = null, double? value = null, CameraRegister register = null, object pValue = null, IntSwissKnife pMin = null, IntSwissKnife pMax = null)
         {
-            Min = min;
+            Min = min == null ? 1 : min;
             Max = max;
             Inc = inc;
             Value = value;
@@ -76,8 +88,6 @@ namespace GigeVision.Core.Models
                 Max = MaxParameter.Value;
             if (MinParameter != null)
                 Min = MinParameter.Value;
-            if (MaxParameter != null)
-                Max = MaxParameter.Value;
             if (ValueParameter is IntSwissKnife intSwissKnife)
                 Value = intSwissKnife.Value;
             if (ValueParameter is MaskedIntReg maskedIntReg)

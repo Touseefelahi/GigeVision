@@ -25,7 +25,7 @@ namespace GigeVision.Core.Models
         /// <summary>
         /// Register Access Mode
         /// </summary>
-        public CameraRegisterAccessMode AccessMode { get; private set; }
+        public CameraRegisterAccessMode AccessMode { get; set; }
 
         /// <summary>
         /// Register Value
@@ -46,6 +46,7 @@ namespace GigeVision.Core.Models
             Length = length;
             AccessMode = registerAccessMode;
             AddressParameter = addressParameter;
+            Value = value;
         }
     }
 }

@@ -3,6 +3,7 @@ using GigeVision.Core.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Xml;
 
 namespace GigeVision.Core.Models
 {
@@ -11,6 +12,8 @@ namespace GigeVision.Core.Models
     /// </summary>
     public class CameraRegisterContainer
     {
+        private CameraRegister register;
+
         /// <summary>
         /// Register Name
         /// </summary>
@@ -52,8 +55,12 @@ namespace GigeVision.Core.Models
                     return cameraRegister;
 
                 if (TypeValue is IntegerRegister integerRegister)
-                    return integerRegister.Register;
+                {
+                    if (integerRegister.Register is null)
+                        return register;
 
+                    return integerRegister.Register;
+                }
                 if (TypeValue is Enumeration enumeration)
                     return enumeration.Register;
 
@@ -66,7 +73,12 @@ namespace GigeVision.Core.Models
                 if (TypeValue is BooleanRegister booleanRegister)
                     return booleanRegister.Register;
 
-                return null;
+                return register;
+            }
+
+            set
+            {
+                register = value;
             }
         }
 
