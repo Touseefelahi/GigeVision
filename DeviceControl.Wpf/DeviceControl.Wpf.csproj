@@ -10,14 +10,11 @@
   <ItemGroup>
     <PackageReference Include="Prism.Wpf" Version="7.2.0.1422" />
     <PackageReference Include="PropertyChanged.Fody" Version="3.2.10" />
+    <PackageReference Include="Stira.Converters.Wpf" Version="1.0.3" />
     <PackageReference Include="Stira.WpfFlatStyle" Version="1.8.6.2" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\GigeVision.Core\GigeVision.Core.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Style\" />
   </ItemGroup>
 </Project>
