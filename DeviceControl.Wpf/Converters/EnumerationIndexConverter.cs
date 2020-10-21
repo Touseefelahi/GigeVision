@@ -14,9 +14,16 @@ namespace DeviceControl.Wpf.Converters
                 int index = 0;
                 foreach (var enumValue in enumeration.Entry)
                 {
-                    if (enumeration.Register.Value != null)
-                        if (enumValue.Value == (uint)enumeration.Register.Value)
-                            return index;
+                    if (enumeration.Register != null)
+                    {
+                        if (enumeration.Register.Value is IntSwissKnife intSwiss)
+                            if (enumValue.Value == (uint)intSwiss.Value)
+                                return index;
+
+                        if (enumeration.Register.Value is uint uintValue)
+                            if (enumValue.Value == uintValue)
+                                return index;
+                    }
 
                     index++;
                 };
