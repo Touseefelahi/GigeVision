@@ -25,14 +25,11 @@ namespace DeviceControl.Wpf.DTO
 
         private async void WriteValue(object newValue)
         {
-            GvcpReply gvcpReply = null;
-            if (newValue is null)
-                return;
-
             //If Register is ReadOnly Do not Write
             if (CameraRegisterContainer.Register.AccessMode == CameraRegisterAccessMode.RO)
                 return;
 
+            GvcpReply gvcpReply = null;
             switch (CameraRegisterContainer.Type)
             {
                 case CameraRegisterType.Integer:
@@ -52,34 +49,48 @@ namespace DeviceControl.Wpf.DTO
                     break;
 
                 case CameraRegisterType.StringReg:
+
+                    if (newValue is null)
+                        return;
+
                     //newValue is a String
                     if (newValue.Equals(CameraRegisterContainer.Register.Value))
                         return;
 
                     await Gvcp.TakeControl(false);
                     gvcpReply = (await Gvcp.WriteMemoryAsync(CameraRegisterContainer.Register.Address, BitConverter.ToUInt32(Encoding.ASCII.GetBytes((string)newValue), 0)));
-
                     break;
 
                 case CameraRegisterType.Enumeration:
                     //newValue is an Enumeration
                     var enumeration = CameraRegisterContainer.TypeValue as Enumeration;
+                    newValue = ((KeyValuePair<string, uint>)enumeration.Register.Value).Value;
+
+                    if (newValue is null)
+                        return;
 
                     await Gvcp.TakeControl(false);
-                    gvcpReply = (await Gvcp.WriteRegisterAsync(enumeration.Register.Address, ((KeyValuePair<string, uint>)enumeration.Register.Value).Value));
+                    gvcpReply = await Gvcp.WriteRegisterAsync(enumeration.Register.Address, (uint)newValue);
                     break;
 
                 case CameraRegisterType.Command:
                     //newValue is an UInt32
+                    newValue = CameraRegisterContainer.Register.Value;
                     var command = CameraRegisterContainer.TypeValue as CommandRegister;
 
+                    if (newValue is null)
+                        return;
+
                     await Gvcp.TakeControl(false);
-                    gvcpReply = (await Gvcp.WriteRegisterAsync(command.Register.Address, (uint)command.Register.Value));
+                    gvcpReply = (await Gvcp.WriteRegisterAsync(command.Register.Address, (uint)newValue));
                     break;
 
                 case CameraRegisterType.Boolean:
                     //newValue is a boolean
                     var boolean = CameraRegisterContainer.TypeValue as BooleanRegister;
+
+                    if (newValue is null)
+                        return;
 
                     await Gvcp.TakeControl(false);
                     gvcpReply = (await Gvcp.WriteRegisterAsync(boolean.Register.Address, (uint)newValue));
