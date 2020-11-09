@@ -23,7 +23,7 @@ namespace GigeVision.Core.Models
         /// <summary>
         /// Integer Register Length
         /// </summary>
-        public uint Length { get; private set; }
+        public ushort Length { get; private set; }
 
         /// <summary>
         /// Integer Register Access Mode
@@ -47,13 +47,12 @@ namespace GigeVision.Core.Models
         /// <param name="address"></param>
         /// <param name="length"></param>
         /// <param name="accessMode"></param>
-        public MaskedIntReg(IntSwissKnife adddressParameter, string address, uint length, CameraRegisterAccessMode accessMode)
+        public MaskedIntReg(IntSwissKnife adddressParameter, string address, ushort length, CameraRegisterAccessMode accessMode)
         {
             AddressParameter = adddressParameter;
             Address = address;
             Length = length;
             AccessMode = accessMode;
-            Register = new CameraRegister(address, length, accessMode, null, AddressParameter);
         }
     }
 }

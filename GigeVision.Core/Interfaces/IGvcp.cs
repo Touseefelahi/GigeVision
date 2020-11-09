@@ -217,14 +217,14 @@ namespace GigeVision.Core.Interfaces
         /// <param name="ip"></param>
         /// <param name="memoryAddress"></param>
         /// <returns></returns>
-        Task<GvcpReply> ReadMemoryAsync(string ip, byte[] memoryAddress);
+        Task<GvcpReply> ReadMemoryAsync(string ip, byte[] memoryAddress, ushort count);
 
         /// <summary>
         /// Read Memory Address
         /// </summary>
         /// <param name="memoryAddressOrKey"></param>
         /// <returns></returns>
-        Task<GvcpReply> ReadMemoryAsync(string memoryAddressOrKey);
+        Task<GvcpReply> ReadMemoryAsync(string memoryAddressOrKey, ushort count);
 
         /// <summary>
         /// Write Memory

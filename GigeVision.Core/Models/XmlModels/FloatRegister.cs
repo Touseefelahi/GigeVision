@@ -39,6 +39,7 @@ namespace GigeVision.Core.Models
         /// <param name="physicalUnit"></param>
         public FloatRegister(IntSwissKnife pValue, IntSwissKnife pMin = null, IntSwissKnife pMax = null, PhysicalUnit? physicalUnit = null)
         {
+            ValueParameter = pValue;
             MinParameter = pMin;
             MaxParameter = pMax;
             PhysicalUnit = physicalUnit;

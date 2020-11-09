@@ -9,24 +9,37 @@ namespace DeviceControl.Wpf.Converters
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value is Enumeration enumeration)
+            if (value is CameraRegisterContainer cameraRegisterContainer)
             {
-                int index = 0;
-                foreach (var enumValue in enumeration.Entry)
+                if (cameraRegisterContainer.TypeValue is Enumeration enumeration)
                 {
-                    if (enumeration.Register != null)
+                    int index = 0;
+                    foreach (var enumValue in enumeration.Entry)
                     {
-                        if (enumeration.Register.Value is IntSwissKnife intSwiss)
+                        if (cameraRegisterContainer.Value is IntSwissKnife intSwiss)
+                        {
                             if (enumValue.Value == (uint)intSwiss.Value)
                                 return index;
-
-                        if (enumeration.Register.Value is uint uintValue)
+                        }
+                        else if (cameraRegisterContainer.Value is uint uintValue)
+                        {
                             if (enumValue.Value == uintValue)
                                 return index;
-                    }
+                        }
+                        else if (cameraRegisterContainer.Value is double doubleValue)
+                        {
+                            if (enumValue.Value == doubleValue)
+                                return index;
+                        }
+                        else if (cameraRegisterContainer.Value is int intValue)
+                        {
+                            if (enumValue.Value == intValue)
+                                return index;
+                        }
 
-                    index++;
-                };
+                        index++;
+                    }
+                }
             }
 
             return null;

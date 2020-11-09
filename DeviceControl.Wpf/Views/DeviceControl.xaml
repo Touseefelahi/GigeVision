@@ -175,7 +175,7 @@
                     <Setter Property="ContentTemplate" TargetName="InputType">
                         <Setter.Value>
                             <DataTemplate>
-                                <TextBox  Grid.Column="1" Text="{Binding CameraRegisterContainer.Register.Value, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding CameraRegisterContainer.Register.AccessMode, Converter={StaticResource AccessModeConverter }}">
+                                <TextBox  Grid.Column="1" Text="{Binding CameraRegisterContainer.Value, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding CameraRegisterContainer.Register, Converter={StaticResource AccessModeConverter }}">
                                     <i:Interaction.Triggers>
                                         <i:EventTrigger EventName="LostFocus">
                                             <i:InvokeCommandAction Command="{Binding SetValueCommand}" />
@@ -198,8 +198,31 @@
                                 <local:NumericUpDown  x:Name="IntegerUpDown" Grid.Column="1"
                                     Minimum="{Binding CameraRegisterContainer.TypeValue.Min, Converter={StaticResource ObjectToUintConverter}}"
                                     Maximum="{Binding CameraRegisterContainer.TypeValue.Max, Converter={StaticResource ObjectToUintConverter}}"
-                                    Value="{Binding CameraRegisterContainer.Register.Value, UpdateSourceTrigger=Explicit, Mode=TwoWay, Converter={StaticResource ObjectToUintConverter}}"
-                                    IsEnabled="{Binding CameraRegisterContainer.Register.AccessMode, Converter={StaticResource AccessModeConverter}}"
+                                    Value="{Binding CameraRegisterContainer.Value, UpdateSourceTrigger=Explicit, Mode=TwoWay, Converter={StaticResource ObjectToUintConverter}}"
+                                    IsEnabled="{Binding CameraRegisterContainer.Register, Converter={StaticResource AccessModeConverter}}"
+                                    Increment="{Binding CameraRegisterContainer.TypeValue.Inc}">
+
+                                    <i:Interaction.Triggers>
+                                        <i:EventTrigger EventName="LostFocus" SourceName="IntegerUpDown">
+                                            <i:InvokeCommandAction Command="{Binding SetValueCommand}" CommandParameter="{Binding Path=Value, RelativeSource={RelativeSource  AncestorType={x:Type local:NumericUpDown}}}" />
+                                        </i:EventTrigger>
+                                    </i:Interaction.Triggers>
+                                </local:NumericUpDown>
+                            </DataTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </DataTrigger>
+
+                <!--For NumericUpDown Float Type-->
+                <DataTrigger Binding="{Binding CameraRegisterContainer.Type, Converter={StaticResource ValueTypeConverter}}" Value="TextBoxFloat">
+                    <Setter Property="ContentTemplate" TargetName="InputType">
+                        <Setter.Value>
+                            <DataTemplate>
+                                <local:NumericUpDown  x:Name="IntegerUpDown" Grid.Column="1"
+                                    Minimum="{Binding CameraRegisterContainer.TypeValue.MinParameter.Value, Converter={StaticResource ObjectToUintConverter}}"
+                                    Maximum="{Binding CameraRegisterContainer.TypeValue.MaxParameter.Value, Converter={StaticResource ObjectToUintConverter}}"
+                                    Value="{Binding CameraRegisterContainer.TypeValue.ValueParameter.Value, UpdateSourceTrigger=Explicit, Mode=TwoWay, Converter={StaticResource ObjectToUintConverter}}"
+                                    IsEnabled="{Binding CameraRegisterContainer.Register, Converter={StaticResource AccessModeConverter}}"
                                     Increment="{Binding CameraRegisterContainer.TypeValue.Inc}">
 
                                     <i:Interaction.Triggers>
@@ -218,12 +241,11 @@
                     <Setter Property="ContentTemplate" TargetName="InputType">
                         <Setter.Value>
                             <DataTemplate>
-                                <ComboBox  Grid.Column="1" ItemsSource="{Binding CameraRegisterContainer.TypeValue.Entry}" DisplayMemberPath="Key"  SelectedValue="{Binding CameraRegisterContainer.Register.Value, UpdateSourceTrigger=PropertyChanged}"
-                                           SelectedIndex="{Binding Path=Item.CameraRegisterContainer.TypeValue, RelativeSource={RelativeSource AncestorLevel=1,AncestorType=DataGridRow}, Converter={StaticResource EnumerationIndexConverter}, Mode=OneWay}"
-                                                                               IsEnabled="{Binding CameraRegisterContainer.Register.AccessMode, Converter={StaticResource AccessModeConverter}}">
+                                <ComboBox  Grid.Column="1" ItemsSource="{Binding CameraRegisterContainer.TypeValue.Entry}" DisplayMemberPath="Key"  SelectedValue="{Binding CameraRegisterContainer.Value, UpdateSourceTrigger=PropertyChanged}"
+                                           SelectedIndex="{Binding Path=Item.CameraRegisterContainer, RelativeSource={RelativeSource AncestorLevel=1,AncestorType=DataGridRow}, Converter={StaticResource EnumerationIndexConverter}, Mode=OneWay}"
+                                                                               IsEnabled="{Binding CameraRegisterContainer.Register, Converter={StaticResource AccessModeConverter}}">
                                     <i:Interaction.Triggers>
                                         <i:EventTrigger EventName="SelectionChanged">
-                                            <!--<i:InvokeCommandAction Command="{Binding Path=Item.SetValueCommand, RelativeSource={RelativeSource AncestorLevel=2,AncestorType=DataGridRow}, Converter={StaticResource EnumerationIndexConverter}}" />-->
                                             <i:InvokeCommandAction Command="{Binding SetValueCommand}" />
                                         </i:EventTrigger>
                                     </i:Interaction.Triggers>

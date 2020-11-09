@@ -25,6 +25,8 @@ namespace DeviceControl.Wpf.DTO
 
         private async void WriteValue(object newValue)
         {
+            return;
+
             //If Register is ReadOnly Do not Write
             if (CameraRegisterContainer.Register.AccessMode == CameraRegisterAccessMode.RO)
                 return;
@@ -37,7 +39,7 @@ namespace DeviceControl.Wpf.DTO
                     if (newValue is Int32 integerValue)
                     {
                         var uIntegreValue = UInt32.Parse($"{integerValue}");
-                        if (uIntegreValue == UInt32.Parse($"{ CameraRegisterContainer.Register.Value}"))
+                        if (uIntegreValue == UInt32.Parse($"{ CameraRegisterContainer.Value}"))
                             return;
 
                         await Gvcp.TakeControl(false);
@@ -54,7 +56,7 @@ namespace DeviceControl.Wpf.DTO
                         return;
 
                     //newValue is a String
-                    if (newValue.Equals(CameraRegisterContainer.Register.Value))
+                    if (newValue.Equals(CameraRegisterContainer.Value))
                         return;
 
                     await Gvcp.TakeControl(false);
@@ -64,18 +66,18 @@ namespace DeviceControl.Wpf.DTO
                 case CameraRegisterType.Enumeration:
                     //newValue is an Enumeration
                     var enumeration = CameraRegisterContainer.TypeValue as Enumeration;
-                    newValue = ((KeyValuePair<string, uint>)enumeration.Register.Value).Value;
+                    newValue = ((KeyValuePair<string, uint>)enumeration.Value).Value;
 
                     if (newValue is null)
                         return;
 
                     await Gvcp.TakeControl(false);
-                    gvcpReply = await Gvcp.WriteRegisterAsync(enumeration.Register.Address, (uint)newValue);
+                    gvcpReply = await Gvcp.WriteRegisterAsync(CameraRegisterContainer.Register.Address, (uint)newValue);
                     break;
 
                 case CameraRegisterType.Command:
                     //newValue is an UInt32
-                    newValue = CameraRegisterContainer.Register.Value;
+                    newValue = CameraRegisterContainer.Value;
                     var command = CameraRegisterContainer.TypeValue as CommandRegister;
 
                     if (newValue is null)
@@ -103,7 +105,7 @@ namespace DeviceControl.Wpf.DTO
             //Error Message
             if (gvcpReply.Status == GvcpStatus.GEV_STATUS_SUCCESS)
             {
-                CameraRegisterContainer.Register.Value = newValue;
+                CameraRegisterContainer.Value = newValue;
                 return;
             }
             MessageBox.Show($"{gvcpReply.Status}");

@@ -3,8 +3,6 @@ using GigeVision.Core.Interfaces;
 using GigeVision.Core.Models;
 using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
 using System.Xml;
 
 namespace GigeVision.Core.Services
@@ -207,9 +205,7 @@ namespace GigeVision.Core.Services
 
         private object ReadPNode(XmlNode parentNode, string pNode)
         {
-            //var test = parentNode.SelectSingleNode(NamespacePrefix + "IntReg[@Name='DeviceScanTypeReg']", XmlNamespaceManager);
-
-            //pNode Value is an IntReg
+            //pNode Value could be IntReg, SwissKinfe ,IntSwissKnife, Integer Or MaskedInteger
             if (GetNodeByAttirbuteValue(parentNode, "IntReg", pNode) is XmlNode intRegNode)
             {
                 var address = intRegNode.SelectSingleNode(NamespacePrefix + "Address", XmlNamespaceManager) != null ? intRegNode.SelectSingleNode(NamespacePrefix + "Address", XmlNamespaceManager).InnerText : null;
@@ -219,12 +215,10 @@ namespace GigeVision.Core.Services
                     pAddress = ReadPNode(parentNode, xmlNode.InnerText);
                 }
 
-                var length = uint.Parse(intRegNode.SelectSingleNode(NamespacePrefix + "Length", XmlNamespaceManager).InnerText);
+                var length = ushort.Parse(intRegNode.SelectSingleNode(NamespacePrefix + "Length", XmlNamespaceManager).InnerText);
                 var accessMode = (CameraRegisterAccessMode)Enum.Parse(typeof(CameraRegisterAccessMode), intRegNode.SelectSingleNode(NamespacePrefix + "AccessMode", XmlNamespaceManager).InnerText);
-                return new CameraRegister(address, length, accessMode, pAddress);
+                return new CameraRegister(address, length, accessMode, (IntSwissKnife)pAddress);
             }
-
-            //pNode Value is a SwissKinfe or IntSwissKnife
             else if (GetNodeByAttirbuteValue(parentNode, "SwissKnife", pNode) is XmlNode swissKnifNode)
             {
                 Dictionary<string, IntSwissKnife> pVariableSwissKnife = new Dictionary<string, IntSwissKnife>();
@@ -239,11 +233,15 @@ namespace GigeVision.Core.Services
                     var nodeName = child.Attributes["Name"] != null ? child.Attributes["Name"].Value : string.Empty;
                     if (child.Name.Equals("pVariable"))
                     {
-                        var pVariable = swissKnifNode.SelectSingleNode(NamespacePrefix + "pVariable", XmlNamespaceManager).InnerText;
+                        var pVariable = child.InnerText;
                         var pVariableValue = ReadPNode(swissKnifNode.ParentNode, pVariable);
 
                         if (pVariableValue is null)
-                            pVariableValue = ReadPNode(LookForChildInsideAllParents(XmlDocument.DocumentElement, pVariable).ParentNode, pVariable);
+                        {
+                            var xmlNode = LookForChildInsideAllParents(XmlDocument.DocumentElement, pVariable);
+                            if (xmlNode != null)
+                                pVariableValue = ReadPNode(xmlNode.ParentNode, pVariable);
+                        }
 
                         //pVariable could be IntSwissKnife, SwissKnife, Integer, IntReg, Float, FloatReg,
                         if (pVariableValue is IntSwissKnife intSwissKnife)
@@ -252,6 +250,13 @@ namespace GigeVision.Core.Services
                             pVariableRegister.Add(nodeName, cameraRegister.Address);
                         else if (pVariableValue is CameraRegisterContainer cameraRegisterContainer)
                             pVariableRegisterContainer.Add(nodeName, cameraRegisterContainer);
+                        else if (pVariableValue is MaskedIntReg maskedIntReg)
+                        {
+                            if (maskedIntReg.Address != null)
+                                pVariableRegister.Add(nodeName, maskedIntReg.Address);
+                            else if (maskedIntReg.AddressParameter != null)
+                                pVariableRegister.Add(nodeName, maskedIntReg.AddressParameter.Value.ToString());
+                        }
                     }
                     else if (child.Name.Equals("Formula"))
                         formula = swissKnifNode.SelectSingleNode(NamespacePrefix + "Formula", XmlNamespaceManager).InnerText;
@@ -282,7 +287,11 @@ namespace GigeVision.Core.Services
                         var pVariableValue = ReadPNode(intSwissKnifNode.ParentNode, pVariable);
 
                         if (pVariableValue is null)
-                            pVariableValue = ReadPNode(LookForChildInsideAllParents(XmlDocument.DocumentElement, pVariable).ParentNode, pVariable);
+                        {
+                            var xmlNode = LookForChildInsideAllParents(XmlDocument.DocumentElement, pVariable);
+                            if (xmlNode != null)
+                                pVariableValue = ReadPNode(xmlNode.ParentNode, pVariable);
+                        }
 
                         //pVariable could be IntSwissKnife, SwissKnife, Integer, IntReg, Float, FloatReg,
                         if (pVariableValue is IntSwissKnife intSwissKnife)
@@ -291,6 +300,13 @@ namespace GigeVision.Core.Services
                             pVariableRegister.Add(nodeName, cameraRegister.Address);
                         else if (pVariableValue is CameraRegisterContainer cameraRegisterContainer)
                             pVariableRegisterContainer.Add(nodeName, cameraRegisterContainer);
+                        else if (pVariableValue is MaskedIntReg maskedIntReg)
+                        {
+                            if (maskedIntReg.Address != null)
+                                pVariableRegister.Add(nodeName, maskedIntReg.Address);
+                            else if (maskedIntReg.AddressParameter != null)
+                                pVariableRegister.Add(nodeName, maskedIntReg.AddressParameter.Value.ToString());
+                        }
                     }
                     else if (child.Name.Equals("Formula"))
                         formula = intSwissKnifNode.SelectSingleNode(NamespacePrefix + "Formula", XmlNamespaceManager).InnerText;
@@ -314,7 +330,13 @@ namespace GigeVision.Core.Services
                 }
             }
             else if (GetNodeByAttirbuteValue(parentNode, "Integer", pNode) is XmlNode integerNode)
+            {
                 return GetCameraRegisterContainerFromNode(integerNode);
+            }
+            else if (GetNodeByAttirbuteValue(parentNode, "Float", pNode) is XmlNode floatNode)
+            {
+                return GetCameraRegisterContainerFromNode(floatNode);
+            }
             else if (GetNodeByAttirbuteValue(parentNode, "MaskedIntReg", pNode) is XmlNode maskedIntRegNode)
             {
                 var pAddress = maskedIntRegNode.SelectSingleNode(NamespacePrefix + "pAddress", XmlNamespaceManager) != null ?
@@ -322,7 +344,7 @@ namespace GigeVision.Core.Services
                 var address = maskedIntRegNode.SelectSingleNode(NamespacePrefix + "Address", XmlNamespaceManager) != null ?
                     maskedIntRegNode.SelectSingleNode(NamespacePrefix + "Address", XmlNamespaceManager).InnerText : null;
                 var pAddressValue = ReadPNode(maskedIntRegNode.ParentNode, pAddress) as IntSwissKnife;
-                var length = uint.Parse(maskedIntRegNode.SelectSingleNode(NamespacePrefix + "Length", XmlNamespaceManager).InnerText);
+                var length = ushort.Parse(maskedIntRegNode.SelectSingleNode(NamespacePrefix + "Length", XmlNamespaceManager).InnerText);
                 var accessMode = (CameraRegisterAccessMode)Enum.Parse(typeof(CameraRegisterAccessMode), maskedIntRegNode.SelectSingleNode(NamespacePrefix + "AccessMode", XmlNamespaceManager).InnerText);
                 return new MaskedIntReg(pAddressValue, address, length, accessMode);
             }
@@ -349,66 +371,65 @@ namespace GigeVision.Core.Services
         private CameraRegisterContainer GetCameraRegisterContainer(XmlNode xmlNode, CameraRegisterType cameraRegisterType)
         {
             object cameraRegisterTypeValue = null;
+            CameraRegister cameraRegister = null;
+            double? value = null;
 
             switch (cameraRegisterType)
             {
                 case CameraRegisterType.StringReg:
                     string address = xmlNode.SelectSingleNode(NamespacePrefix + "Address", XmlNamespaceManager).InnerText;
-                    uint length = uint.Parse(xmlNode.SelectSingleNode(NamespacePrefix + "Length", XmlNamespaceManager).InnerText);
+                    ushort length = ushort.Parse(xmlNode.SelectSingleNode(NamespacePrefix + "Length", XmlNamespaceManager).InnerText);
                     CameraRegisterAccessMode accessMode = (CameraRegisterAccessMode)Enum.Parse(typeof(CameraRegisterAccessMode), xmlNode.SelectSingleNode(NamespacePrefix + "AccessMode", XmlNamespaceManager).InnerText);
 
-                    cameraRegisterTypeValue = new CameraRegister(address, length, accessMode);
+                    cameraRegister = new CameraRegister(address, length, accessMode);
                     break;
 
                 case CameraRegisterType.Integer:
-                    uint? value = null;
                     if (xmlNode.Attributes["Name"].Value.EndsWith("Expr") || xmlNode.Attributes["Name"].Value.EndsWith("Val"))
                     {
                         value = uint.Parse(xmlNode.SelectSingleNode(NamespacePrefix + "Value", XmlNamespaceManager).InnerText);
-
-                        cameraRegisterTypeValue = new IntegerRegister(null, null, null, value);
                     }
 
-                    uint? min = null, max = null, inc = null;
+                    double? min = null, max = null, inc = null;
                     IntSwissKnife pMin = null, pMax = null;
-                    string pNode;
-                    object pNodeValue = null;
+                    string integerPNode;
+                    object integerPNodeValue = null;
 
                     foreach (XmlNode node in xmlNode.ChildNodes)
                     {
                         switch (node.Name)
                         {
                             case "Value":
-                                value = uint.Parse(node.InnerText);
+                                value = double.Parse(node.InnerText);
 
                                 break;
 
                             case "Min":
-                                min = uint.Parse(node.InnerText);
+                                min = double.Parse(node.InnerText);
                                 break;
 
                             case "Max":
-                                max = uint.Parse(node.InnerText);
+                                max = double.Parse(node.InnerText);
                                 break;
 
                             case "pMin":
-                                pNode = node.InnerText;
-                                pMin = ReadPNode(xmlNode.ParentNode, pNode) as IntSwissKnife;
+                                integerPNode = node.InnerText;
+                                pMin = ReadPNode(xmlNode.ParentNode, integerPNode) as IntSwissKnife;
                                 break;
 
                             case "pMax":
-                                pNode = node.InnerText;
-                                pMax = ReadPNode(xmlNode.ParentNode, pNode) as IntSwissKnife;
+                                integerPNode = node.InnerText;
+                                pMax = ReadPNode(xmlNode.ParentNode, integerPNode) as IntSwissKnife;
 
                                 break;
 
                             case "Inc":
-                                inc = uint.Parse(node.InnerText);
+                                inc = double.Parse(node.InnerText);
                                 break;
 
                             case "pValue":
-                                pNode = node.InnerText;
-                                pNodeValue = ReadPNode(xmlNode.ParentNode, pNode);
+                                integerPNode = node.InnerText;
+                                integerPNodeValue = ReadPNode(xmlNode.ParentNode, integerPNode);
                                 break;
 
                             default:
@@ -417,50 +438,44 @@ namespace GigeVision.Core.Services
                     }
 
                     //Find pValue
-                    if (pNodeValue is CameraRegister integerCameraRegister)
-                        cameraRegisterTypeValue = new IntegerRegister(min, max, inc, value, integerCameraRegister, integerCameraRegister, pMin, pMax);
-                    else if (pNodeValue is IntSwissKnife intSwissKnifeRegister)
-                        cameraRegisterTypeValue = new IntegerRegister(min, max, inc, value, null, intSwissKnifeRegister, pMin, pMax);
-                    //else if (pNodeValue is MaskedIntReg maskedIntReg)
-                    //    cameraRegisterTypeValue = new IntegerRegister(min, max, inc, value, null, maskedIntReg, pMin, pMax);
-                    else if (pNodeValue is MaskedIntReg maskedIntReg)
-                    {
-                        CameraRegister cameraRegister = new CameraRegister(maskedIntReg.Address, maskedIntReg.Length, maskedIntReg.AccessMode, maskedIntReg.Value, maskedIntReg.AddressParameter);
-                        cameraRegisterTypeValue = new IntegerRegister(min, max, inc, value, cameraRegister, maskedIntReg, pMin, pMax);
-                    }
+                    cameraRegisterTypeValue = new IntegerRegister(min, max, inc, integerPNodeValue, pMin, pMax);
+                    if (integerPNodeValue is CameraRegister cameraRegister1)
+                        cameraRegister = cameraRegister1;
+                    else if (integerPNodeValue is MaskedIntReg maskedIntReg)
+                        cameraRegister = new CameraRegister(maskedIntReg.Address, maskedIntReg.Length, maskedIntReg.AccessMode, maskedIntReg.AddressParameter);
+
                     break;
 
                 case CameraRegisterType.Float:
                     IntSwissKnife floatMin = null, floatMax = null, floatValue = null;
                     PhysicalUnit? physicalUnit = null;
-
-                    Dictionary<string, CameraRegisterContainer> cameraRegistersContainerDictionary = new Dictionary<string, CameraRegisterContainer>();
-
+                    string floatPNode;
+                    object floatPNodeValue = null;
                     foreach (XmlNode node in xmlNode.ChildNodes)
                     {
                         switch (node.Name)
                         {
                             case "pValue":
                                 //Find pValue
-                                pNode = node.InnerText;
-                                pNodeValue = ReadPNode(xmlNode.ParentNode, pNode);
-                                if (pNodeValue is IntSwissKnife pValueIntSwissKnife)
+                                floatPNode = node.InnerText;
+                                floatPNodeValue = ReadPNode(xmlNode.ParentNode, floatPNode);
+                                if (floatPNodeValue is IntSwissKnife pValueIntSwissKnife)
                                     floatValue = pValueIntSwissKnife;
                                 break;
 
                             case "pMin":
                                 //Find pMin
-                                pNode = node.InnerText;
-                                pNodeValue = ReadPNode(xmlNode.ParentNode, pNode);
-                                if (pNodeValue is IntSwissKnife pMinIntSwissKnife)
+                                floatPNode = node.InnerText;
+                                floatPNodeValue = ReadPNode(xmlNode.ParentNode, floatPNode);
+                                if (floatPNodeValue is IntSwissKnife pMinIntSwissKnife)
                                     floatMin = pMinIntSwissKnife;
                                 break;
 
                             case "pMax":
                                 //Find pMax
-                                pNode = node.InnerText;
-                                pNodeValue = ReadPNode(xmlNode.ParentNode, pNode);
-                                if (pNodeValue is IntSwissKnife pMaxIntSwissKnife)
+                                floatPNode = node.InnerText;
+                                floatPNodeValue = ReadPNode(xmlNode.ParentNode, floatPNode);
+                                if (floatPNodeValue is IntSwissKnife pMaxIntSwissKnife)
                                     floatMax = pMaxIntSwissKnife;
                                 break;
 
@@ -480,35 +495,44 @@ namespace GigeVision.Core.Services
                 case CameraRegisterType.Enumeration:
                     Dictionary<string, uint> entry = new Dictionary<string, uint>();
                     var enumList = xmlNode.SelectNodes(NamespacePrefix + "EnumEntry", XmlNamespaceManager);
+                    string enumPNode;
+                    object enumPNodeValue = null;
 
                     foreach (XmlNode enumEntry in enumList)
                         entry.Add(enumEntry.Attributes["Name"].Value, UInt32.Parse(enumEntry.SelectSingleNode(NamespacePrefix + "Value", XmlNamespaceManager).InnerText));
 
                     //Find pValue
-                    pNode = xmlNode.SelectSingleNode(NamespacePrefix + "pValue", XmlNamespaceManager).InnerText;
-                    pNodeValue = ReadPNode(xmlNode.ParentNode, pNode);
-                    if (pNodeValue is CameraRegister enumCameraRegister)
-                        cameraRegisterTypeValue = new Enumeration(entry, enumCameraRegister);
+                    enumPNode = xmlNode.SelectSingleNode(NamespacePrefix + "pValue", XmlNamespaceManager).InnerText;
+                    enumPNodeValue = ReadPNode(xmlNode.ParentNode, enumPNode);
+                    if (enumPNodeValue is CameraRegister enumCameraRegister)
+                    {
+                        cameraRegister = enumCameraRegister;
+                        cameraRegisterTypeValue = new Enumeration(entry, null);
+                    }
+                    else if (enumPNodeValue is IntSwissKnife enumIntSwissKnife)
+                        cameraRegisterTypeValue = new Enumeration(entry, enumIntSwissKnife);
 
                     break;
 
                 case CameraRegisterType.Command:
                     uint commandValue = uint.Parse(xmlNode.SelectSingleNode(NamespacePrefix + "CommandValue", XmlNamespaceManager).InnerText);
-
+                    string commandPNode;
+                    object commandPNodeValue = null;
                     //Find pValue
-                    pNode = xmlNode.SelectSingleNode(NamespacePrefix + "pValue", XmlNamespaceManager).InnerText;
-                    pNodeValue = ReadPNode(xmlNode.ParentNode, pNode);
-                    if (pNodeValue is CameraRegister commandCameraRegister)
+                    commandPNode = xmlNode.SelectSingleNode(NamespacePrefix + "pValue", XmlNamespaceManager).InnerText;
+                    commandPNodeValue = ReadPNode(xmlNode.ParentNode, commandPNode);
+                    if (commandPNodeValue is CameraRegister commandCameraRegister)
                         cameraRegisterTypeValue = new CommandRegister(commandValue, commandCameraRegister);
 
                     break;
 
                 case CameraRegisterType.Boolean:
-
+                    string booleanPNode;
+                    object booleanPNodeValue = null;
                     //Find pValue
-                    pNode = xmlNode.SelectSingleNode(NamespacePrefix + "pValue", XmlNamespaceManager).InnerText;
-                    pNodeValue = ReadPNode(xmlNode.ParentNode, pNode);
-                    if (pNodeValue is CameraRegister booleanCameraRegister)
+                    booleanPNode = xmlNode.SelectSingleNode(NamespacePrefix + "pValue", XmlNamespaceManager).InnerText;
+                    booleanPNodeValue = ReadPNode(xmlNode.ParentNode, booleanPNode);
+                    if (booleanPNodeValue is CameraRegister booleanCameraRegister)
                         cameraRegisterTypeValue = new BooleanRegister(booleanCameraRegister);
                     break;
 
@@ -522,7 +546,7 @@ namespace GigeVision.Core.Services
             CameraRegisterVisibility? visibilty = xmlNode.SelectSingleNode(NamespacePrefix + "Visibility", XmlNamespaceManager) != null ? (CameraRegisterVisibility?)Enum.Parse(typeof(CameraRegisterVisibility), xmlNode.SelectSingleNode(NamespacePrefix + "Visibility", XmlNamespaceManager).InnerText) : null;
             bool isStreamable = xmlNode.SelectSingleNode(NamespacePrefix + "Streamable", XmlNamespaceManager) != null ? true : false;
 
-            return new CameraRegisterContainer(registerName, description, visibilty, isStreamable, cameraRegisterType, cameraRegisterTypeValue);
+            return new CameraRegisterContainer(registerName, description, visibilty, isStreamable, cameraRegisterType, cameraRegisterTypeValue, cameraRegister, value);
         }
 
         #endregion Helpers

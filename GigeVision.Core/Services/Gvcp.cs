@@ -440,7 +440,6 @@ namespace GigeVision.Core.Models
                     //connecting to the server
                     client.Connect(IP, PortGvcp);
 
-
                     byte[] commandCCP = new byte[] { 0x42, 0x00, 0x00, 0x82, 0x00, 0x08, 0x10, 0x01, 0x00, 0x00, 0x0a, 0x00, 0x00, 0x00, 0x00, 0x02 };
 
                     //sending the packet
@@ -679,7 +678,7 @@ namespace GigeVision.Core.Models
             {
                 foreach (var pVariable in pVariablesCameraRegister)
                 {
-                    RegistersDictionary.Where(x => x.Value.Register != null).Where(x => x.Value.Register.Address == pVariable.Value).First().Value.Register.Value = (await ReadRegisterAsync(pVariable.Value)).RegisterValue;
+                    RegistersDictionary.Where(x => x.Value.Register != null).Where(x => x.Value.Register.Address == pVariable.Value).First().Value.Value = (await ReadRegisterAsync(pVariable.Value)).RegisterValue;
                 }
             }
             else if (intSwissKnife.VariableParameter is Dictionary<string, IntSwissKnife> pVariableIntSwissKnifeDictionary)
@@ -903,11 +902,11 @@ namespace GigeVision.Core.Models
 
         #region ReadMemory
 
-        public async Task<GvcpReply> ReadMemoryAsync(string ip, byte[] memoryAddress)
+        public async Task<GvcpReply> ReadMemoryAsync(string ip, byte[] memoryAddress, ushort count)
         {
             if (ValidateIp(ip))
             {
-                GvcpCommand command = new GvcpCommand(memoryAddress, GvcpCommandType.ReadMem, requestID: gvcpRequestID++);
+                GvcpCommand command = new GvcpCommand(memoryAddress, GvcpCommandType.ReadMem, requestID: gvcpRequestID++, count: count);
                 using (UdpClient socket = new UdpClient())
                 {
                     socket.Client.ReceiveTimeout = 1000;
@@ -921,9 +920,9 @@ namespace GigeVision.Core.Models
             }
         }
 
-        public async Task<GvcpReply> ReadMemoryAsync(string memoryAddressOrKey)
+        public async Task<GvcpReply> ReadMemoryAsync(string memoryAddressOrKey, ushort count)
         {
-            return await ReadMemoryAsync(CameraIp, Converter.RegisterStringToByteArray(memoryAddressOrKey)).ConfigureAwait(false);
+            return await ReadMemoryAsync(CameraIp, Converter.RegisterStringToByteArray(memoryAddressOrKey), count).ConfigureAwait(false);
         }
 
         #endregion ReadMemory
@@ -970,7 +969,7 @@ namespace GigeVision.Core.Models
         /// Takes control of the devices
         /// </summary>
         /// <param name="KeepAlive">
-        /// If true thread will continously send heartbeat command to keep the devices in control
+        /// If true thread will continuously send heartbeat command to keep the devices in control
         /// </param>
         /// <returns>Control Status</returns>
         public async Task<bool> TakeControl(bool KeepAlive = true)

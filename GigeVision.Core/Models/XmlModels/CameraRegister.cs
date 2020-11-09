@@ -1,4 +1,5 @@
 ﻿using GigeVision.Core.Enums;
+using System.Net.Sockets;
 
 namespace GigeVision.Core.Models
 {
@@ -18,19 +19,14 @@ namespace GigeVision.Core.Models
         public IntSwissKnife AddressParameter { get; set; }
 
         /// <summary>
-        /// Reister Length
+        /// Register Length
         /// </summary>
-        public uint Length { get; private set; }
+        public ushort Length { get; private set; }
 
         /// <summary>
         /// Register Access Mode
         /// </summary>
         public CameraRegisterAccessMode AccessMode { get; set; }
-
-        /// <summary>
-        /// Register Value
-        /// </summary>
-        public object Value { get; set; }
 
         /// <summary>
         /// Main Method
@@ -40,13 +36,18 @@ namespace GigeVision.Core.Models
         /// <param name="registerAccessMode"></param>
         /// <param name="value"></param>
         /// <param name="addressParameter"></param>
-        public CameraRegister(string? address, uint length, CameraRegisterAccessMode registerAccessMode, object value = null, IntSwissKnife addressParameter = null)
+        public CameraRegister(string? address, ushort length, CameraRegisterAccessMode registerAccessMode, IntSwissKnife addressParameter = null)
         {
-            Address = address;
+            if (address is null && addressParameter != null)
+            {
+                if (addressParameter.Value != null)
+                    Address = addressParameter.Value.ToString();
+            }
+            else
+                Address = address;
             Length = length;
             AccessMode = registerAccessMode;
             AddressParameter = addressParameter;
-            Value = value;
         }
     }
 }

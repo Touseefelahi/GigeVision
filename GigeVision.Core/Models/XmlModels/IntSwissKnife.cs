@@ -2,8 +2,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
+using System.Windows.Controls;
 
 namespace GigeVision.Core.Models
 {
@@ -25,7 +26,7 @@ namespace GigeVision.Core.Models
         /// <summary>
         /// Formula Result
         /// </summary>
-        public double? Value { get; set; }
+        public object Value { get; set; }
 
         /// <summary>
         /// Gvcp is here for reading variable parameter (registers)
@@ -39,15 +40,20 @@ namespace GigeVision.Core.Models
         /// <param name="formula"></param>
         /// <param name="pVarible"></param>
         /// <param name="value"></param>
-        public IntSwissKnife(IGvcp gvcp, string formula, object pVarible, double? value = null)
+        public IntSwissKnife(IGvcp gvcp, string formula, object pVarible, object value = null)
         {
             Gvcp = gvcp;
             VariableParameter = pVarible;
             Formula = formula;
             //Prepare Expression
 
+            if (Formula.Equals("(VAR_PLC_INTERRUPT_FIFO0_OFFSET26 & 0xFF00) >> 8"))
+            {
+                var x = 0;
+            }
+
             Formula = Formula.Replace(" ", "");
-            List<char> opreations = new List<char> { '(', '+', '-', '/', '*', '=', '?', ':', ')', '>', '&' };
+            List<char> opreations = new List<char> { '(', '+', '-', '/', '*', '=', '?', ':', ')', '>', '<', '&', '|' };
             foreach (var character in opreations)
             {
                 if (opreations.Where(x => x == character).Count() > 0)
@@ -77,7 +83,13 @@ namespace GigeVision.Core.Models
                         if (register.Key.Equals(word) && !tempWord.Equals(word))
                         {
                             tempWord = word;
-                            tempValue = $"{(await Gvcp.ReadRegisterAsync(register.Value)).RegisterValue}";
+
+                            var reply = await Gvcp.ReadRegisterAsync(register.Value);
+                            if (reply.Status != Enums.GvcpStatus.GEV_STATUS_SUCCESS)
+                                continue;
+
+                            tempValue = $"{reply.RegisterValue}";
+
                             intSwissKnife.Formula = intSwissKnife.Formula.Replace(word, tempValue);
                         }
                         else if (word.Equals(tempWord) && tempValue != string.Empty)
@@ -91,7 +103,7 @@ namespace GigeVision.Core.Models
             {
                 foreach (var pVarible in pVariableIntSwissKnifeDictionary)
                 {
-                    pVarible.Value.Value = (await ExecuteFormula(pVarible.Value)) as double?;
+                    pVarible.Value.Value = await ExecuteFormula(pVarible.Value);
                     foreach (var word in intSwissKnife.Formula.Split())
                     {
                         if (pVarible.Key.Equals(word))
@@ -110,17 +122,54 @@ namespace GigeVision.Core.Models
                     {
                         if (pVarible.Key.Equals(word))
                         {
-                            if (pVarible.Value.Register is null)
+                            if (pVarible.Value.Value is uint uintValue)
+                                intSwissKnife.Formula = intSwissKnife.Formula.Replace(word, $"{uintValue}");
+                            else if (pVarible.Value.TypeValue is FloatRegister floatRegister)
+                                intSwissKnife.Formula = intSwissKnife.Formula.Replace(word, $"{floatRegister.ValueParameter.Value}");
+                            else if (pVarible.Value.Register != null)
                             {
-                                if (pVarible.Value.TypeValue is IntegerRegister integerRegister)
-                                    intSwissKnife.Formula = intSwissKnife.Formula.Replace(word, $"{integerRegister.Value}");
+                                if (pVarible.Value.Register.Address != null)
+                                {
+                                    if (pVarible.Value.Register.Address is string pAddress)
+                                    {
+                                        var reply = await Gvcp.ReadRegisterAsync(pAddress);
+                                        if (reply.Status != Enums.GvcpStatus.GEV_STATUS_SUCCESS)
+                                            continue;
+
+                                        pVarible.Value.Value = reply.RegisterValue;
+                                    }
+
+                                    intSwissKnife.Formula = intSwissKnife.Formula.Replace(word, $"{pVarible.Value.Value}");
+                                }
+                                else if (pVarible.Value.Register.AddressParameter != null)
+                                {
+                                    if (pVarible.Value.Register.AddressParameter.Value is string pAddress)
+                                    {
+                                        var reply = await Gvcp.ReadRegisterAsync(pAddress);
+                                        if (reply.Status != Enums.GvcpStatus.GEV_STATUS_SUCCESS)
+                                            continue;
+
+                                        pVarible.Value.Value = reply.RegisterValue;
+                                    }
+
+                                    intSwissKnife.Formula = intSwissKnife.Formula.Replace(word, $"{pVarible.Value.Value}");
+                                }
                             }
-                            else if (pVarible.Value.Register.AddressParameter != null)
-                                intSwissKnife.Formula = intSwissKnife.Formula.Replace(word, $"{pVarible.Value.Register.AddressParameter.Value}");
                             else if (!tempWord.Equals(word))
                             {
                                 tempWord = word;
-                                tempValue = $"{(await Gvcp.ReadRegisterAsync(pVarible.Value.Register.Address)).RegisterValue}";
+
+                                if (pVarible.Value.Register != null)
+                                {
+                                    var reply = await Gvcp.ReadRegisterAsync(pVarible.Value.Register.Address);
+                                    if (reply.Status != Enums.GvcpStatus.GEV_STATUS_SUCCESS)
+                                        continue;
+
+                                    tempValue = $"{reply.RegisterValue}";
+                                }
+                                else if (pVarible.Value.Value != null)
+                                    tempValue = pVarible.Value.Value.ToString();
+
                                 intSwissKnife.Formula = intSwissKnife.Formula.Replace(word, tempValue);
                             }
                             else if (word.Equals(tempWord) && tempValue != string.Empty)
@@ -130,15 +179,15 @@ namespace GigeVision.Core.Models
                 }
             }
 
-            var value = Evaluate(intSwissKnife.Formula);
+            try
+            {
+                var value = Evaluate(intSwissKnife.Formula);
 
-            if (value is string pAddressValue)
-                Value = (await Gvcp.ReadRegisterAsync(pAddressValue)).RegisterValue;
-
-            if (value is double doubleValue)
-                Value = doubleValue;
-
-            intSwissKnife.Value = Value;
+                Value = value;
+            }
+            catch (Exception ex)
+            {
+            }
             return Value;
         }
 
@@ -151,34 +200,20 @@ namespace GigeVision.Core.Models
         {
             expression = "( " + expression + " )";
             Stack<string> opreators = new Stack<string>();
-            Stack<double> values = new Stack<double>();
-            string number = string.Empty;
-            double tempNumber = 0;
+            Stack<object> values = new Stack<object>();
             bool tempBoolean = false;
             string tempAddress = string.Empty;
+            int integerValue = 0;
 
             foreach (var word in expression.Split())
             {
-                if (double.TryParse(word, out tempNumber))
-                {
-                    number += word;
-                }
-                else if (tempBoolean)
-                {
-                    if (word.StartsWith("0x") && word.Length == 10)
-                        return word;
-                }
-                else if (word.StartsWith("0x") && word.Length == 10)
-                    tempAddress = word;
+                if (word.StartsWith("0x"))
+                    values.Push(word);
+                else if (double.TryParse(word, out double tempNumber))
+                    values.Push(tempNumber);
                 else
                 {
-                    if (number != string.Empty)
-                    {
-                        values.Push(double.Parse(number));
-                        number = string.Empty;
-                    }
-
-                    if (word.Equals("(")) { }
+                    if (word.Equals("(")) { continue; }
                     else if (word.Equals("+")) opreators.Push(word);
                     else if (word.Equals("-")) opreators.Push(word);
                     else if (word.Equals("*")) opreators.Push(word);
@@ -186,31 +221,65 @@ namespace GigeVision.Core.Models
                     else if (word.Equals("=")) opreators.Push(word);
                     else if (word.Equals("?")) opreators.Push(word);
                     else if (word.Equals(":")) opreators.Push(word);
-                    else if (word.Equals("&"))
-                        opreators.Push(word);
-                    else if (word.Equals(">"))
-                        opreators.Push(word);
+                    else if (word.Equals("&")) opreators.Push(word);
+                    else if (word.Equals("|")) opreators.Push(word);
+                    else if (word.Equals(">")) opreators.Push(word);
+                    else if (word.Equals("<")) opreators.Push(word);
                     else if (word.Equals(")"))
                     {
                         int count = opreators.Count;
                         while (count > 0)
                         {
                             string opreator = opreators.Pop();
-                            double value = values.Pop();
-                            if (opreator.Equals("+")) value = values.Pop() + value;
-                            else if (opreator.Equals("-")) value = values.Pop() - value;
-                            else if (opreator.Equals("*")) value = values.Pop() * value;
-                            else if (opreator.Equals("/")) value = values.Pop() / value;
+                            double value = 0;
+                            if (opreator.Equals("+"))
+                            {
+                                value = (double)values.Pop();
+                                value = (double)values.Pop() + value;
+                                values.Push(value);
+                            }
+                            else if (opreator.Equals("-"))
+                            {
+                                value = (double)values.Pop();
+                                value = (double)values.Pop() - value;
+                                values.Push(value);
+                            }
+                            else if (opreator.Equals("*"))
+                            {
+                                value = (double)values.Pop();
+                                value = (double)values.Pop() * value;
+                                values.Push(value);
+                            }
+                            else if (opreator.Equals("/"))
+                            {
+                                value = (double)values.Pop();
+                                value = (double)values.Pop() / value;
+                                values.Push(value);
+                            }
                             else if (opreator.Equals("="))
                             {
-                                if (value == values.Pop()) tempBoolean = true;
+                                var firstValue = (int)GetLongValueFromString(values.Pop().ToString());
+                                var secondValue = (int)GetLongValueFromString(values.Pop().ToString());
+
+                                if (firstValue == secondValue)
+                                    tempBoolean = true;
                             }
                             else if (opreator.Equals("&"))
                             {
-                                var byte1 = Int32.Parse(value.ToString());
-                                var byte2 = Int32.Parse(tempAddress.Substring(2), System.Globalization.NumberStyles.HexNumber);
-                                value = (byte1 & byte2);
-                                tempAddress = string.Empty;
+                                var byte2 = (int)GetLongValueFromString(values.Pop().ToString());
+                                var byte1 = (int)GetLongValueFromString(values.Pop().ToString());
+                                integerValue = (byte1 & byte2);
+                                values.Push(integerValue);
+                            }
+                            else if (opreator.Equals("|"))
+                            {
+                                if (values.Count > 2)
+                                {
+                                    var byte2 = (int)GetLongValueFromString(values.Pop().ToString());
+                                    var byte1 = (int)GetLongValueFromString(values.Pop().ToString());
+                                    integerValue = (byte1 | byte2);
+                                    values.Push(integerValue);
+                                }
                             }
                             else if (opreator.Equals(">"))
                             {
@@ -218,20 +287,54 @@ namespace GigeVision.Core.Models
                                 {
                                     opreators.Pop();
                                     count--;
-                                    value = ((int)values.Pop() >> (byte)value);
+                                    integerValue = (int)GetLongValueFromString(values.Pop().ToString());
+                                    integerValue = ((int)GetLongValueFromString(values.Pop().ToString()) >> integerValue);
+                                    values.Push(integerValue);
                                 }
                             }
-
-                            values.Push(value);
+                            else if (opreator.Equals("<"))
+                            {
+                                if (opreators.Peek().Equals("<"))
+                                {
+                                    opreators.Pop();
+                                    count--;
+                                    integerValue = (int)GetLongValueFromString(values.Pop().ToString());
+                                    integerValue = ((int)GetLongValueFromString(values.Pop().ToString()) << integerValue);
+                                    values.Push(integerValue);
+                                }
+                            }
+                            else if (opreator.Equals("?"))
+                            {
+                                if (tempBoolean)
+                                {
+                                    if (values.Count > 0)
+                                        return values.Pop();
+                                }
+                            }
+                            else if (opreator.Equals(":"))
+                            {
+                            }
 
                             count--;
                         }
                     }
                 }
             }
-            if (tempAddress != string.Empty)
-                return tempAddress;
-            return values.Pop();
+            if (values.Count > 0)
+                return values.Pop();
+
+            return null;
+        }
+
+        private long GetLongValueFromString(string value)
+        {
+            if (value.StartsWith("0x"))
+            {
+                value = value.Replace("0x", "");
+                return long.Parse(value, System.Globalization.NumberStyles.HexNumber);
+            }
+
+            return long.Parse(value); ;
         }
     }
 }

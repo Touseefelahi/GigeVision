@@ -12,8 +12,6 @@ namespace GigeVision.Core.Models
     /// </summary>
     public class CameraRegisterContainer
     {
-        private CameraRegister register;
-
         /// <summary>
         /// Register Name
         /// </summary>
@@ -35,6 +33,11 @@ namespace GigeVision.Core.Models
         public bool IsStreamable { get; private set; }
 
         /// <summary>
+        /// The Register Information of the Register Type
+        /// </summary>
+        public CameraRegister Register { get; set; }
+
+        /// <summary>
         /// Register Type
         /// </summary>
         public CameraRegisterType Type { get; private set; }
@@ -45,42 +48,9 @@ namespace GigeVision.Core.Models
         public object TypeValue { get; set; }
 
         /// <summary>
-        /// The Register Information of the Register Type
+        /// Register Value
         /// </summary>
-        public CameraRegister Register
-        {
-            get
-            {
-                if (TypeValue is CameraRegister cameraRegister)
-                    return cameraRegister;
-
-                if (TypeValue is IntegerRegister integerRegister)
-                {
-                    if (integerRegister.Register is null)
-                        return register;
-
-                    return integerRegister.Register;
-                }
-                if (TypeValue is Enumeration enumeration)
-                    return enumeration.Register;
-
-                if (TypeValue is CommandRegister commandRegister)
-                    return commandRegister.Register;
-
-                if (TypeValue is MaskedIntReg maskedIntReg)
-                    return maskedIntReg.Register;
-
-                if (TypeValue is BooleanRegister booleanRegister)
-                    return booleanRegister.Register;
-
-                return register;
-            }
-
-            set
-            {
-                register = value;
-            }
-        }
+        public object Value { get; set; }
 
         /// <summary>
         /// Main Method
@@ -91,15 +61,33 @@ namespace GigeVision.Core.Models
         /// <param name="isStreamable"></param>
         /// <param name="registerType"></param>
         /// <param name="typeValue"></param>
-        public CameraRegisterContainer(string registerName, string description, CameraRegisterVisibility? registerVisibility, bool isStreamable, CameraRegisterType registerType,
-             object typeValue = null)
+        public CameraRegisterContainer(string registerName, string description, CameraRegisterVisibility? registerVisibility, bool isStreamable, CameraRegisterType cameraRegisterType, object typeValue = null, CameraRegister cameraRegister = null, object value = null)
         {
             Name = registerName;
             Descrption = description;
             Visibility = registerVisibility;
             IsStreamable = isStreamable;
-            Type = registerType;
+            Register = cameraRegister;
+            Value = value;
+            Type = cameraRegisterType;
             TypeValue = typeValue;
+            if (Value is null)
+            {
+                if (TypeValue is IntSwissKnife intSwiss)
+                    Value = intSwiss.Value;
+
+                if (TypeValue is IntegerRegister integerRegister)
+                    Value = integerRegister.Value;
+
+                if (TypeValue is Enumeration enumeration)
+                    Value = enumeration.Value;
+            }
+
+            //Type = registerType;
+            //if (typeValue is CameraRegister cameraRegister)
+            //    Register = cameraRegister;
+            //else
+            //    TypeValue = typeValue;
         }
     }
 }

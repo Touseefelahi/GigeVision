@@ -17,7 +17,7 @@ namespace DeviceControl.Wpf.Converters
                         return "TextBoxInteger";
 
                     case CameraRegisterType.Float:
-                        return "TextBox";
+                        return "TextBoxFloat";
 
                     case CameraRegisterType.StringReg:
                         return "TextBoxString";

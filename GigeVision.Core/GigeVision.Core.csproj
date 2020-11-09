@@ -21,7 +21,9 @@
     <Configurations>Debug;Release;PublishLocally</Configurations>
   </PropertyGroup>
 
-  //Add relative documentation path
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DocumentationFile>\GigeVision.Core\GigeVision.Core.xml</DocumentationFile>
+  </PropertyGroup>
 
   <ItemGroup>
     <None Include="build\GigeVision.Core.targets">

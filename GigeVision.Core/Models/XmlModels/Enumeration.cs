@@ -14,20 +14,26 @@ namespace GigeVision.Core.Models
         /// </summary>
         public Dictionary<string, uint> Entry { get; private set; }
 
+        public object Value { get; set; }
+
         /// <summary>
-        ///  Camera Register has Enumeration address, length and access mode
+        /// Enumeration Value Parameter
         /// </summary>
-        public CameraRegister Register { get; private set; }
+        public object ValueParameter { get; set; }
 
         /// <summary>
         /// Main Method
         /// </summary>
         /// <param name="entry"></param>
         /// <param name="register"></param>
-        public Enumeration(Dictionary<string, uint> entry, CameraRegister register)
+        public Enumeration(Dictionary<string, uint> entry, object pValue = null, object value = null)
         {
             Entry = entry;
-            Register = register;
+            ValueParameter = pValue;
+            Value = value;
+            if (Value is null)
+                if (ValueParameter is IntSwissKnife swissKnife)
+                    Value = swissKnife.Value;
         }
     }
 }

@@ -91,20 +91,47 @@ namespace DeviceControl.Wpf.ViewModels
             var skipSize = 0;
             FilteredRegistersDictionary = Gvcp.RegistersDictionary.Where(x => x.Value.Register != null && x.Value.Visibility != CameraRegisterVisibility.Invisible).ToDictionary(x => x.Key, x => x.Value);
             var readableRegisters = FilteredRegistersDictionary.Where(x => x.Value.Register.Address != null && x.Value.Register.AccessMode != CameraRegisterAccessMode.WO).ToDictionary(x => x.Key, x => x.Value);
-            while (readableRegisters.Count > skipSize)
-            {
-                var packetOfRegisters = readableRegisters.Skip(skipSize).Take(chunkSize).Select(x => x.Value.Register.Address).ToList();
-                var values = (await Gvcp.ReadRegisterAsync(packetOfRegisters.ToArray()));
-                if (values.Status == GvcpStatus.GEV_STATUS_SUCCESS)
-                {
-                    int index = 0;
-                    foreach (var register in readableRegisters.Skip(skipSize).Take(chunkSize).Select(x => x.Key))
-                    {
-                        Gvcp.RegistersDictionary[register].Register.Value = values.RegisterValues[index];
-                        index++;
-                    }
+            //while (readableRegisters.Count > skipSize)
+            //{
+            //    var packetOfRegisters = readableRegisters.Skip(skipSize).Take(chunkSize).Select(x => x.Value.Register.Address).ToList();
+            //    var values = (await Gvcp.ReadRegisterAsync(packetOfRegisters.ToArray()));
+            //    if (values.Status == GvcpStatus.GEV_STATUS_SUCCESS)
+            //    {
+            //        int index = 0;
+            //        foreach (var register in readableRegisters.Skip(skipSize).Take(chunkSize).Select(x => x.Key))
+            //        {
+            //            if (Gvcp.RegistersDictionary[register].Type == CameraRegisterType.StringReg)
+            //            {
+            //                var stringValue = (await Gvcp.ReadMemoryAsync(Gvcp.RegistersDictionary[register].Register.Address, Gvcp.RegistersDictionary[register].Register.Length));
+            //                Gvcp.RegistersDictionary[register].Value = Encoding.ASCII.GetString(stringValue.MemoryValue);
+            //            }
+            //            else
+            //            {
+            //                Gvcp.RegistersDictionary[register].Value = values.RegisterValues[index];
+            //            }
+            //            index++;
+            //        }
 
-                    skipSize += chunkSize;
+            //        skipSize += chunkSize;
+            //    }
+            //}
+
+            foreach (var register in readableRegisters.Select(x => x.Key))
+            {
+                if (Gvcp.RegistersDictionary[register].Type == CameraRegisterType.StringReg)
+                {
+                    var stringValue = (await Gvcp.ReadMemoryAsync(Gvcp.RegistersDictionary[register].Register.Address, Gvcp.RegistersDictionary[register].Register.Length));
+                    Gvcp.RegistersDictionary[register].Value = Encoding.ASCII.GetString(stringValue.MemoryValue);
+                }
+                else
+                {
+                    try
+                    {
+                        Gvcp.RegistersDictionary[register].Value = (await Gvcp.ReadRegisterAsync(Gvcp.RegistersDictionary[register].Register.Address)).RegisterValue;
+                    }
+                    catch (Exception ex)
+                    {
+                    }
                 }
             }
         }
@@ -191,23 +218,19 @@ namespace DeviceControl.Wpf.ViewModels
                 {
                     try
                     {
-                        if (Gvcp.RegistersDictionary[categoryFeature].Type == CameraRegisterType.StringReg)
-                            Gvcp.RegistersDictionary[categoryFeature].Register.Value = Encoding.ASCII.GetString((await Gvcp.ReadMemoryAsync(Gvcp.RegistersDictionary[categoryFeature].Register.Address)).MemoryValue);
+                        //if (Gvcp.RegistersDictionary[categoryFeature].Type == CameraRegisterType.StringReg)
+                        //{
+                        //    var stringValue = (await Gvcp.ReadMemoryAsync((Gvcp.RegistersDictionary[categoryFeature].Register.Address), Gvcp.RegistersDictionary[categoryFeature].Register.Length));
+                        //    Gvcp.RegistersDictionary[categoryFeature].Value = Encoding.ASCII.GetString(stringValue.MemoryValue);
+                        //}
 
                         cameraRegisterContainer = Gvcp.RegistersDictionary[categoryFeature];
-                        if (cameraRegisterContainer.Register is null)
-                        {
-                            if (cameraRegisterContainer.TypeValue is IntegerRegister integerRegister)
-                                cameraRegisterContainer.Register = new CameraRegister(null, 0, CameraRegisterAccessMode.RO, integerRegister.Value);
-                        }
-
-                        if (cameraRegisterContainer.Type == CameraRegisterType.Enumeration && cameraRegisterContainer.Register is null)
-                            cameraRegisterContainer.Register = new CameraRegister(null, 0, CameraRegisterAccessMode.RO);
 
                         isNull = false;
                     }
-                    catch
+                    catch (Exception ex)
                     {
+                        var x = ex;
                     }
                 }
 

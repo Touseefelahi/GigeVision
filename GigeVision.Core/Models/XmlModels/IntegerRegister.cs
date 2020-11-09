@@ -12,11 +12,6 @@ namespace GigeVision.Core.Models
         private double? max;
 
         /// <summary>
-        /// Integer Value
-        /// </summary>
-        public double? Value { get; private set; }
-
-        /// <summary>
         /// Integer Minimum Value
         /// </summary>
         public double? Min { get; private set; }
@@ -56,10 +51,11 @@ namespace GigeVision.Core.Models
         /// </summary>
         public object ValueParameter { get; set; }
 
+        public double? Value { get; }
+
         /// <summary>
         /// Camera Register has Integer address, length and access mode
         /// </summary>
-        public CameraRegister Register { get; private set; }
 
         /// <summary>
         /// Main Method
@@ -72,26 +68,32 @@ namespace GigeVision.Core.Models
         /// <param name="pValue"></param>
         /// <param name="pMin"></param>
         /// <param name="pMax"></param>
-        public IntegerRegister(double? min = null, double? max = null, double? inc = null, double? value = null, CameraRegister register = null, object pValue = null, IntSwissKnife pMin = null, IntSwissKnife pMax = null)
+        public IntegerRegister(double? min = null, double? max = null, double? inc = null, object pValue = null, IntSwissKnife pMin = null, IntSwissKnife pMax = null)
         {
             Min = min == null ? 1 : min;
             Max = max;
             Inc = inc;
-            Value = value;
-            Register = register;
             ValueParameter = pValue;
             MinParameter = pMin;
             MaxParameter = pMax;
 
             //DTOs
             if (MaxParameter != null)
-                Max = MaxParameter.Value;
+                if (MaxParameter.Value != null)
+                    Max = double.Parse(MaxParameter.Value.ToString());
             if (MinParameter != null)
-                Min = MinParameter.Value;
-            if (ValueParameter is IntSwissKnife intSwissKnife)
-                Value = intSwissKnife.Value;
-            if (ValueParameter is MaskedIntReg maskedIntReg)
-                Value = maskedIntReg.Value;
+                if (MinParameter.Value != null)
+                    Min = double.Parse(MinParameter.Value.ToString());
+
+            if (Value is null)
+            {
+                if (ValueParameter is IntSwissKnife intSwissKnife)
+                    if (intSwissKnife.Value != null)
+                        Value = double.Parse(intSwissKnife.Value.ToString());
+
+                if (ValueParameter is MaskedIntReg maskedIntReg)
+                    Value = maskedIntReg.Value;
+            }
         }
     }
 }
