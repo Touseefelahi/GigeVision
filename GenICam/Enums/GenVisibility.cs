@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Text;
 
-namespace GigeVision.Core.Enums
+namespace GenICam
 {
     /// <summary>
     /// Camera Registrer Visibility
     /// </summary>
-    public enum CameraRegisterVisibility
+    public enum GenVisibility
     {
         /// <summary>
         /// Beginner (First Level)

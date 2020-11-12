@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace GigeVision.Core.Enums
+namespace GenICam
 {
-    public enum CameraRegisterType
+    public enum CategoryType
     {
         Integer,
         Float,

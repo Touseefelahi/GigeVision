@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace GigeVision.Core.Enums
+namespace GenICam
 {
-    public enum CameraRegisterAccessMode
+    public enum GenAccessMode
     {
         RO,
         WO,
