@@ -1,9 +1,9 @@
 ﻿namespace DeviceControl.Wpf.Enums
 {
     /// <summary>
-    /// Camera Register Visibility
+    /// Device Control Visibility
     /// </summary>
-    public enum CameraRegisterVisibility
+    public enum DeviceControlVisibility
     {
         /// <summary>
         /// Beginner (First Level)
@@ -18,6 +18,6 @@
         /// <summary>
         /// Guru (Third Level)
         /// </summary>
-        Guru
+        Guru,
     }
 }

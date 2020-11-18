@@ -1,6 +1,8 @@
 ﻿using Prism.Ioc;
 using DeviceControl.Test.Wpf.Views;
 using System.Windows;
+using GenICam;
+using GigeVision.Core;
 
 namespace DeviceControl.Test.Wpf
 {
@@ -16,7 +18,7 @@ namespace DeviceControl.Test.Wpf
 
         protected override void RegisterTypes(IContainerRegistry containerRegistry)
         {
-
+            containerRegistry.RegisterInstance<IGenPort>(new GenPort(3956));
         }
     }
 }

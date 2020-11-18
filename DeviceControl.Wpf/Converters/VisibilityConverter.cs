@@ -1,4 +1,5 @@
-﻿using GigeVision.Core.Enums;
+﻿using DeviceControl.Wpf.Enums;
+using GenICam;
 using System;
 using System.Globalization;
 using System.Windows;
@@ -6,13 +7,13 @@ using System.Windows.Data;
 
 namespace DeviceControl.Wpf.Converters
 {
-    public class CameraRegisterVisibilityConverter : IMultiValueConverter
+    public class VisibilityConverter : IMultiValueConverter
     {
         public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
         {
-            if (values[0] is CameraRegisterVisibility cameraRegisterVisibility)
-                if (values[1] is Enums.CameraRegisterVisibility cameraRegisterVisibility1)
-                    if ((uint)cameraRegisterVisibility > (uint)cameraRegisterVisibility1)
+            if (values[0] is GenVisibility visibility)
+                if (values[1] is DeviceControlVisibility visibility1)
+                    if ((uint)visibility > (uint)visibility1)
                         return Visibility.Collapsed;
 
             return Visibility.Visible;

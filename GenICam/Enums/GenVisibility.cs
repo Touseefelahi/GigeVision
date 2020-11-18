@@ -6,7 +6,7 @@ using System.Text;
 namespace GenICam
 {
     /// <summary>
-    /// Camera Registrer Visibility
+    /// Gen Visibility
     /// </summary>
     public enum GenVisibility
     {
@@ -26,10 +26,9 @@ namespace GenICam
         Guru,
 
         /// <summary>
-        /// this level ment to be hidden
+        /// this level meant to be hidden
         /// </summary>
-        [Browsable(false)]
-        [EditorBrowsable(EditorBrowsableState.Never)]
+
         Invisible,
     }
 }

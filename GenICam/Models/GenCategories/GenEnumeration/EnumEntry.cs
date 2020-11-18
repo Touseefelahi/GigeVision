@@ -5,14 +5,14 @@ namespace GenICam
     public class EnumEntry
     {
         public uint Value { get; private set; }
-        public bool IsImplemented { get; private set; }
+        public IIsImplemented IsImplemented { get; private set; }
 
-        public Dictionary<string, IPRegister> Registers { get; private set; }
+        public Dictionary<string, IPValue> Expressions { get; private set; }
 
-        public EnumEntry(uint value, Dictionary<string, IPRegister> registers)
+        public EnumEntry(uint value, IIsImplemented isImplemented)
         {
             Value = value;
-            Registers = registers;
+            IsImplemented = isImplemented;
         }
     }
 }

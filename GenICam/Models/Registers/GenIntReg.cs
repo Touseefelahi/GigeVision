@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 
 namespace GenICam
 {
-    public class GenIntReg : IGenRegister, IPRegister
+    public class GenIntReg : IRegister
     {
         /// <summary>
         /// Register Address in hex format
@@ -19,28 +20,28 @@ namespace GenICam
         /// <summary>
         /// Register Access Mode
         /// </summary>
-        public GenAccessMode AccessMode { get; set; }
+        public GenAccessMode AccessMode { get; private set; }
 
-        public Dictionary<string, IPRegister> Registers { get; set; }
-        public IGenPort Port { get; }
+        public Dictionary<string, IntSwissKnife> Expressions { get; set; }
+        public IGenPort GenPort { get; }
 
-        public GenIntReg(long address, long length, GenAccessMode accessMode, Dictionary<string, IPRegister> registers)
+        public GenIntReg(long address, long length, GenAccessMode accessMode, Dictionary<string, IntSwissKnife> expressions, IGenPort genPort)
         {
             Address = address;
             Length = length;
             AccessMode = accessMode;
-            Registers = registers;
-            Port = new GenPort(2020);
+            Expressions = expressions;
+            GenPort = genPort;
         }
 
-        public void Get(byte[] pBuffer, long length)
+        public async Task<IReplyPacket> Get(long length)
         {
-            Port.Read(pBuffer, Address, Length);
+            return await GenPort.Read(Address, Length);
         }
 
-        public void Set(byte[] pBuffer, long length)
+        public async Task<IReplyPacket> Set(byte[] pBuffer, long length)
         {
-            throw new System.NotImplementedException();
+            return await GenPort.Write(pBuffer, Address, length);
         }
 
         public long GetAddress()
@@ -53,25 +54,38 @@ namespace GenICam
             return Length;
         }
 
-        public long GetValue()
+        public async Task<long> GetValue()
         {
-            byte[] pBuffer = new byte[Length];
-            Get(pBuffer, Length);
+            var reply = await Get(Length);
+            Int64 value = 0;
 
-            switch (Length)
+            if (reply.MemoryValue != null)
             {
-                case 2:
-                    return BitConverter.ToUInt16(pBuffer);
+                switch (Length)
+                {
+                    case 2:
+                        value = BitConverter.ToUInt16(reply.MemoryValue);
+                        break;
 
-                case 4:
-                    return BitConverter.ToUInt32(pBuffer);
+                    case 4:
+                        value = BitConverter.ToUInt32(reply.MemoryValue);
+                        break;
 
-                case 8:
-                    return BitConverter.ToInt64(pBuffer);
+                    case 8:
+                        value = BitConverter.ToInt64(reply.MemoryValue);
+                        break;
+
+                    default:
+                        value = BitConverter.ToInt64(reply.MemoryValue);
+                        break;
+                }
+            }
+            else
+            {
+                value = (Int64)reply.RegisterValue;
             }
 
-            return BitConverter.ToInt64(pBuffer);
-
+            return value;
         }
     }
 }

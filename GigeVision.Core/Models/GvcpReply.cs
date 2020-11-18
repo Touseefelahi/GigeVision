@@ -1,4 +1,5 @@
-﻿using GigeVision.Core.Enums;
+﻿using GenICam;
+using GigeVision.Core.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,7 +9,7 @@ namespace GigeVision.Core.Models
     /// <summary>
     /// Decodes GVCP acknowledgement
     /// </summary>
-    public class GvcpReply
+    public class GvcpReply : IReplyPacket
     {
         /// <summary>
         /// Decode GVCP acknowledgement packet

@@ -4,6 +4,6 @@ namespace GenICam
 {
     public interface IGenCategory
     {
-        Dictionary<string, ICategory> GetFeatures();
+       List<ICategory> GetFeatures();
     }
 }

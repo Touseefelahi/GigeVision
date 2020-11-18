@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace GenICam
 {
     public interface IGenBoolean
     {
-        bool GetValue();
+        Task<bool> GetValue();
 
-        void SetVlaue(bool value);
+        void SetValue(bool value);
     }
 }

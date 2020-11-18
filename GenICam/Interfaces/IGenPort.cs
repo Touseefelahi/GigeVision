@@ -1,12 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace GenICam
 {
     public interface IGenPort
     {
-        void Read(byte[] pBuffer, Int64 address, Int64 length);
+        Task<IReplyPacket> Read(Int64 address, Int64 length);
 
-        void Write(byte[] pBuffer, Int64 address, Int64 length);
+        Task<IReplyPacket> Write(byte[] pBuffer, Int64 address, Int64 length);
     }
 }

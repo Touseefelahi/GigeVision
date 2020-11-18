@@ -1,5 +1,4 @@
-﻿using GigeVision.Core.Enums;
-using GigeVision.Core.Models;
+﻿using GenICam;
 using System;
 using System.Globalization;
 using System.Windows.Data;
@@ -10,15 +9,11 @@ namespace DeviceControl.Wpf.Converters
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value is CameraRegister cameraRegister)
-            {
-                if (cameraRegister.AccessMode == CameraRegisterAccessMode.RO)
-                    return false;
-            }
-            else if (value is null)
-                return false;
+            if (value is IRegister register)
+                if (register.AccessMode != GenAccessMode.RO)
+                    return true;
 
-            return true;
+            return false;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

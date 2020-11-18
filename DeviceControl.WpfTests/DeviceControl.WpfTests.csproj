@@ -14,8 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\GenICam\GenICam.csproj" />
-    <ProjectReference Include="..\GigeVision.Core\GigeVision.Core.csproj" />
+    <ProjectReference Include="..\DeviceControl.Wpf\DeviceControl.Wpf.csproj" />
   </ItemGroup>
 
 </Project>

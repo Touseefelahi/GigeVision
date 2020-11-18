@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace GenICam
 {
@@ -20,24 +22,45 @@ namespace GenICam
         /// </summary>
         public GenAccessMode AccessMode { get; private set; }
 
+        public IGenPort GenPort { get; }
         public string Value { get; set; }
 
-        public GenStringReg(CategoryProperties categoryProperties, Int64 address, ushort length, GenAccessMode accessMode)
+        public GenStringReg(CategoryProperties categoryProperties, Int64 address, ushort length, GenAccessMode accessMode, IGenPort genPort)
         {
             CategoryProperties = categoryProperties;
             Address = address;
             Length = length;
             AccessMode = accessMode;
+            GenPort = genPort;
+            SetupFeatures();
         }
 
-        public string GetValue()
+        public async Task<string> GetValue()
         {
+            var reply = await Get(Length);
+            Value = ASCIIEncoding.ASCII.GetString(reply.MemoryValue);
+
             return Value;
         }
 
-        public void SetValue(string value)
+        public async void SetValue(string value)
         {
-            Value = value;
+            if (PValue is IRegister Register)
+            {
+                if (Register.AccessMode != GenAccessMode.RO)
+                {
+                    var length = Register.GetLength();
+                    byte[] pBuffer = new byte[length];
+                    pBuffer = ASCIIEncoding.ASCII.GetBytes(value);
+
+                    var reply = await Register.Set(pBuffer, length);
+                    if (reply.IsSentAndReplyReceived && reply.Reply[0] == 0)
+                    {
+                        if (reply.MemoryValue != null)
+                            Value = Encoding.ASCII.GetString(reply.MemoryValue);
+                    }
+                }
+            }
         }
 
         public long GetMaxLength()
@@ -45,14 +68,14 @@ namespace GenICam
             return Length;
         }
 
-        public void Get(byte[] pBuffer, long length)
+        public async Task<IReplyPacket> Get(long length)
         {
-            throw new NotImplementedException();
+            return await GenPort.Read(Address, Length);
         }
 
-        public void Set(byte[] pBuffer, long length)
+        public async Task<IReplyPacket> Set(byte[] pBuffer, long length)
         {
-            throw new NotImplementedException();
+            return await GenPort.Write(pBuffer, Address, length);
         }
 
         public long GetAddress()
@@ -63,6 +86,11 @@ namespace GenICam
         public long GetLength()
         {
             return Length;
+        }
+
+        public async void SetupFeatures()
+        {
+            Value = await GetValue();
         }
     }
 }

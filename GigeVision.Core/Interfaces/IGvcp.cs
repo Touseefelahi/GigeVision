@@ -40,13 +40,7 @@ namespace GigeVision.Core.Interfaces
         /// <summary>
         /// Dictionary for registers
         /// </summary>
-        Dictionary<string, CameraRegisterContainer> RegistersDictionary { get; set; }
-
-        /// <summary>
-        /// Dictionary for registers groups
-        /// </summary>
-
-        Dictionary<string, CameraRegisterGroup> RegistersGroupDictionary { get; set; }
+        Dictionary<string, string> RegistersDictionary { get; set; }
 
         /// <summary>
         /// Write Register: it will send the GVCP command to the specified socket
@@ -205,13 +199,6 @@ namespace GigeVision.Core.Interfaces
         Task<GvcpReply> ReadRegisterAsync(string[] registerAddresses);
 
         /// <summary>
-        /// Read Register Container
-        /// </summary>
-        /// <param name="cameraRegisterContainer"></param>
-        /// <returns></returns>
-        Task<GvcpReply> ReadRegisterAsync(CameraRegisterContainer cameraRegisterContainer);
-
-        /// <summary>
         /// Read Memory Address
         /// </summary>
         /// <param name="ip"></param>
@@ -238,20 +225,20 @@ namespace GigeVision.Core.Interfaces
         /// Read all Register
         /// </summary>
         /// <returns>Dictionary of registers</returns>
-        Task<Dictionary<string, CameraRegisterContainer>> ReadAllRegisterAddressFromCameraAsync(string cameraIp);
+        Task<Dictionary<string, string>> ReadAllRegisterAddressFromCameraAsync(string cameraIp);
 
         /// <summary>
         /// Read all Register
         /// </summary>
         /// <returns>Dictionary of registers</returns>
-        Task<Dictionary<string, CameraRegisterContainer>> ReadAllRegisterAddressFromCameraAsync();
+        Task<Dictionary<string, string>> ReadAllRegisterAddressFromCameraAsync();
 
         /// <summary>
         /// Read all Register
         /// </summary>
         /// <param name="gvcp"></param>
         /// <returns></returns>
-        Task<Dictionary<string, CameraRegisterContainer>> ReadAllRegisterAddressFromCameraAsync(IGvcp gvcp);
+        Task<Dictionary<string, string>> ReadAllRegisterAddressFromCameraAsync(IGvcp gvcp);
 
         /// <summary>
         /// Forces the IP of camera to be changed to the given IP

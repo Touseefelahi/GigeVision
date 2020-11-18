@@ -5,6 +5,9 @@ using System.Collections.Generic;
 using System.Text;
 using System.Xml;
 
+using GigeVision.Core.Models;
+using GigeVision.Core;
+
 namespace GenICam.Tests
 {
     [TestClass()]
@@ -21,12 +24,11 @@ namespace GenICam.Tests
             XmlDocument xml = new XmlDocument();
             xml.Load("GEV_B1020C_v209.xml");
 
-            Dictionary<string, IGenCategory> catagoryDictionary = new Dictionary<string, IGenCategory>();
-            XmlHelper xmlHelper = new XmlHelper("Category", xml);
+            Gvcp gvcp = new Gvcp(new GenPort(3956));
+            XmlHelper xmlHelper = new XmlHelper("Category", xml, gvcp.GenPort);
+            //var width = xmlHelper.CategoryDictionary["ImageSizeControl"].PFeatures["Width"] as GenInteger;
 
-            var width = xmlHelper.CategoryDictionary["ImageSizeControl"].PFeatures["Width"] as GenInteger;
-
-            var value = width.GetValue();
+            //var value = width.GetValue();
         }
     }
 }

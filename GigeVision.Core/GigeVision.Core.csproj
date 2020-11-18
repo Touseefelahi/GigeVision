@@ -23,6 +23,7 @@
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <DocumentationFile>\GigeVision.Core\GigeVision.Core.xml</DocumentationFile>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
@@ -60,6 +61,10 @@
 
   <ItemGroup>
     <PackageReference Include="Stira.WpfCore" Version="1.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GenICam\GenICam.csproj" />
   </ItemGroup>
 
   <ItemGroup>

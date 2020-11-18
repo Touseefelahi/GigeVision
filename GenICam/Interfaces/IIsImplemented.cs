@@ -4,8 +4,7 @@ using System.Text;
 
 namespace GenICam
 {
-    public interface IPRegister
+    public interface IIsImplemented
     {
-        Int64 GetValue();
     }
 }

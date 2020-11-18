@@ -6,7 +6,7 @@
     <AssemblyName>DeviceControl.Test.Wpf</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Prism.DryIoc" Version="7.2.0.1422" />
+    <PackageReference Include="Prism.DryIoc" Version="8.0.0.1909" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DeviceControl.Wpf\DeviceControl.Wpf.csproj" />

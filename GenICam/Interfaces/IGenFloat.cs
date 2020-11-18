@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace GenICam
 {
@@ -20,7 +21,7 @@ namespace GenICam
 
         string GetUnit();
 
-        double GetValue();
+        Task<double> GetValue();
 
         void ImposeMax(double max);
 

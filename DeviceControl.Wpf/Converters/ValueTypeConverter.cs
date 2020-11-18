@@ -1,5 +1,4 @@
-﻿using GigeVision.Core.Enums;
-using System;
+﻿using System;
 using System.Globalization;
 using System.Windows.Data;
 
@@ -9,32 +8,32 @@ namespace DeviceControl.Wpf.Converters
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value is CameraRegisterType cameraRegisterType)
-            {
-                switch (cameraRegisterType)
-                {
-                    case CameraRegisterType.Integer:
-                        return "TextBoxInteger";
+            //if (value is CameraRegisterType cameraRegisterType)
+            //{
+            //    switch (cameraRegisterType)
+            //    {
+            //        case CameraRegisterType.Integer:
+            //            return "TextBoxInteger";
 
-                    case CameraRegisterType.Float:
-                        return "TextBoxFloat";
+            //        case CameraRegisterType.Float:
+            //            return "TextBoxFloat";
 
-                    case CameraRegisterType.StringReg:
-                        return "TextBoxString";
+            //        case CameraRegisterType.StringReg:
+            //            return "TextBoxString";
 
-                    case CameraRegisterType.Enumeration:
-                        return "ComboBox";
+            //        case CameraRegisterType.Enumeration:
+            //            return "ComboBox";
 
-                    case CameraRegisterType.Command:
-                        return "Button";
+            //        case CameraRegisterType.Command:
+            //            return "Button";
 
-                    case CameraRegisterType.Boolean:
-                        return "Checkbox";
+            //        case CameraRegisterType.Boolean:
+            //            return "Checkbox";
 
-                    default:
-                        break;
-                }
-            }
+            //        default:
+            //            break;
+            //    }
+            //}
             return null;
         }
 

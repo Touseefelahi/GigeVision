@@ -4,8 +4,13 @@ using System.Text;
 
 namespace GenICam
 {
-    public interface ICategory : IGenCategory
+    public interface ICategory : IGenCategory, IIsImplemented
     {
-        Dictionary<string, ICategory> PFeatures { get; set; }
+        string GroupName { get; }
+        List<ICategory> PFeatures { get; set; }
+        IPValue PValue { get; }
+        Dictionary<string, IntSwissKnife> Expressions { get; }
+
+        CategoryProperties CategoryProperties { get; }
     }
 }

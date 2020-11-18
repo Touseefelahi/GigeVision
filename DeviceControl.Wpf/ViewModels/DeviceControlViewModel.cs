@@ -1,7 +1,6 @@
 ﻿using DeviceControl.Wpf.DTO;
-using GigeVision.Core.Enums;
-using GigeVision.Core.Interfaces;
-using GigeVision.Core.Models;
+using GenICam;
+using GigeVision.Core;
 using Prism.Commands;
 using Prism.Mvvm;
 using System;
@@ -13,25 +12,24 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
+using System.Xml;
 
 namespace DeviceControl.Wpf.ViewModels
 {
     public class DeviceControlViewModel : BindableBase
     {
+        private ICategory selectedCategory;
+
         #region Properties
 
         /// <summary>
         /// This List is binded to the TreeView as a parent
         /// </summary>
-        public ObservableCollection<CameraRegisterGroupDTO> CameraRegisterGroupDTOList { get; set; }
+        public List<ICategory> Categories { get; set; }
 
-        public Dictionary<string, CameraRegisterContainer> FilteredRegistersDictionary { get; set; }
-        private List<CameraRegisterDTO> CameraRegistersList { get; set; }
-
-        public IGvcp Gvcp { get; set; }
         public ICommand LoadedWindowCommand { get; }
 
-        public CameraRegisterVisibility CameraRegisterVisibility
+        public GenVisibility CameraRegisterVisibility
         {
             get;
             set;
@@ -47,6 +45,12 @@ namespace DeviceControl.Wpf.ViewModels
             set;
         }
 
+        public Int64 ValueToWrite
+        {
+            get;
+            set;
+        }
+
         #endregion Properties
 
         #region Commands
@@ -54,17 +58,28 @@ namespace DeviceControl.Wpf.ViewModels
         public DelegateCommand TestDataTriggerCommand { get; }
         public DelegateCommand ExpandCommand { get; }
         public DelegateCommand<CameraRegisterDTO> SelectRegisterCommand { get; }
+        public IGenPort GenPort { get; }
 
         #endregion Commands
 
-        public DeviceControlViewModel(IGvcp gvcp)
+        public DeviceControlViewModel(IGenPort genPort)
         {
-            Gvcp = gvcp;
+            GenPort = genPort;
+
+            XmlDocument xml = new XmlDocument();
+            xml.Load("GEV_B1020C_v209.xml");
+            XmlHelper xmlHelper = new XmlHelper("Category", xml, genPort);
+            Categories = xmlHelper.CategoryDictionary;
             LoadedWindowCommand = new DelegateCommand(WindowLoaded);
-            TestDataTriggerCommand = new DelegateCommand(CreateCameraRegistersGroupCollection);
             ExpandCommand = new DelegateCommand(ExecuteExpandCommand);
             SelectRegisterCommand = new DelegateCommand<CameraRegisterDTO>(ExecuteSelectRegisterCommand);
-            CameraRegisterGroupDTOList = new ObservableCollection<CameraRegisterGroupDTO>();
+            // Categories = ReadAllRegisters(Categories);
+        }
+
+        public ICategory SelectedCategory
+        {
+            get => selectedCategory;
+            set => selectedCategory = value;
         }
 
         private void ExecuteSelectRegisterCommand(CameraRegisterDTO cameraRegister)
@@ -74,174 +89,10 @@ namespace DeviceControl.Wpf.ViewModels
 
         private void WindowLoaded()
         {
-            CreateCameraRegistersGroupCollection();
-            RaisePropertyChanged(nameof(CameraRegisterGroupDTOList));
+            RaisePropertyChanged(nameof(Categories));
         }
 
         #region Methods
-
-        /// <summary>
-        /// this method reads all device control registers values
-        /// </summary>
-        private async Task ReadDeviceControlRegisters()
-        {
-            await Gvcp.ReadAllRegisterAddressFromCameraAsync().ConfigureAwait(false);
-
-            var chunkSize = 30;
-            var skipSize = 0;
-            FilteredRegistersDictionary = Gvcp.RegistersDictionary.Where(x => x.Value.Register != null && x.Value.Visibility != CameraRegisterVisibility.Invisible).ToDictionary(x => x.Key, x => x.Value);
-            var readableRegisters = FilteredRegistersDictionary.Where(x => x.Value.Register.Address != null && x.Value.Register.AccessMode != CameraRegisterAccessMode.WO).ToDictionary(x => x.Key, x => x.Value);
-            //while (readableRegisters.Count > skipSize)
-            //{
-            //    var packetOfRegisters = readableRegisters.Skip(skipSize).Take(chunkSize).Select(x => x.Value.Register.Address).ToList();
-            //    var values = (await Gvcp.ReadRegisterAsync(packetOfRegisters.ToArray()));
-            //    if (values.Status == GvcpStatus.GEV_STATUS_SUCCESS)
-            //    {
-            //        int index = 0;
-            //        foreach (var register in readableRegisters.Skip(skipSize).Take(chunkSize).Select(x => x.Key))
-            //        {
-            //            if (Gvcp.RegistersDictionary[register].Type == CameraRegisterType.StringReg)
-            //            {
-            //                var stringValue = (await Gvcp.ReadMemoryAsync(Gvcp.RegistersDictionary[register].Register.Address, Gvcp.RegistersDictionary[register].Register.Length));
-            //                Gvcp.RegistersDictionary[register].Value = Encoding.ASCII.GetString(stringValue.MemoryValue);
-            //            }
-            //            else
-            //            {
-            //                Gvcp.RegistersDictionary[register].Value = values.RegisterValues[index];
-            //            }
-            //            index++;
-            //        }
-
-            //        skipSize += chunkSize;
-            //    }
-            //}
-
-            foreach (var register in readableRegisters.Select(x => x.Key))
-            {
-                if (Gvcp.RegistersDictionary[register].Type == CameraRegisterType.StringReg)
-                {
-                    var stringValue = (await Gvcp.ReadMemoryAsync(Gvcp.RegistersDictionary[register].Register.Address, Gvcp.RegistersDictionary[register].Register.Length));
-                    Gvcp.RegistersDictionary[register].Value = Encoding.ASCII.GetString(stringValue.MemoryValue);
-                }
-                else
-                {
-                    try
-                    {
-                        Gvcp.RegistersDictionary[register].Value = (await Gvcp.ReadRegisterAsync(Gvcp.RegistersDictionary[register].Register.Address)).RegisterValue;
-                    }
-                    catch (Exception ex)
-                    {
-                    }
-                }
-            }
-        }
-
-        public async void CreateCameraRegistersGroupCollection()
-        {
-            await ReadDeviceControlRegisters();
-            CameraRegistersList = new List<CameraRegisterDTO>();
-
-            foreach (var categoryFeature in Gvcp.RegistersGroupDictionary["Root"].Category)
-            {
-                var child = await GetChild(categoryFeature);
-                if (child != null)
-                {
-                    if (child.Child != null)
-                    {
-                        if (child.Child.Count == 0)
-                            child.Child = null;
-                    }
-
-                    child.CameraRegisters = CameraRegistersList;
-
-                    Application.Current.Dispatcher.Invoke((Action)delegate
-                    {
-                        CameraRegisterGroupDTOList.Add(child);
-                    });
-
-                    CameraRegistersList = new List<CameraRegisterDTO>();
-                }
-            }
-        }
-
-        /// <summary>
-        /// Helper method to reorganize camera registers structure
-        /// </summary>
-        /// <param name="categoryFeature"></param>
-        /// <returns></returns>
-
-        private async Task<CameraRegisterGroupDTO> GetChild(string categoryFeature)
-        {
-            CameraRegisterContainer cameraRegisterContainer = null;
-            ObservableCollection<CameraRegisterGroupDTO> cameraRegisterGroupDTOs = new ObservableCollection<CameraRegisterGroupDTO>();
-
-            //Look for parent (group)
-            if (Gvcp.RegistersGroupDictionary.ContainsKey(categoryFeature))
-            {
-                foreach (var feature in Gvcp.RegistersGroupDictionary[categoryFeature].Category)
-                {
-                    //When you find it look for its` children
-                    //child might be either parent of other children or child
-                    var child = await GetChild(feature);
-
-                    //check if child is a parent
-                    if (child != null)
-                    {
-                        if (child.Child.Count == 0)
-                        {
-                            child.Child = null;
-                        }
-                        if (CameraRegistersList.Count > 0)
-                        {
-                            child.CameraRegisters = CameraRegistersList;
-
-                            cameraRegisterGroupDTOs.Add(child);
-                            CameraRegistersList = new List<CameraRegisterDTO>();
-                        }
-                        else
-                        {
-                            cameraRegisterGroupDTOs.Add(child);
-                        }
-                    }
-                }
-                //return parent
-                if (Gvcp.RegistersGroupDictionary["Root"].Category.Contains(categoryFeature))
-                    return new CameraRegisterGroupDTO(categoryFeature, cameraRegisterGroupDTOs);
-
-                return new CameraRegisterGroupDTO(categoryFeature, cameraRegisterGroupDTOs);
-            }
-            else
-            {
-                //Look for Child (register)
-                var isNull = true;
-                if (Gvcp.RegistersDictionary.ContainsKey(categoryFeature))
-                {
-                    try
-                    {
-                        //if (Gvcp.RegistersDictionary[categoryFeature].Type == CameraRegisterType.StringReg)
-                        //{
-                        //    var stringValue = (await Gvcp.ReadMemoryAsync((Gvcp.RegistersDictionary[categoryFeature].Register.Address), Gvcp.RegistersDictionary[categoryFeature].Register.Length));
-                        //    Gvcp.RegistersDictionary[categoryFeature].Value = Encoding.ASCII.GetString(stringValue.MemoryValue);
-                        //}
-
-                        cameraRegisterContainer = Gvcp.RegistersDictionary[categoryFeature];
-
-                        isNull = false;
-                    }
-                    catch (Exception ex)
-                    {
-                        var x = ex;
-                    }
-                }
-
-                if (isNull)
-                    return null;
-
-                CameraRegistersList.Add(new CameraRegisterDTO(Gvcp, cameraRegisterContainer));
-
-                return null;
-            }
-        }
 
         /// <summary>
         /// Expand Tree View
@@ -254,6 +105,41 @@ namespace DeviceControl.Wpf.ViewModels
                 IsExpanded = true;
         }
 
-        #endregion Methods
+        //private List<ICategory> ReadAllRegisters(List<ICategory> categories)
+        //{
+        //    foreach (var category in categories)
+        //    {
+        //        if (category == null)
+        //            continue;
+        //        if (category.PFeatures != null)
+        //            category.PFeatures = ReadAllRegisters(category.PFeatures);
+
+        //        if (category.Registers == null)
+        //            continue;
+        //        if (category.CategoryProperties.Name == "GevTimestampControl")
+        //        {
+        //        }
+        //        if (category.CategoryProperties.Visibility == GenVisibility.Invisible)
+        //            continue;
+
+        //        foreach (var registerNode in category.Registers.Values)
+        //        {
+        //            if (registerNode is IPValue pRegister)
+        //            {
+        //                if (pRegister is IRegister register)
+        //                {
+        //                    if (register.AccessMode == GenAccessMode.WO)
+        //                        continue;
+        //                }
+
+        //                pRegister.GetValue();
+        //            }
+        //        }
+        //    }
+
+        //    return categories;
+        //}
     }
+
+    #endregion Methods
 }

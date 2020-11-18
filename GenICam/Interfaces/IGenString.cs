@@ -1,10 +1,11 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 namespace GenICam
 {
     public interface IGenString
     {
-        string GetValue();
+        Task<string> GetValue();
 
         void SetValue(string value);
 

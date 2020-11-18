@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace GenICam
 {
     public interface IGenEnumeration
     {
-        Int64 GetIntValue();
+        Task<Int64> GetIntValue();
 
         void SetIntValue(Int64 value);
 

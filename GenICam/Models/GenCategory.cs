@@ -1,14 +1,23 @@
-﻿using System;
+﻿using Prism.Mvvm;
+using System;
 using System.Collections.Generic;
+using System.Windows.Input;
 
 namespace GenICam
 {
-    public class GenCategory : ICategory
+    public class GenCategory : BindableBase, ICategory
     {
         public CategoryProperties CategoryProperties { get; internal set; }
-        public Dictionary<string, ICategory> PFeatures { get; set; }
+        public List<ICategory> PFeatures { get; set; }
 
-        public Dictionary<string, ICategory> GetFeatures()
+        public IPValue PValue { get; internal set; }
+
+        public string GroupName { get; internal set; }
+        public ICommand SetValueCommand { get; internal set; }
+
+        public Dictionary<string, IntSwissKnife> Expressions { get; internal set; }
+
+        public List<ICategory> GetFeatures()
         {
             return PFeatures;
         }
