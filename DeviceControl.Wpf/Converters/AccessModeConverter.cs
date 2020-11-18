@@ -5,7 +5,7 @@ using System.Windows.Data;
 
 namespace DeviceControl.Wpf.Converters
 {
-    public class TextBoxReadOnlyConverter : IValueConverter
+    public class AccessModeConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {

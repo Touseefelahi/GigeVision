@@ -1,7 +1,4 @@
-﻿using DeviceControl.Wpf.DTO;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
+﻿using System;
 using System.Globalization;
 using System.Windows.Data;
 
