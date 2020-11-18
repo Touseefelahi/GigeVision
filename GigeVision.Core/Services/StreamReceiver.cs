@@ -104,7 +104,7 @@ namespace GigeVision.Core.Models
                 while (Camera.IsStreaming)
                 {
                     length = socketRxRaw.Receive(singlePacket);
-                    if (length > 44) //Packet
+                    if (singlePacket[4] == 0x03) //Packet
                     {
                         packetRxCount++;
                         packetID = (singlePacket[6] << 8) | singlePacket[7];
@@ -121,7 +121,7 @@ namespace GigeVision.Core.Models
                             singlePacket.Slice(8, length - 8).CopyTo(slicedRowInImage);
                         }
                     }
-                    else if (length == 16) //Trailer packet size=16, Header Packet Size=44
+                    else if (singlePacket[4] == 0x02)
                     {
                         if (finalPacketID == 0)
                         {
@@ -151,6 +151,8 @@ namespace GigeVision.Core.Models
         }
 
         #region OldCode
+
+        private IntPtr intPtr;
 
         private void SetupSocketRx()
         {
@@ -229,7 +231,7 @@ namespace GigeVision.Core.Models
                 _ = Camera.StopStream();
             }
         }
-        IntPtr intPtr;
+
         private void RxCpp()
         {
             intPtr = new IntPtr();
