@@ -2,7 +2,8 @@
 using GigeVision.Core.Interfaces;
 using Stira.WpfCore;
 using System;
-using System.Net;
+using System.Linq;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 
@@ -35,6 +36,9 @@ namespace GigeVision.Core.Models
         private StreamReceiver streamReceiver;
 
         private bool isMulticast;
+        private uint payload = 0;
+        private string rxIP;
+        private int portRx;
 
         /// <summary>
         /// Camera constructor with initialized Gvcp Controller
@@ -59,7 +63,18 @@ namespace GigeVision.Core.Models
         /// <summary>
         /// Rx port
         /// </summary>
-        public int PortRx { get; set; }
+        public int PortRx
+        {
+            get { return portRx; }
+            set
+            {
+                if (portRx != value)
+                {
+                    portRx = value;
+                    OnPropertyChanged(nameof(PortRx));
+                }
+            }
+        }
 
         /// <summary>
         /// Camera stream status
@@ -84,7 +99,18 @@ namespace GigeVision.Core.Models
         /// <summary>
         /// Payload size, if not provided it will be automatically set to one row, depending on resolution
         /// </summary>
-        public uint Payload { get; set; } = 0;
+        public uint Payload
+        {
+            get => payload;
+            set
+            {
+                if (payload != value)
+                {
+                    payload = value;
+                    OnPropertyChanged(nameof(Payload));
+                }
+            }
+        }
 
         /// <summary>
         /// Camera width
@@ -185,7 +211,7 @@ namespace GigeVision.Core.Models
         /// </summary>
         public bool IsMulticast
         {
-            get { return isMulticast; }
+            get => isMulticast;
             set { isMulticast = value; OnPropertyChanged(nameof(IsMulticast)); }
         }
 
@@ -205,6 +231,19 @@ namespace GigeVision.Core.Models
         /// </summary>
         public bool IsUsingExternalBuffer { get; set; }
 
+        public string RxIP
+        {
+            get => rxIP;
+            set
+            {
+                if (rxIP != value)
+                {
+                    rxIP = value;
+                    OnPropertyChanged(nameof(RxIP));
+                }
+            }
+        }
+
         /// <summary>
         /// This method will get current PC IP and Gets the Camera ip from Gvcp
         /// </summary>
@@ -214,22 +253,23 @@ namespace GigeVision.Core.Models
         /// <returns></returns>
         public async Task<bool> StartStreamAsync(string rxIP = null, int rxPort = 0, Action<byte[]> frameReady = null)
         {
+            string ip2Send;
             frameReadyAction = frameReady;
             if (string.IsNullOrEmpty(rxIP))
             {
-                try
+                if (string.IsNullOrEmpty(RxIP) && !SetRxIP())
                 {
-                    rxIP = GetMyIp();
-                }
-                catch (Exception ex)
-                {
-                    Updates?.Invoke(this, ex.Message);
                     return false;
                 }
             }
+            else
+            {
+                RxIP = rxIP;
+            }
+            ip2Send = RxIP;
             if (IsMulticast)
             {
-                rxIP = MulticastIP;
+                ip2Send = MulticastIP;
             }
             try
             {
@@ -272,7 +312,7 @@ namespace GigeVision.Core.Models
                     SetupRxThread();
                     if ((await Gvcp.WriteRegisterAsync(GvcpRegister.SCPHostPort, (uint)PortRx).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS)
                     {
-                        await Gvcp.WriteRegisterAsync(GvcpRegister.SCDA, Converter.IpToNumber(rxIP)).ConfigureAwait(false);
+                        await Gvcp.WriteRegisterAsync(GvcpRegister.SCDA, Converter.IpToNumber(ip2Send)).ConfigureAwait(false);
                         await Gvcp.WriteRegisterAsync(GvcpRegister.SCPSPacketSize, Payload).ConfigureAwait(false);
                         string startReg = Gvcp.RegistersDictionary[nameof(RegisterName.AcquisitionStart)].Register.Address;
                         if ((await Gvcp.WriteRegisterAsync(startReg, 1).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS)
@@ -296,7 +336,7 @@ namespace GigeVision.Core.Models
             }
             else
             {
-                Updates?.Invoke(this,"Fatal Error: Aquisition Start Register Not Found");
+                Updates?.Invoke(this, "Fatal Error: Acquisition Start Register Not Found");
             }
             return IsStreaming;
         }
@@ -457,7 +497,10 @@ namespace GigeVision.Core.Models
             if (!IsStreaming && externalRawBytes != default)
             {
                 if (rawBytes != null)
+                {
                     Array.Clear(rawBytes, 0, rawBytes.Length);
+                }
+
                 rawBytes = externalRawBytes;
                 IsUsingExternalBuffer = true;
             }
@@ -476,7 +519,7 @@ namespace GigeVision.Core.Models
                 {
                     return false;
                 }
-                var test = Gvcp.RegistersDictionary[nameof(RegisterName.Width)].Register.Address;
+                string test = Gvcp.RegistersDictionary[nameof(RegisterName.Width)].Register.Address;
 
                 string[] registersToRead = new string[]
                 {
@@ -510,6 +553,25 @@ namespace GigeVision.Core.Models
             return true;
         }
 
+        private bool SetRxIP()
+        {
+            try
+            {
+                var ip = GetMyIp();
+                if (string.IsNullOrEmpty(ip))
+                {
+                    return false;
+                }
+                RxIP = ip;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Updates?.Invoke(this, ex.Message);
+                return false;
+            }
+        }
+
         private void SetupRxThread()
         {
             if (IsUsingCppForRx)
@@ -525,7 +587,10 @@ namespace GigeVision.Core.Models
         private void SetRxBuffer()
         {
             if (rawBytes != null)
+            {
                 Array.Clear(rawBytes, 0, rawBytes.Length);
+            }
+
             if (!IsRawFrame && PixelFormat.ToString().Contains("Bayer"))
             {
                 rawBytes = new byte[Width * Height * 3];
@@ -540,6 +605,7 @@ namespace GigeVision.Core.Models
         {
             MotorController = new MotorControl();
             streamReceiver = new StreamReceiver(this);
+            SetRxIP();
             Gvcp.CameraIpChanged += CameraIpChanged;
         }
 
@@ -555,14 +621,31 @@ namespace GigeVision.Core.Models
 
         private string GetMyIp()
         {
-            string localIP;
-            using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, 0))
+            string localIP = "";
+            foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
             {
-                socket.Connect("8.8.8.8", 65530);
-                IPEndPoint endPoint = socket.LocalEndPoint as IPEndPoint;
-                localIP = endPoint.Address.ToString();
+                IPInterfaceProperties ipProp = nic.GetIPProperties();
+                var gwAddresses = ipProp.GatewayAddresses;
+                if (gwAddresses.Count > 0 &&
+                    gwAddresses.Any(g => g.Address.AddressFamily == AddressFamily.InterNetwork))
+                {
+                    localIP = ipProp.UnicastAddresses.First(d => d.Address.AddressFamily == AddressFamily.InterNetwork).Address.ToString();
+                }
+                else if (ipProp.UnicastAddresses.Count > 0) //If we have any other address then get that one
+                {
+                    localIP = ipProp.UnicastAddresses.First(d => d.Address.AddressFamily == AddressFamily.InterNetwork).Address.ToString();
+                }
+                if (!string.IsNullOrEmpty(localIP))
+                    return localIP;
             }
-            return localIP;
+
+            //using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, 0))
+            //{
+            //    socket.Connect("8.8.8.8", 65530);
+            //    IPEndPoint endPoint = socket.LocalEndPoint as IPEndPoint;
+            //    localIP = endPoint.Address.ToString();
+            //}
+            throw new Exception("System IP not found");
         }
     }
 }
