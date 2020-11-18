@@ -1,4 +1,5 @@
-﻿using GigeVision.Core.Enums;
+﻿using GenICam;
+using GigeVision.Core.Enums;
 using GigeVision.Core.Models;
 using System;
 using System.Collections.Generic;
@@ -27,6 +28,8 @@ namespace GigeVision.Core.Interfaces
         /// </summary>
         string CameraIp { get; set; }
 
+        int PortGvcp { get; }
+
         /// <summary>
         /// Controlling port for GVCP
         /// </summary>
@@ -37,10 +40,12 @@ namespace GigeVision.Core.Interfaces
         /// </summary>
         bool IsKeepingAlive { get; }
 
+        Dictionary<string, string> RegistersDictionary { get; set; }
+
         /// <summary>
         /// Dictionary for registers
         /// </summary>
-        Dictionary<string, string> RegistersDictionary { get; set; }
+        //Dictionary<string, string> RegistersDictionary { get; set; }
 
         /// <summary>
         /// Write Register: it will send the GVCP command to the specified socket
@@ -221,24 +226,24 @@ namespace GigeVision.Core.Interfaces
         /// <returns></returns>
         Task<GvcpReply> WriteMemoryAsync(string memoryAddress, uint valueToWrite);
 
-        /// <summary>
-        /// Read all Register
-        /// </summary>
-        /// <returns>Dictionary of registers</returns>
-        Task<Dictionary<string, string>> ReadAllRegisterAddressFromCameraAsync(string cameraIp);
+        ///// <summary>
+        ///// Read all Register
+        ///// </summary>
+        ///// <returns>Dictionary of registers</returns>
+        //Task<Dictionary<string, string>> ReadAllRegisterAddressFromCameraAsync(string cameraIp);
 
-        /// <summary>
-        /// Read all Register
-        /// </summary>
-        /// <returns>Dictionary of registers</returns>
-        Task<Dictionary<string, string>> ReadAllRegisterAddressFromCameraAsync();
+        ///// <summary>
+        ///// Read all Register
+        ///// </summary>
+        ///// <returns>Dictionary of registers</returns>
+        //Task<Dictionary<string, string>> ReadAllRegisterAddressFromCameraAsync();
 
-        /// <summary>
-        /// Read all Register
-        /// </summary>
-        /// <param name="gvcp"></param>
-        /// <returns></returns>
-        Task<Dictionary<string, string>> ReadAllRegisterAddressFromCameraAsync(IGvcp gvcp);
+        ///// <summary>
+        ///// Read all Register
+        ///// </summary>
+        ///// <param name="gvcp"></param>
+        ///// <returns></returns>
+        //Task<Dictionary<string, string>> ReadAllRegisterAddressFromCameraAsync(IGvcp gvcp);
 
         /// <summary>
         /// Forces the IP of camera to be changed to the given IP
@@ -293,5 +298,13 @@ namespace GigeVision.Core.Interfaces
         /// </summary>
         /// <returns>Leave Status</returns>
         Task<bool> LeaveControl();
+
+        bool ValidateIp(string ipString);
+
+        Task<Dictionary<string, string>> ReadAllRegisterAddressFromCameraAsync(string cameraIp);
+
+        Task<Dictionary<string, string>> ReadAllRegisterAddressFromCameraAsync();
+
+        //List<ICategory> CategoryDictionary { get; }
     }
 }

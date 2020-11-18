@@ -1,10 +1,17 @@
-﻿using GigeVision.Core.Enums;
+﻿using GenICam;
+using GigeVision.Core.Enums;
+using GigeVision.Core.Exceptions;
 using GigeVision.Core.Interfaces;
 using Stira.WpfCore;
 using System;
+using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 using System.Threading.Tasks;
+using System.Xml;
 
 namespace GigeVision.Core.Models
 {
@@ -35,6 +42,15 @@ namespace GigeVision.Core.Models
         private StreamReceiver streamReceiver;
 
         private bool isMulticast;
+        private short gvcpRequestID = 1;
+
+        /// <summary>
+        /// Register dictionary of camera
+        /// </summary>
+
+        public Dictionary<string, string> RegistersDictionary { get; set; }
+
+        public List<ICategory> CategoryDictionary { get; private set; }
 
         /// <summary>
         /// Camera constructor with initialized Gvcp Controller
@@ -46,6 +62,13 @@ namespace GigeVision.Core.Models
             Task.Run(async () => await SyncParameters().ConfigureAwait(false));
             Init();
         }
+
+        //public Camera(IGenPort genPort)
+        //{
+        //    Task.Run(async () => await SyncParameters().ConfigureAwait(false));
+        //    Init();
+        //    GenPort = genPort;
+        //}
 
         /// <summary>
         /// Default camera constructor initializes the controller
@@ -204,6 +227,8 @@ namespace GigeVision.Core.Models
         /// true and software will copy stream on this buffer
         /// </summary>
         public bool IsUsingExternalBuffer { get; set; }
+
+        public IGenPort GenPort { get; }
 
         /// <summary>
         /// This method will get current PC IP and Gets the Camera ip from Gvcp
@@ -471,7 +496,7 @@ namespace GigeVision.Core.Models
         {
             try
             {
-                await Gvcp.ReadAllRegisterAddressFromCameraAsync(Gvcp).ConfigureAwait(false);
+                await Gvcp.ReadAllRegisterAddressFromCameraAsync().ConfigureAwait(false);
                 if (Gvcp.RegistersDictionary.Count == 0)
                 {
                     return false;

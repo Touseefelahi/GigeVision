@@ -3,6 +3,8 @@ using DeviceControl.Test.Wpf.Views;
 using System.Windows;
 using GenICam;
 using GigeVision.Core;
+using GigeVision.Core.Interfaces;
+using GigeVision.Core.Models;
 
 namespace DeviceControl.Test.Wpf
 {
@@ -18,7 +20,7 @@ namespace DeviceControl.Test.Wpf
 
         protected override void RegisterTypes(IContainerRegistry containerRegistry)
         {
-            containerRegistry.RegisterInstance<IGenPort>(new GenPort(3956));
+            //containerRegistry.RegisterInstance<ICamera>(new Camera(new GenPort(new )));
         }
     }
 }
