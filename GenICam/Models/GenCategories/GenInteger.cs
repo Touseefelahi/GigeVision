@@ -115,30 +115,30 @@ namespace GenICam
             {
                 if (Register.AccessMode != GenAccessMode.RO)
                 {
-                    if ((value % Inc) != 0)
-                        return;
-
-                    var length = Register.GetLength();
-                    byte[] pBuffer = new byte[length];
-
-                    switch (length)
+                    if ((value % Inc) == 0)
                     {
-                        case 2:
-                            pBuffer = BitConverter.GetBytes((UInt16)value);
-                            break;
+                        var length = Register.GetLength();
+                        byte[] pBuffer = new byte[length];
 
-                        case 4:
-                            pBuffer = BitConverter.GetBytes((Int32)value);
-                            break;
+                        switch (length)
+                        {
+                            case 2:
+                                pBuffer = BitConverter.GetBytes((UInt16)value);
+                                break;
 
-                        case 8:
-                            pBuffer = BitConverter.GetBytes(value);
-                            break;
+                            case 4:
+                                pBuffer = BitConverter.GetBytes((Int32)value);
+                                break;
+
+                            case 8:
+                                pBuffer = BitConverter.GetBytes(value);
+                                break;
+                        }
+
+                        var reply = await Register.Set(pBuffer, length);
+                        if (reply.IsSentAndReplyReceived && reply.Reply[0] == 0)
+                            Value = value;
                     }
-
-                    var reply = await Register.Set(pBuffer, length);
-                    if (reply.IsSentAndReplyReceived && reply.Reply[0] == 0)
-                        Value = value;
                 }
             }
             ValueToWrite = Value;

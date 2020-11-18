@@ -1,16 +1,8 @@
-﻿using DeviceControl.Wpf.DTO;
-using GenICam;
-using GigeVision.Core;
+﻿using GenICam;
 using Prism.Commands;
 using Prism.Mvvm;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Windows;
 using System.Windows.Input;
 using System.Xml;
 
@@ -39,12 +31,6 @@ namespace DeviceControl.Wpf.ViewModels
 
         public bool IsExpanded { get; set; } = false;
 
-        public CameraRegisterDTO SelectedRegister
-        {
-            get;
-            set;
-        }
-
         public Int64 ValueToWrite
         {
             get;
@@ -57,7 +43,6 @@ namespace DeviceControl.Wpf.ViewModels
 
         public DelegateCommand TestDataTriggerCommand { get; }
         public DelegateCommand ExpandCommand { get; }
-        public DelegateCommand<CameraRegisterDTO> SelectRegisterCommand { get; }
         public IGenPort GenPort { get; }
 
         #endregion Commands
@@ -72,19 +57,12 @@ namespace DeviceControl.Wpf.ViewModels
             Categories = xmlHelper.CategoryDictionary;
             LoadedWindowCommand = new DelegateCommand(WindowLoaded);
             ExpandCommand = new DelegateCommand(ExecuteExpandCommand);
-            SelectRegisterCommand = new DelegateCommand<CameraRegisterDTO>(ExecuteSelectRegisterCommand);
-            // Categories = ReadAllRegisters(Categories);
         }
 
         public ICategory SelectedCategory
         {
             get => selectedCategory;
             set => selectedCategory = value;
-        }
-
-        private void ExecuteSelectRegisterCommand(CameraRegisterDTO cameraRegister)
-        {
-            SelectedRegister = cameraRegister;
         }
 
         private void WindowLoaded()
