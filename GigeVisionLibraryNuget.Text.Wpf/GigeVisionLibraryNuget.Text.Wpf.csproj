@@ -188,7 +188,7 @@
       <Version>1.0.1</Version>
     </PackageReference>
     <PackageReference Include="Stira.WpfFlatStyle">
-      <Version>1.5.0</Version>
+      <Version>1.8.6.2</Version>
     </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -28,6 +28,12 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DeviceControl.Wpf", "Device
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DeviceControl.Test.Wpf", "DeviceControl.Test.Wpf\DeviceControl.Test.Wpf.csproj", "{A36160A9-16E4-4CE7-9DB1-19D4807314CA}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GenICam", "GenICam\GenICam.csproj", "{329D0921-AC4C-430D-92CD-B387AE869764}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GenICamTests", "GenICamTests\GenICamTests.csproj", "{082A0F16-55F9-4520-8CF3-D48E5EBCAAEA}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DeviceControl.WpfTests", "DeviceControl.WpfTests\DeviceControl.WpfTests.csproj", "{0CC98438-3AD6-4677-9196-72F07DB5F9A2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -192,6 +198,7 @@ Global
 		{60740260-6D52-4F9A-AAB7-4076B349EEC0} = {0307491D-B8FC-42AE-8EAB-69D2C072973B}
 		{6EBD3983-8BB0-4FD4-B1EC-04335D7AE962} = {B120F0DB-D7D6-4ABA-845B-32117EB4B1B2}
 		{A36160A9-16E4-4CE7-9DB1-19D4807314CA} = {0307491D-B8FC-42AE-8EAB-69D2C072973B}
+		{329D0921-AC4C-430D-92CD-B387AE869764} = {B120F0DB-D7D6-4ABA-845B-32117EB4B1B2}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C6692468-3D71-4CF6-BBB2-3E938FFB2E6F}
