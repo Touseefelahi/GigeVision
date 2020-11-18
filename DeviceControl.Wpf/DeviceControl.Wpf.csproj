@@ -3,8 +3,15 @@
   <PropertyGroup>
     <OutputType>library</OutputType>
     <AssemblyName>DeviceControl.Wpf</AssemblyName>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
     <UseWPF>true</UseWPF>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageId>Gige.DeviceControl.Wpf</PackageId>
+    <Authors>Faisal Fagihi</Authors>
+    <Company>Stira.sa</Company>
+    <Product>Gige.DeviceControl.Wpf</Product>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup>

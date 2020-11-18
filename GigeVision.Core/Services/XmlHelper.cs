@@ -24,10 +24,10 @@ namespace GigeVision.Core.Services
         /// <summary>
         /// the main method to read xml file
         /// </summary>
-        /// <param name="registerDictionary"> Regiser Dictionary </param>
-        /// <param name="regisetrGroupDictionary"> Register Group Dictionary</param>
-        /// <param name="tagName"> First Parent Tag Name</param>
-        /// <param name="xmlDocument"> Xml File </param>
+        /// <param name="registerDictionary">Regiser Dictionary</param>
+        /// <param name="regisetrGroupDictionary">Register Group Dictionary</param>
+        /// <param name="tagName">First Parent Tag Name</param>
+        /// <param name="xmlDocument">Xml File</param>
         public XmlHelper(out Dictionary<string, CameraRegisterContainer> registerDictionary, out Dictionary<string, CameraRegisterGroup> regisetrGroupDictionary, string tagName, XmlDocument xmlDocument)
         {
             registerDictionary = new Dictionary<string, CameraRegisterContainer>();
@@ -86,11 +86,12 @@ namespace GigeVision.Core.Services
         /// <summary>
         /// the main method to read xml file
         /// </summary>
-        /// <param name="gvcp"> Gvcp </param>
-        /// <param name="registerDictionary"> Regiser Dictionary </param>
-        /// <param name="regisetrGroupDictionary"> Register Group Dictionary</param>
-        /// <param name="tagName"> First Parent Tag Name</param>
-        /// <param name="xmlDocument"> Xml File </param>>
+        /// <param name="gvcp">Gvcp</param>
+        /// <param name="registerDictionary">Regiser Dictionary</param>
+        /// <param name="regisetrGroupDictionary">Register Group Dictionary</param>
+        /// <param name="tagName">First Parent Tag Name</param>
+        /// <param name="xmlDocument">Xml File</param>
+        /// &gt;
         public XmlHelper(IGvcp gvcp, out Dictionary<string, CameraRegisterContainer> registerDictionary, out Dictionary<string, CameraRegisterGroup> regisetrGroupDictionary, string tagName, XmlDocument xmlDocument)
         {
             Gvcp = gvcp;

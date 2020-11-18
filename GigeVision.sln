@@ -24,9 +24,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GigeVisionLibraryNuget.Text
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GigeVision.WpfTests", "GigeVision.WpfTests\GigeVision.WpfTests.csproj", "{60740260-6D52-4F9A-AAB7-4076B349EEC0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeviceControl.Wpf", "DeviceControl.Wpf\DeviceControl.Wpf.csproj", "{6EBD3983-8BB0-4FD4-B1EC-04335D7AE962}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DeviceControl.Wpf", "DeviceControl.Wpf\DeviceControl.Wpf.csproj", "{6EBD3983-8BB0-4FD4-B1EC-04335D7AE962}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeviceControl.Test.Wpf", "DeviceControl.Test.Wpf\DeviceControl.Test.Wpf.csproj", "{A36160A9-16E4-4CE7-9DB1-19D4807314CA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DeviceControl.Test.Wpf", "DeviceControl.Test.Wpf\DeviceControl.Test.Wpf.csproj", "{A36160A9-16E4-4CE7-9DB1-19D4807314CA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -130,6 +130,12 @@ Global
 		{60740260-6D52-4F9A-AAB7-4076B349EEC0}.Debug|x64.Build.0 = Debug|Any CPU
 		{60740260-6D52-4F9A-AAB7-4076B349EEC0}.Debug|x86.ActiveCfg = Debug|Any CPU
 		{60740260-6D52-4F9A-AAB7-4076B349EEC0}.Debug|x86.Build.0 = Debug|Any CPU
+		{60740260-6D52-4F9A-AAB7-4076B349EEC0}.PublishLocally|Any CPU.ActiveCfg = Release|Any CPU
+		{60740260-6D52-4F9A-AAB7-4076B349EEC0}.PublishLocally|Any CPU.Build.0 = Release|Any CPU
+		{60740260-6D52-4F9A-AAB7-4076B349EEC0}.PublishLocally|x64.ActiveCfg = Release|Any CPU
+		{60740260-6D52-4F9A-AAB7-4076B349EEC0}.PublishLocally|x64.Build.0 = Release|Any CPU
+		{60740260-6D52-4F9A-AAB7-4076B349EEC0}.PublishLocally|x86.ActiveCfg = Release|Any CPU
+		{60740260-6D52-4F9A-AAB7-4076B349EEC0}.PublishLocally|x86.Build.0 = Release|Any CPU
 		{60740260-6D52-4F9A-AAB7-4076B349EEC0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{60740260-6D52-4F9A-AAB7-4076B349EEC0}.Release|Any CPU.Build.0 = Release|Any CPU
 		{60740260-6D52-4F9A-AAB7-4076B349EEC0}.Release|x64.ActiveCfg = Release|Any CPU
@@ -142,6 +148,12 @@ Global
 		{6EBD3983-8BB0-4FD4-B1EC-04335D7AE962}.Debug|x64.Build.0 = Debug|Any CPU
 		{6EBD3983-8BB0-4FD4-B1EC-04335D7AE962}.Debug|x86.ActiveCfg = Debug|Any CPU
 		{6EBD3983-8BB0-4FD4-B1EC-04335D7AE962}.Debug|x86.Build.0 = Debug|Any CPU
+		{6EBD3983-8BB0-4FD4-B1EC-04335D7AE962}.PublishLocally|Any CPU.ActiveCfg = Release|Any CPU
+		{6EBD3983-8BB0-4FD4-B1EC-04335D7AE962}.PublishLocally|Any CPU.Build.0 = Release|Any CPU
+		{6EBD3983-8BB0-4FD4-B1EC-04335D7AE962}.PublishLocally|x64.ActiveCfg = Release|Any CPU
+		{6EBD3983-8BB0-4FD4-B1EC-04335D7AE962}.PublishLocally|x64.Build.0 = Release|Any CPU
+		{6EBD3983-8BB0-4FD4-B1EC-04335D7AE962}.PublishLocally|x86.ActiveCfg = Release|Any CPU
+		{6EBD3983-8BB0-4FD4-B1EC-04335D7AE962}.PublishLocally|x86.Build.0 = Release|Any CPU
 		{6EBD3983-8BB0-4FD4-B1EC-04335D7AE962}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6EBD3983-8BB0-4FD4-B1EC-04335D7AE962}.Release|Any CPU.Build.0 = Release|Any CPU
 		{6EBD3983-8BB0-4FD4-B1EC-04335D7AE962}.Release|x64.ActiveCfg = Release|Any CPU
@@ -154,6 +166,12 @@ Global
 		{A36160A9-16E4-4CE7-9DB1-19D4807314CA}.Debug|x64.Build.0 = Debug|Any CPU
 		{A36160A9-16E4-4CE7-9DB1-19D4807314CA}.Debug|x86.ActiveCfg = Debug|Any CPU
 		{A36160A9-16E4-4CE7-9DB1-19D4807314CA}.Debug|x86.Build.0 = Debug|Any CPU
+		{A36160A9-16E4-4CE7-9DB1-19D4807314CA}.PublishLocally|Any CPU.ActiveCfg = Release|Any CPU
+		{A36160A9-16E4-4CE7-9DB1-19D4807314CA}.PublishLocally|Any CPU.Build.0 = Release|Any CPU
+		{A36160A9-16E4-4CE7-9DB1-19D4807314CA}.PublishLocally|x64.ActiveCfg = Release|Any CPU
+		{A36160A9-16E4-4CE7-9DB1-19D4807314CA}.PublishLocally|x64.Build.0 = Release|Any CPU
+		{A36160A9-16E4-4CE7-9DB1-19D4807314CA}.PublishLocally|x86.ActiveCfg = Release|Any CPU
+		{A36160A9-16E4-4CE7-9DB1-19D4807314CA}.PublishLocally|x86.Build.0 = Release|Any CPU
 		{A36160A9-16E4-4CE7-9DB1-19D4807314CA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A36160A9-16E4-4CE7-9DB1-19D4807314CA}.Release|Any CPU.Build.0 = Release|Any CPU
 		{A36160A9-16E4-4CE7-9DB1-19D4807314CA}.Release|x64.ActiveCfg = Release|Any CPU
