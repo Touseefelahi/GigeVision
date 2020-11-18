@@ -21,7 +21,10 @@
     <Configurations>Debug;Release;PublishLocally</Configurations>
   </PropertyGroup>
 
-  //Add relative documentation path
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DocumentationFile>\GigeVision.Core\GigeVision.Core.xml</DocumentationFile>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+  </PropertyGroup>
 
   <ItemGroup>
     <None Include="build\GigeVision.Core.targets">
@@ -58,6 +61,10 @@
 
   <ItemGroup>
     <PackageReference Include="Stira.WpfCore" Version="1.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GenICam\GenICam.csproj" />
   </ItemGroup>
 
   <ItemGroup>
