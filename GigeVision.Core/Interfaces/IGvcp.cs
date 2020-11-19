@@ -1,4 +1,5 @@
-﻿using GigeVision.Core.Enums;
+﻿using GenICam;
+using GigeVision.Core.Enums;
 using GigeVision.Core.Models;
 using System;
 using System.Collections.Generic;
@@ -293,5 +294,7 @@ namespace GigeVision.Core.Interfaces
         /// </summary>
         /// <returns>Leave Status</returns>
         Task<bool> LeaveControl();
+
+        List<ICategory> CategoryDictionary { get; }
     }
 }
