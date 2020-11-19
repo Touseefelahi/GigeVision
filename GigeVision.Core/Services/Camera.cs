@@ -1,15 +1,13 @@
 ﻿using GenICam;
 using GigeVision.Core.Enums;
-using GigeVision.Core.Exceptions;
 using GigeVision.Core.Interfaces;
 using Stira.WpfCore;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading.Tasks;
-using System.Xml;
 
 namespace GigeVision.Core.Models
 {
@@ -48,10 +46,6 @@ namespace GigeVision.Core.Models
         /// Register dictionary of camera
         /// </summary>
 
-        public Dictionary<string, string> RegistersDictionary { get; set; }
-
-        public List<ICategory> CategoryDictionary { get; private set; }
-
         /// <summary>
         /// Camera constructor with initialized Gvcp Controller
         /// </summary>
@@ -63,13 +57,6 @@ namespace GigeVision.Core.Models
             Init();
         }
 
-        //public Camera(IGenPort genPort)
-        //{
-        //    Task.Run(async () => await SyncParameters().ConfigureAwait(false));
-        //    Init();
-        //    GenPort = genPort;
-        //}
-
         /// <summary>
         /// Default camera constructor initializes the controller
         /// </summary>
@@ -79,12 +66,22 @@ namespace GigeVision.Core.Models
             Init();
         }
 
+        public Dictionary<string, string> RegistersDictionary { get; set; }
+
+        public List<ICategory> CategoryDictionary { get; private set; }
+
+        //public Camera(IGenPort genPort)
+        //{
+        //    Task.Run(async () => await SyncParameters().ConfigureAwait(false));
+        //    Init();
+        //    GenPort = genPort;
+        //}
         /// <summary>
         /// Rx port
         /// </summary>
         public int PortRx
         {
-            get { return portRx; }
+            get => portRx;
             set
             {
                 if (portRx != value)
@@ -538,7 +535,6 @@ namespace GigeVision.Core.Models
                 {
                     return false;
                 }
-                var test = Gvcp.RegistersDictionary[nameof(RegisterName.Width)].Register.Address;
 
                 string[] registersToRead = new string[]
                 {
@@ -576,7 +572,7 @@ namespace GigeVision.Core.Models
         {
             try
             {
-                var ip = GetMyIp();
+                string ip = GetMyIp();
                 if (string.IsNullOrEmpty(ip))
                 {
                     return false;
@@ -644,7 +640,7 @@ namespace GigeVision.Core.Models
             foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
             {
                 IPInterfaceProperties ipProp = nic.GetIPProperties();
-                var gwAddresses = ipProp.GatewayAddresses;
+                GatewayIPAddressInformationCollection gwAddresses = ipProp.GatewayAddresses;
                 if (gwAddresses.Count > 0 &&
                     gwAddresses.Any(g => g.Address.AddressFamily == AddressFamily.InterNetwork))
                 {
@@ -655,7 +651,9 @@ namespace GigeVision.Core.Models
                     localIP = ipProp.UnicastAddresses.First(d => d.Address.AddressFamily == AddressFamily.InterNetwork).Address.ToString();
                 }
                 if (!string.IsNullOrEmpty(localIP))
+                {
                     return localIP;
+                }
             }
 
             //using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, 0))
