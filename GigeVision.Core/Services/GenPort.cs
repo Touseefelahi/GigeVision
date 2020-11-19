@@ -1,4 +1,5 @@
 ﻿using GenICam;
+using GigeVision.Core.Interfaces;
 using GigeVision.Core.Models;
 using System;
 using System.Runtime.InteropServices;
@@ -8,16 +9,12 @@ namespace GigeVision.Core
 {
     public class GenPort : IGenPort
     {
-        public GenPort(int port)
+        public GenPort(IGvcp gvcp)
         {
-            IP = "192.168.10.244";
-            Port = port;
-            Gvcp = new Gvcp(this);
+            Gvcp = gvcp;
         }
 
-        public Gvcp Gvcp { get; }
-        public string IP { get; set; }
-        public int Port { get; }
+        public IGvcp Gvcp { get; }
 
         public async Task<IReplyPacket> Read(long address, long length)
         {
@@ -30,7 +27,7 @@ namespace GigeVision.Core
                 return reply;
 
             if (length >= 8)
-                return await Gvcp.ReadMemoryAsync(IP, addressBytes, (ushort)length);
+                return await Gvcp.ReadMemoryAsync(Gvcp.CameraIp, addressBytes, (ushort)length);
             else
                 return await Gvcp.ReadRegisterAsync(addressBytes);
         }

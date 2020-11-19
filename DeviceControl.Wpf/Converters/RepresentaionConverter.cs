@@ -1,6 +1,7 @@
 ﻿using GenICam;
 using System;
 using System.Globalization;
+using System.Linq;
 using System.Net;
 using System.Text;
 using System.Windows.Data;
@@ -24,17 +25,10 @@ namespace DeviceControl.Wpf.Converters
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            try
-            {
-                if (value is null)
-                    return 0;
+            if (value is string stringValue)
+                return BitConverter.ToInt32(IPAddress.Parse(stringValue).GetAddressBytes().ToArray());
 
-                return value;
-            }
-            catch
-            {
-                return null;
-            }
+            return null;
         }
     }
 }

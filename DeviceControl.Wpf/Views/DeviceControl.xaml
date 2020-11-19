@@ -21,11 +21,9 @@
     <UserControl.Resources>
         <!--Converters-->
 
-        <converters:TextBoxReadOnlyConverter x:Key="AccessModeConverter" />
+        <converters:AccessModeConverter x:Key="AccessModeConverter" />
         <converters:VisibilityConverter x:Key="VisibillityConverter" />
         <converters:ListCheckConverter x:Key="ListCheckConverter" />
-        <converters:EnumerationIndexConverter x:Key="EnumerationIndexConverter" />
-        <converters:ValueTypeConverter x:Key="ValueTypeConverter" />
         <converters:TreeExpandConverter x:Key="TreeExpandConverter" />
         <converters:NullVisibilityConverter x:Key="NullVisibilityConverter" />
         <converters:CheckBoxConverter x:Key="CheckBoxConverter" />
@@ -167,8 +165,8 @@
         <!--TreeView Templates-->
 
         <!--Category-->
-        <HierarchicalDataTemplate DataType="{x:Type genICam:GenCategory}"  ItemsSource="{Binding PFeatures}">
-            <TextBlock Text="{Binding GroupName}" FontWeight="Bold" />
+        <HierarchicalDataTemplate  DataType="{x:Type genICam:GenCategory}"  ItemsSource="{Binding PFeatures}">
+            <TextBlock  Text="{Binding GroupName}" FontWeight="Bold" />
         </HierarchicalDataTemplate>
 
         <!--TextBox-->
@@ -181,14 +179,14 @@
                 <TextBlock  Grid.Column="0" Text="{Binding CategoryProperties.Name}"  FontWeight="Regular" />
 
                 <TextBox Grid.Column="1" HorizontalAlignment="Stretch" Text="{Binding Value}" IsEnabled="{Binding AccessMode, Converter={StaticResource AccessModeConverter }}">
-                    <!--<i:Interaction.Triggers>
+                    <i:Interaction.Triggers>
                         <i:EventTrigger EventName="LostFocus">
                             <i:InvokeCommandAction Command="{Binding SetValueCommand}" />
                         </i:EventTrigger>
                     </i:Interaction.Triggers>
                     <TextBox.InputBindings>
                         <KeyBinding Key="Return" Command="{Binding SetValueCommand , Mode=OneWay}" />
-                    </TextBox.InputBindings>-->
+                    </TextBox.InputBindings>
                 </TextBox>
             </Grid>
         </HierarchicalDataTemplate>
@@ -203,15 +201,15 @@
                     <Setter Property="ContentTemplate" TargetName="IntegerControl">
                         <Setter.Value>
                             <DataTemplate>
-                                <TextBox  HorizontalAlignment="Stretch" Text="{Binding Value, Converter={StaticResource RepresentaionConverter}}"   IsEnabled="{Binding PValue, Converter={StaticResource AccessModeConverter}}">
-                                    <!--<i:Interaction.Triggers>
+                                <TextBox  HorizontalAlignment="Stretch" Text="{Binding ValueToWrite, Converter={StaticResource RepresentaionConverter}}"   IsEnabled="{Binding PValue, Converter={StaticResource AccessModeConverter}}">
+                                    <i:Interaction.Triggers>
                                         <i:EventTrigger EventName="LostFocus">
                                             <i:InvokeCommandAction Command="{Binding SetValueCommand}" />
                                         </i:EventTrigger>
                                     </i:Interaction.Triggers>
                                     <TextBox.InputBindings>
                                         <KeyBinding Key="Return" Command="{Binding SetValueCommand , Mode=OneWay}" />
-                                    </TextBox.InputBindings>-->
+                                    </TextBox.InputBindings>
                                 </TextBox>
                             </DataTemplate>
                         </Setter.Value>
@@ -235,6 +233,9 @@
                                             <i:InvokeCommandAction Command="{Binding SetValueCommand }" />
                                         </i:EventTrigger>
                                     </i:Interaction.Triggers>
+                                    <TextBox.InputBindings>
+                                        <KeyBinding Key="Return" Command="{Binding SetValueCommand , Mode=OneWay}" />
+                                    </TextBox.InputBindings>
                                 </controls:NumericUpDown>
                             </DataTemplate>
                         </Setter.Value>

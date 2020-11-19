@@ -23,7 +23,7 @@ namespace GigeVision.Core.Models
         /// <summary>
         /// GVCP Port
         /// </summary>
-        public readonly int PortGvcp = 3956;
+        public int PortGvcp { get => 3956; }
 
         private string cameraIP = "";
         private ushort gvcpRequestID = 1;
@@ -37,17 +37,6 @@ namespace GigeVision.Core.Models
         public Gvcp(string ip)
         {
             CameraIp = ip;
-            RegistersDictionary = new Dictionary<string, string>();
-        }
-
-        /// <summary>
-        /// Gvcp constructor, GenPort From IGenCam Module, and try to get register values
-        /// </summary>
-        /// <param name="genPort"></param>
-        public Gvcp(IGenPort genPort)
-        {
-            GenPort = genPort;
-            CameraIp = (genPort as GenPort).IP;
             RegistersDictionary = new Dictionary<string, string>();
         }
 
@@ -104,8 +93,6 @@ namespace GigeVision.Core.Models
             }
         }
 
-        public IGenPort GenPort { get; }
-
         /// <summary>
         /// Controlling port of GVCP
         /// </summary>
@@ -123,11 +110,6 @@ namespace GigeVision.Core.Models
         public bool IsKeepingAlive { get; set; }
 
         /// <summary>
-        /// Register dictionary of camera
-        /// </summary>
-        public Dictionary<string, string> RegistersDictionary { get; set; }
-
-        /// <summary>
         /// It can be for any thing, to update fps to check devices
         /// </summary>
         public EventHandler ElapsedOneSecond { get; set; }
@@ -136,6 +118,8 @@ namespace GigeVision.Core.Models
         /// Event fired whenever camera IP changed: used to get registers
         /// </summary>
         public EventHandler CameraIpChanged { get; set; }
+
+        public List<ICategory> CategoryDictionary { get; private set; }
 
         #region Status Commands
 
@@ -347,7 +331,7 @@ namespace GigeVision.Core.Models
             return cameraInfo;
         }
 
-        #endregion Status Commands
+        public Dictionary<string, string> RegistersDictionary { get; set; }
 
         #region Read All Registers Address XML
 
@@ -358,7 +342,7 @@ namespace GigeVision.Core.Models
         /// <returns>Register dictionary</returns>
         public async Task<Dictionary<string, string>> ReadAllRegisterAddressFromCameraAsync(string cameraIp)
         {
-            if (!ValidateIp(cameraIP)) throw new InvalidIpException();
+            if (!ValidateIp(CameraIp)) throw new InvalidIpException();
 
             List<string> registresList = new List<string>();
 
@@ -366,13 +350,10 @@ namespace GigeVision.Core.Models
             XmlDocument xml = new XmlDocument();
             xml.Load(await GetXmlFileFromCamera(cameraIp).ConfigureAwait(false));
 
-            if (RegistersDictionary.Count > 0)
-            {
-                RegistersDictionary.Clear();
-            }
+            var xmlHelper = new XmlHelper("Category", xml, new GenPort(this));
+            CategoryDictionary = xmlHelper.CategoryDictionary;
 
-            var xmlHelper = new XmlHelper("Category", xml, GenPort);
-            ReadAllRegisters(xmlHelper.CategoryDictionary);
+            ReadAllRegisters(CategoryDictionary);
 
             //handling the name-space of the XML file to cover all the cases
 
@@ -391,17 +372,16 @@ namespace GigeVision.Core.Models
 
         public async Task<Dictionary<string, string>> ReadAllRegisterAddressFromCameraAsync(IGvcp gvcp)
         {
-            if (!ValidateIp(gvcp.CameraIp)) throw new InvalidIpException();
+            if (!gvcp.ValidateIp(gvcp.CameraIp)) throw new InvalidIpException();
 
             //loading the XML file
             XmlDocument xml = new XmlDocument();
             xml.Load(await GetXmlFileFromCamera(gvcp.CameraIp).ConfigureAwait(false));
             if (RegistersDictionary.Count > 0)
-            {
                 RegistersDictionary.Clear();
-            }
+
             //handling the name-space of the XML file to cover all the cases
-            var xmlHelper = new XmlHelper("Category", xml, GenPort);
+            var xmlHelper = new XmlHelper("Category", xml, new GenPort(this));
             ReadAllRegisters(xmlHelper.CategoryDictionary);
             //finding the nodes and their values
             return RegistersDictionary;
@@ -580,6 +560,8 @@ namespace GigeVision.Core.Models
         }
 
         #endregion Read All Registers Address XML
+
+        #endregion Status Commands
 
         #region ReadRegister
 
@@ -1088,7 +1070,7 @@ namespace GigeVision.Core.Models
             return gvcpReply;
         }
 
-        private bool ValidateIp(string ipString)
+        public bool ValidateIp(string ipString)
         {
             if (string.IsNullOrWhiteSpace(ipString))
             {
