@@ -199,6 +199,29 @@ namespace GigeVision.Core.Interfaces
         Task<GvcpReply> ReadRegisterAsync(string[] registerAddresses);
 
         /// <summary>
+        /// Read Memory Address
+        /// </summary>
+        /// <param name="ip"></param>
+        /// <param name="memoryAddress"></param>
+        /// <returns></returns>
+        Task<GvcpReply> ReadMemoryAsync(string ip, byte[] memoryAddress, ushort count);
+
+        /// <summary>
+        /// Read Memory Address
+        /// </summary>
+        /// <param name="memoryAddressOrKey"></param>
+        /// <returns></returns>
+        Task<GvcpReply> ReadMemoryAsync(string memoryAddressOrKey, ushort count);
+
+        /// <summary>
+        /// Write Memory
+        /// </summary>
+        /// <param name="registerAddress"></param>
+        /// <param name="valueToWrite"></param>
+        /// <returns></returns>
+        Task<GvcpReply> WriteMemoryAsync(string memoryAddress, uint valueToWrite);
+
+        /// <summary>
         /// Read all Register
         /// </summary>
         /// <returns>Dictionary of registers</returns>
@@ -209,6 +232,13 @@ namespace GigeVision.Core.Interfaces
         /// </summary>
         /// <returns>Dictionary of registers</returns>
         Task<Dictionary<string, string>> ReadAllRegisterAddressFromCameraAsync();
+
+        /// <summary>
+        /// Read all Register
+        /// </summary>
+        /// <param name="gvcp"></param>
+        /// <returns></returns>
+        Task<Dictionary<string, string>> ReadAllRegisterAddressFromCameraAsync(IGvcp gvcp);
 
         /// <summary>
         /// Forces the IP of camera to be changed to the given IP

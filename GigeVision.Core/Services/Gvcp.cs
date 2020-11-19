@@ -372,7 +372,7 @@ namespace GigeVision.Core.Models
 
         public async Task<Dictionary<string, string>> ReadAllRegisterAddressFromCameraAsync(IGvcp gvcp)
         {
-            if (!gvcp.ValidateIp(gvcp.CameraIp)) throw new InvalidIpException();
+            if (!ValidateIp(gvcp.CameraIp)) throw new InvalidIpException();
 
             //loading the XML file
             XmlDocument xml = new XmlDocument();
