@@ -12,35 +12,35 @@ namespace DeviceControl.Wpf.Style
     {
         public event PropertyChangedEventHandler PropertyChanged;
 
-        public int Value
+        public long Value
         {
-            get { return (int)GetValue(ValueProperty); }
+            get { return (long)GetValue(ValueProperty); }
             set { SetValue(ValueProperty, value); }
         }
 
         // Using a DependencyProperty as the backing store for Value.  This enables animation, styling, binding, etc...
         public static readonly DependencyProperty ValueProperty =
-            DependencyProperty.Register("Value", typeof(int), typeof(NumericUpDown), new PropertyMetadata(0));
+            DependencyProperty.Register("Value", typeof(long), typeof(NumericUpDown), new PropertyMetadata(long.MinValue));
 
-        public int Maximum
+        public long Maximum
         {
-            get { return (int)GetValue(MaximumProperty); }
+            get { return (long)GetValue(MaximumProperty); }
             set { SetValue(MaximumProperty, value); }
         }
 
         // Using a DependencyProperty as the backing store for Maximum.  This enables animation, styling, binding, etc...
         public static readonly DependencyProperty MaximumProperty =
-            DependencyProperty.Register("Maximum", typeof(int), typeof(NumericUpDown), new PropertyMetadata(int.MaxValue));
+            DependencyProperty.Register("Maximum", typeof(long), typeof(NumericUpDown), new PropertyMetadata(long.MaxValue));
 
-        public int Minimum
+        public long Minimum
         {
-            get { return (int)GetValue(MinimumProperty); }
+            get { return (long)GetValue(MinimumProperty); }
             set { SetValue(MinimumProperty, value); }
         }
 
         // Using a DependencyProperty as the backing store for Minimum.  This enables animation, styling, binding, etc...
         public static readonly DependencyProperty MinimumProperty =
-            DependencyProperty.Register("Minimum", typeof(int), typeof(NumericUpDown), new PropertyMetadata(1));
+            DependencyProperty.Register("Minimum", typeof(long), typeof(NumericUpDown), new PropertyMetadata(long.MinValue));
 
         public int Increment
         {

@@ -6,7 +6,7 @@
              xmlns:System="clr-namespace:System;assembly=mscorlib"
              xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             MinWidth="500" Width="500"
+             MinWidth="410" Width="410"
              xmlns:converters="clr-namespace:DeviceControl.Wpf.Converters"
              xmlns:genICam="clr-namespace:GenICam;assembly=GenICam"
              xmlns:controls="clr-namespace:DeviceControl.Wpf.Style">
@@ -217,8 +217,34 @@
                     </Setter>
                 </DataTrigger>
 
-                <!--For PureNumber-->
+                <!--For Linear-->
                 <DataTrigger Binding="{Binding Representation}" Value="Linear">
+                    <Setter Property="ContentTemplate" TargetName="IntegerControl">
+                        <Setter.Value>
+                            <DataTemplate>
+                                <controls:NumericUpDown  x:Name="IntegerUpDown"
+                                    Minimum="{Binding Min}"
+                                    Maximum="{Binding Max}"
+                                    Value="{Binding ValueToWrite, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                    IsEnabled="{Binding PValue, Converter={StaticResource AccessModeConverter}}"
+                                    Increment="{Binding Inc}">
+
+                                    <i:Interaction.Triggers>
+                                        <i:EventTrigger EventName="LostFocus" SourceName="IntegerUpDown">
+                                            <i:InvokeCommandAction Command="{Binding SetValueCommand }" />
+                                        </i:EventTrigger>
+                                    </i:Interaction.Triggers>
+                                    <TextBox.InputBindings>
+                                        <KeyBinding Key="Return" Command="{Binding SetValueCommand , Mode=OneWay}" />
+                                    </TextBox.InputBindings>
+                                </controls:NumericUpDown>
+                            </DataTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </DataTrigger>
+
+                <!--For Pure Number-->
+                <DataTrigger Binding="{Binding Representation}" Value="PureNumber">
                     <Setter Property="ContentTemplate" TargetName="IntegerControl">
                         <Setter.Value>
                             <DataTemplate>
@@ -437,6 +463,7 @@
                                 </MultiBinding>
                             </Setter.Value>
                         </Setter>
+                        <Setter Property="IsExpanded" Value="{Binding  RelativeSource={RelativeSource AncestorType=UserControl}, Path=DataContext.IsExpanded}" />
                     </Style>
                 </TreeView.ItemContainerStyle>
                 <i:Interaction.Behaviors>
