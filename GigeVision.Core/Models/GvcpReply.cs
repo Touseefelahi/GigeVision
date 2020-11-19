@@ -2,17 +2,16 @@
 using GigeVision.Core.Enums;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace GigeVision.Core.Models
 {
     /// <summary>
-    /// Decodes GVCP acknowledgement
+    /// Decodes GVCP acknowledgment
     /// </summary>
     public class GvcpReply : IReplyPacket
     {
         /// <summary>
-        /// Decode GVCP acknowledgement packet
+        /// Decode GVCP acknowledgment packet
         /// </summary>
         /// <param name="buffer"></param>
         public GvcpReply(byte[] buffer)
@@ -73,7 +72,7 @@ namespace GigeVision.Core.Models
         public byte[] MemoryValue { get; set; }
 
         /// <summary>
-        /// acknowledgement id
+        /// acknowledgment id
         /// </summary>
         public ushort AcknowledgementID { get; set; }
 

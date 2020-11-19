@@ -28,6 +28,12 @@ namespace GigeVision.Core.Interfaces
         string MulticastIP { get; set; }
 
         /// <summary>
+        /// Receivers IP. Once the stream is on camera will stream to this IP address. It will be
+        /// automatically fetch the system IP if not set
+        /// </summary>
+        string RxIP { get; set; }
+
+        /// <summary>
         /// Multicast Option
         /// </summary>
         bool IsMulticast { get; set; }

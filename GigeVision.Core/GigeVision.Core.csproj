@@ -6,24 +6,19 @@
     <Company>Stira.sa</Company>
     <Product>GigeVision</Product>
     <Description>
-      Simple GigE Vision Implementation (x64 platform only)
+      Simple GigE Vision Implementation
     </Description>
     <PackageTags>GigeVision, GeniCam, GVSP, GVCP</PackageTags>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>1.3.4</Version>
+    <Version>1.3.8</Version>
     <PackageLicenseFile>License.txt</PackageLicenseFile>
     <PackageIcon>gige.png</PackageIcon>
     <PackageIconUrl />
     <Platforms>AnyCPU;x64;x86</Platforms>
-    <PackageReleaseNotes>Improved GVSP Reception using raw sockets and Span&lt;byte&gt;</PackageReleaseNotes>
+    <PackageReleaseNotes>Improved GVSP Reception using raw sockets and Span&lt;byte&gt; With RaiseProperty</PackageReleaseNotes>
     <LangVersion>8.0</LangVersion>
     <Configurations>Debug;Release;PublishLocally</Configurations>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DocumentationFile>\GigeVision.Core\GigeVision.Core.xml</DocumentationFile>
-    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>

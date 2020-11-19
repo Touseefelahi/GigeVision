@@ -820,10 +820,10 @@ namespace GigeVision.Core.Models
         private async Task<GvcpReply> WriteRegister(UdpClient socket, GvcpCommand gvcpCommand)
         {
             await socket.SendAsync(gvcpCommand.CommandBytes, gvcpCommand.Length).ConfigureAwait(false);
-            var reply = await socket.ReceiveAsync().ConfigureAwait(false);
-            if (reply.Buffer?.Length > 0)
+            Task<UdpReceiveResult> reply = socket.ReceiveAsync();
+            if (await Task.WhenAny(reply, Task.Delay(socket.Client.ReceiveTimeout)).ConfigureAwait(false) == reply)
             {
-                return new GvcpReply(reply.Buffer);
+                return new GvcpReply(reply.Result.Buffer);
             }
             else
             {
@@ -890,6 +890,16 @@ namespace GigeVision.Core.Models
         /// <summary>
         /// Write Memory
         /// </summary>
+        /// <returns>Command Status</returns>
+        public async Task<GvcpReply> WriteMemoryAsync(string memoryAddress, uint valueToWrite)
+        {
+            GvcpCommand gvcpCommand = new GvcpCommand(Converter.RegisterStringToByteArray(memoryAddress), GvcpCommandType.WriteMem, valueToWrite, gvcpRequestID++);
+            return await WriteMemory(ControlSocket, gvcpCommand).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Write Memory
+        /// </summary>
         /// <param name="socket"></param>
         /// <param name="gvcpCommand"></param>
         /// <returns></returns>
@@ -905,16 +915,6 @@ namespace GigeVision.Core.Models
             {
                 return new GvcpReply() { Error = "Couldn't Get Reply" };
             }
-        }
-
-        /// <summary>
-        /// Write Memory
-        /// </summary>
-        /// <returns>Command Status</returns>
-        public async Task<GvcpReply> WriteMemoryAsync(string memoryAddress, uint valueToWrite)
-        {
-            GvcpCommand gvcpCommand = new GvcpCommand(Converter.RegisterStringToByteArray(memoryAddress), GvcpCommandType.WriteMem, valueToWrite, gvcpRequestID++);
-            return await WriteMemory(ControlSocket, gvcpCommand).ConfigureAwait(false);
         }
 
         #endregion WriteMemory
