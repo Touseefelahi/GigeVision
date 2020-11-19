@@ -1070,7 +1070,7 @@ namespace GigeVision.Core.Models
             return gvcpReply;
         }
 
-        public bool ValidateIp(string ipString)
+        private bool ValidateIp(string ipString)
         {
             if (string.IsNullOrWhiteSpace(ipString))
             {
