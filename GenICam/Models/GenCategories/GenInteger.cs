@@ -15,12 +15,12 @@ namespace GenICam
         /// <summary>
         /// Integer Minimum Value
         /// </summary>
-        public Int64 Min { get; private set; }
+        public Int64 Min { get; private set; } = long.MinValue;
 
         /// <summary>
         /// Integer Maximum Value
         /// </summary>
-        public Int64 Max { get; private set; }
+        public Int64 Max { get; private set; } = long.MaxValue;
 
         /// <summary>
         /// Integer Increment Value
@@ -43,7 +43,13 @@ namespace GenICam
         {
             CategoryProperties = categoryProperties;
             Min = min;
+            if (max == 0)
+                max = Int32.MaxValue;
+
             Max = max;
+            if (inc == 0)
+                inc = 1;
+
             Inc = inc;
             IncMode = incMode;
             Representation = representation;

@@ -38,6 +38,10 @@ namespace GenICam
             PVariables = pVaribles;
             Formula = formula;
 
+            if (formula == "(VAR_GETTEMPERATURE & 0x000003FC)>>2")
+            {
+            }
+
             //Prepare Expression
             Formula = Formula.Replace(" ", "");
             List<char> opreations = new List<char> { '(', '+', '-', '/', '*', '=', '?', ':', ')', '>', '<', '&', '|', '^', '~', '%' };

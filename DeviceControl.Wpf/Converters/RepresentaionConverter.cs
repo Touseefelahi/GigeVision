@@ -19,7 +19,7 @@ namespace DeviceControl.Wpf.Converters
             }
             catch
             {
-                return null;
+                return value;
             }
         }
 
