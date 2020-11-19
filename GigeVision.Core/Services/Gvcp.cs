@@ -1,7 +1,7 @@
-﻿using GigeVision.Core.Enums;
+﻿using GenICam;
+using GigeVision.Core.Enums;
 using GigeVision.Core.Exceptions;
 using GigeVision.Core.Interfaces;
-using GigeVision.Core.Services;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -23,7 +23,7 @@ namespace GigeVision.Core.Models
         /// <summary>
         /// GVCP Port
         /// </summary>
-        public readonly int PortGvcp = 3956;
+        public int PortGvcp { get => 3956; }
 
         private string cameraIP = "";
         private ushort gvcpRequestID = 1;
@@ -37,7 +37,7 @@ namespace GigeVision.Core.Models
         public Gvcp(string ip)
         {
             CameraIp = ip;
-            RegistersDictionary = new Dictionary<string, CameraRegisterContainer>();
+            RegistersDictionary = new Dictionary<string, string>();
         }
 
         /// <summary>
@@ -45,7 +45,7 @@ namespace GigeVision.Core.Models
         /// </summary>
         public Gvcp()
         {
-            RegistersDictionary = new Dictionary<string, CameraRegisterContainer>();
+            RegistersDictionary = new Dictionary<string, string>();
         }
 
         #endregion Constructor
@@ -110,13 +110,6 @@ namespace GigeVision.Core.Models
         public bool IsKeepingAlive { get; set; }
 
         /// <summary>
-        /// Register dictionary of camera
-        /// </summary>
-        public Dictionary<string, CameraRegisterContainer> RegistersDictionary { get; set; }
-
-        public Dictionary<string, CameraRegisterGroup> RegistersGroupDictionary { get; set; }
-
-        /// <summary>
         /// It can be for any thing, to update fps to check devices
         /// </summary>
         public EventHandler ElapsedOneSecond { get; set; }
@@ -125,6 +118,8 @@ namespace GigeVision.Core.Models
         /// Event fired whenever camera IP changed: used to get registers
         /// </summary>
         public EventHandler CameraIpChanged { get; set; }
+
+        public List<ICategory> CategoryDictionary { get; private set; }
 
         #region Status Commands
 
@@ -336,7 +331,7 @@ namespace GigeVision.Core.Models
             return cameraInfo;
         }
 
-        #endregion Status Commands
+        public Dictionary<string, string> RegistersDictionary { get; set; }
 
         #region Read All Registers Address XML
 
@@ -345,9 +340,9 @@ namespace GigeVision.Core.Models
         /// </summary>
         /// <param name="cameraIp">Camera IP</param>
         /// <returns>Register dictionary</returns>
-        public async Task<Dictionary<string, CameraRegisterContainer>> ReadAllRegisterAddressFromCameraAsync(string cameraIp)
+        public async Task<Dictionary<string, string>> ReadAllRegisterAddressFromCameraAsync(string cameraIp)
         {
-            if (!ValidateIp(cameraIP)) throw new InvalidIpException();
+            if (!ValidateIp(CameraIp)) throw new InvalidIpException();
 
             List<string> registresList = new List<string>();
 
@@ -355,17 +350,14 @@ namespace GigeVision.Core.Models
             XmlDocument xml = new XmlDocument();
             xml.Load(await GetXmlFileFromCamera(cameraIp).ConfigureAwait(false));
 
-            if (RegistersDictionary.Count > 0)
-            {
-                RegistersDictionary.Clear();
-            }
+            var xmlHelper = new XmlHelper("Category", xml, new GenPort(this));
+            CategoryDictionary = xmlHelper.CategoryDictionary;
+
+            ReadAllRegisters(CategoryDictionary);
+
             //handling the name-space of the XML file to cover all the cases
-            Dictionary<string, CameraRegisterContainer> registersDictionary = null;
-            Dictionary<string, CameraRegisterGroup> registerGroupDictionary = null;
-            new XmlHelper(this, out registersDictionary, out registerGroupDictionary, "Group", xml);
+
             //finding the nodes and their values
-            RegistersDictionary = registersDictionary;
-            RegistersGroupDictionary = registerGroupDictionary;
             return RegistersDictionary;
         }
 
@@ -373,32 +365,47 @@ namespace GigeVision.Core.Models
         /// Reads all register of camera
         /// </summary>
         /// <returns>Register dictionary</returns>
-        public async Task<Dictionary<string, CameraRegisterContainer>> ReadAllRegisterAddressFromCameraAsync()
+        public async Task<Dictionary<string, string>> ReadAllRegisterAddressFromCameraAsync()
         {
             return await ReadAllRegisterAddressFromCameraAsync(CameraIp).ConfigureAwait(false);
         }
 
-        public async Task<Dictionary<string, CameraRegisterContainer>> ReadAllRegisterAddressFromCameraAsync(IGvcp gvcp)
+        public async Task<Dictionary<string, string>> ReadAllRegisterAddressFromCameraAsync(IGvcp gvcp)
         {
-            if (!ValidateIp(gvcp.CameraIp)) throw new InvalidIpException();
-
-            List<string> registresList = new List<string>();
+            if (!gvcp.ValidateIp(gvcp.CameraIp)) throw new InvalidIpException();
 
             //loading the XML file
             XmlDocument xml = new XmlDocument();
             xml.Load(await GetXmlFileFromCamera(gvcp.CameraIp).ConfigureAwait(false));
             if (RegistersDictionary.Count > 0)
-            {
                 RegistersDictionary.Clear();
-            }
+
             //handling the name-space of the XML file to cover all the cases
-            Dictionary<string, CameraRegisterContainer> registersDictionary = null;
-            Dictionary<string, CameraRegisterGroup> registerGroupDictionary = null;
-            new XmlHelper(gvcp, out registersDictionary, out registerGroupDictionary, "Group", xml);
+            var xmlHelper = new XmlHelper("Category", xml, new GenPort(this));
+            ReadAllRegisters(xmlHelper.CategoryDictionary);
             //finding the nodes and their values
-            RegistersDictionary = registersDictionary;
-            RegistersGroupDictionary = registerGroupDictionary;
             return RegistersDictionary;
+        }
+
+        private void ReadAllRegisters(List<ICategory> categories)
+        {
+            foreach (var category in categories)
+            {
+                if (category is null)
+                    continue;
+
+                if (category.PValue is IRegister register)
+                    RegistersDictionary.Add(category.CategoryProperties.Name, $"0x{register.GetAddress():X4}");
+                else if (category is IGenRegister genRegister)
+                {
+                    if (RegistersDictionary.ContainsKey(category.CategoryProperties.Name))
+                        continue;
+
+                    RegistersDictionary.Add(category.CategoryProperties.Name, $"0x{genRegister.GetAddress():X4}");
+                }
+                else if (category.PFeatures != null)
+                    ReadAllRegisters(category.PFeatures);
+            }
         }
 
         private (string, int, int) GetFileDetails(string Message)
@@ -554,6 +561,8 @@ namespace GigeVision.Core.Models
 
         #endregion Read All Registers Address XML
 
+        #endregion Status Commands
+
         #region ReadRegister
 
         /// <summary>
@@ -641,57 +650,6 @@ namespace GigeVision.Core.Models
         public async Task<GvcpReply> ReadRegisterAsync(string Ip, GvcpRegister register)
         {
             return await ReadRegisterAsync(Ip, register.ToString("X")).ConfigureAwait(false);
-        }
-
-        public async Task<GvcpReply> ReadRegisterAsync(CameraRegisterContainer cameraRegisterContainer)
-        {
-            if (cameraRegisterContainer.TypeValue is IntegerRegister integerRegister)
-            {
-                if (integerRegister.MinParameter != null)
-                    await integerRegister.MinParameter.ExecuteFormula(integerRegister.MaxParameter);
-
-                if (integerRegister.MaxParameter != null)
-                    await integerRegister.MaxParameter.ExecuteFormula(integerRegister.MaxParameter);
-
-                if (integerRegister.ValueParameter is IntSwissKnife intSwissKnife)
-                {
-                    await intSwissKnife.ExecuteFormula(intSwissKnife);
-                    integerRegister.ValueParameter = intSwissKnife;
-                }
-                if (integerRegister.ValueParameter is MaskedIntReg maskedIntReg)
-                    integerRegister.ValueParameter = maskedIntReg; ;
-            }
-
-            GvcpReply gvcpReply = null;
-            if (cameraRegisterContainer.Register is CameraRegister cameraRegister)
-            {
-                if (cameraRegister.Address != null)
-                    gvcpReply = await ReadRegisterAsync(CameraIp, Converter.RegisterStringToByteArray(cameraRegister.Address));
-            }
-
-            return gvcpReply;
-        }
-
-        private async Task ReadIntSwissKnifeVariables(IntSwissKnife intSwissKnife)
-        {
-            if (intSwissKnife.VariableParameter is Dictionary<string, string> pVariablesCameraRegister)
-            {
-                foreach (var pVariable in pVariablesCameraRegister)
-                {
-                    RegistersDictionary.Where(x => x.Value.Register != null).Where(x => x.Value.Register.Address == pVariable.Value).First().Value.Register.Value = (await ReadRegisterAsync(pVariable.Value)).RegisterValue;
-                }
-            }
-            else if (intSwissKnife.VariableParameter is Dictionary<string, IntSwissKnife> pVariableIntSwissKnifeDictionary)
-            {
-                foreach (var item in pVariableIntSwissKnifeDictionary.Values)
-                {
-                    await ReadIntSwissKnifeVariables(item);
-                }
-            }
-            else if (intSwissKnife.VariableParameter is IntSwissKnife pVariableIntSwissKnife)
-            {
-                await ReadIntSwissKnifeVariables(pVariableIntSwissKnife);
-            }
         }
 
         #endregion ReadRegister
@@ -902,11 +860,11 @@ namespace GigeVision.Core.Models
 
         #region ReadMemory
 
-        public async Task<GvcpReply> ReadMemoryAsync(string ip, byte[] memoryAddress)
+        public async Task<GvcpReply> ReadMemoryAsync(string ip, byte[] memoryAddress, ushort count)
         {
             if (ValidateIp(ip))
             {
-                GvcpCommand command = new GvcpCommand(memoryAddress, GvcpCommandType.ReadMem, requestID: gvcpRequestID++);
+                GvcpCommand command = new GvcpCommand(memoryAddress, GvcpCommandType.ReadMem, requestID: gvcpRequestID++, count: count);
                 using (UdpClient socket = new UdpClient())
                 {
                     socket.Client.ReceiveTimeout = 1000;
@@ -920,9 +878,9 @@ namespace GigeVision.Core.Models
             }
         }
 
-        public async Task<GvcpReply> ReadMemoryAsync(string memoryAddressOrKey)
+        public async Task<GvcpReply> ReadMemoryAsync(string memoryAddressOrKey, ushort count)
         {
-            return await ReadMemoryAsync(CameraIp, Converter.RegisterStringToByteArray(memoryAddressOrKey)).ConfigureAwait(false);
+            return await ReadMemoryAsync(CameraIp, Converter.RegisterStringToByteArray(memoryAddressOrKey), count).ConfigureAwait(false);
         }
 
         #endregion ReadMemory
@@ -969,7 +927,7 @@ namespace GigeVision.Core.Models
         /// Takes control of the devices
         /// </summary>
         /// <param name="KeepAlive">
-        /// If true thread will continously send heartbeat command to keep the devices in control
+        /// If true thread will continuously send heartbeat command to keep the devices in control
         /// </param>
         /// <returns>Control Status</returns>
         public async Task<bool> TakeControl(bool KeepAlive = true)
@@ -1112,7 +1070,7 @@ namespace GigeVision.Core.Models
             return gvcpReply;
         }
 
-        private bool ValidateIp(string ipString)
+        public bool ValidateIp(string ipString)
         {
             if (string.IsNullOrWhiteSpace(ipString))
             {

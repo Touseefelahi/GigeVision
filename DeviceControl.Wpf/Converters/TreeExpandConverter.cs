@@ -9,9 +9,7 @@ namespace DeviceControl.Wpf.Converters
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             if (value is bool valueBolean)
-            {
                 return valueBolean;
-            }
 
             return false;
         }

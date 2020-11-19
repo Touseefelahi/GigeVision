@@ -6,7 +6,7 @@
     <AssemblyName>GigeVisionLibrary.Test.Wpf</AssemblyName>
     <Version>0.1</Version>
   </PropertyGroup>
-   
+
   <ItemGroup>
     <PackageReference Include="Prism.DryIoc" Version="8.0.0.1909" />
     <PackageReference Include="PropertyChanged.Fody" Version="3.2.10" />
@@ -14,7 +14,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DeviceControl.Wpf\DeviceControl.Wpf.csproj" />
     <ProjectReference Include="..\GigeVision.Core\GigeVision.Core.csproj" />
   </ItemGroup>
 </Project>

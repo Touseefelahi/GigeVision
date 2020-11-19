@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using GigeVision.Core.Enums;
 using System.Linq.Expressions;
 
 namespace GigeVision.Core.Models.Tests

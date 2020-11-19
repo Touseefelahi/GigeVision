@@ -1,6 +1,8 @@
-﻿using GigeVision.Core.Enums;
+﻿using GenICam;
+using GigeVision.Core.Enums;
 using GigeVision.Core.Models;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace GigeVision.Core.Interfaces
@@ -191,5 +193,9 @@ namespace GigeVision.Core.Interfaces
         /// </summary>
         /// <returns></returns>
         Task<bool> SyncParameters();
+
+        Dictionary<string, string> RegistersDictionary { get; }
+
+        List<ICategory> CategoryDictionary { get; }
     }
 }

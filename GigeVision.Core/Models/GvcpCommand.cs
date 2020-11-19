@@ -26,9 +26,9 @@ namespace GigeVision.Core.Models
         /// <param name="type"></param>
         /// <param name="value"></param>
         /// <param name="requestID"></param>
-        public GvcpCommand(byte[] adress, GvcpCommandType type, uint value = 0, ushort requestID = 0)
+        public GvcpCommand(byte[] adress, GvcpCommandType type, uint value = 0, ushort requestID = 0, ushort count = 0)
         {
-            GenerateCommand(adress, type, requestID, value);
+            GenerateCommand(adress, type, requestID, value, count);
         }
 
         /// <summary>
@@ -37,9 +37,9 @@ namespace GigeVision.Core.Models
         /// <param name="address"></param>
         /// <param name="valuesToWrite"></param>
         /// <param name="requestID"></param>
-        public GvcpCommand(string[] address, uint[] valuesToWrite, ushort requestID = 0)
+        public GvcpCommand(string[] address, uint[] valuesToWrite, ushort requestID = 0, ushort count = 0)
         {
-            GenerateCommand(address, valuesToWrite: valuesToWrite, requestID);
+            GenerateCommand(address, valuesToWrite: valuesToWrite, requestID, count);
         }
 
         /// <summary>
@@ -108,7 +108,7 @@ namespace GigeVision.Core.Models
         /// <param name="type"></param>
         /// <param name="requestID"></param>
         /// <param name="valueToWrite"></param>
-        public void GenerateCommand(byte[] adress, GvcpCommandType type, ushort requestID, uint valueToWrite = 0)
+        public void GenerateCommand(byte[] adress, GvcpCommandType type, ushort requestID, uint valueToWrite = 0, ushort count = 0)
         {
             Random random = new Random();
             Address = adress;
@@ -140,16 +140,16 @@ namespace GigeVision.Core.Models
                     break;
 
                 case GvcpCommandType.ReadMem:
-                    GenerateReadMemoryCommand(requestID);
+                    GenerateReadMemoryCommand(requestID, count);
                     break;
 
                 case GvcpCommandType.WriteMem:
-                    GenerateReadMemoryCommand(requestID);
+                    GenerateWriteMemoryCommand(requestID, valueToWrite);
                     break;
             }
         }
 
-        private void GenerateCommand(string[] addressess, ushort requestID)
+        private void GenerateCommand(string[] addressess, ushort requestID, ushort count = 0)
         {
             var commandHeader = GenerateCommandHeader(GvcpCommandType.ReadReg, addressess.Length, requestID);
             CommandBytes = new byte[8 + (addressess.Length * 4)];
@@ -158,7 +158,7 @@ namespace GigeVision.Core.Models
             Array.Copy(registerBytes, 0, CommandBytes, commandHeader.Length, registerBytes.Length);
         }
 
-        private void GenerateCommand(string[] addressess, uint[] valuesToWrite, ushort requestID)
+        private void GenerateCommand(string[] addressess, uint[] valuesToWrite, ushort requestID, ushort count = 0)
         {
             if (addressess.Length != valuesToWrite.Length) throw new Exception("Length missmatch between address and values to write");
             var commandHeader = GenerateCommandHeader(GvcpCommandType.WriteReg, addressess.Length, requestID);
@@ -214,7 +214,7 @@ namespace GigeVision.Core.Models
             bytes.CopyTo(CommandBytes, CommandBytes.Length - 4);
         }
 
-        private void GenerateReadMemoryCommand(ushort requestID)
+        private void GenerateReadMemoryCommand(ushort requestID, ushort count)
         {
             //byte[] readFileHeader = { 0x42, 0x01, 0x00, 0x84, 0x00, 0x08,
             //                    requestID[0], requestID[1],
@@ -223,7 +223,7 @@ namespace GigeVision.Core.Models
             //client.Send(readFileHeader, readFileHeader.Length);
 
             var packetLength = (short)(Address.Length) + 4;
-            var count = BitConverter.GetBytes((short)32);
+            var countBytes = BitConverter.GetBytes(count);
             var bytes = new byte[]
             {
                         GvcpHeader,
@@ -232,11 +232,11 @@ namespace GigeVision.Core.Models
                         (byte)((packetLength & 0xFF00) >> 8), (byte)packetLength,
                         (byte)((requestID & 0xFF00) >> 8), (byte)requestID,
             };
-            Array.Reverse(count);
-            CommandBytes = new byte[bytes.Length + Address.Length + 2 + count.Length];
+            Array.Reverse(countBytes);
+            CommandBytes = new byte[bytes.Length + Address.Length + 2 + countBytes.Length];
             bytes.CopyTo(CommandBytes, 0);
             Address.CopyTo(CommandBytes, bytes.Length);
-            count.CopyTo(CommandBytes, (bytes.Length + Address.Length + 2));
+            countBytes.CopyTo(CommandBytes, (bytes.Length + Address.Length + 2));
         }
 
         private void GenerateWriteMemoryCommand(ushort requestID, uint valueToWrite)
