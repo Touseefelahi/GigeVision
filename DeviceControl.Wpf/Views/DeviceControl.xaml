@@ -28,6 +28,7 @@
         <converters:NullVisibilityConverter x:Key="NullVisibilityConverter" />
         <converters:CheckBoxConverter x:Key="CheckBoxConverter" />
         <converters:RepresentaionConverter x:Key="RepresentaionConverter" />
+        <converters:CameraStatusConverter x:Key="CameraStatusConverter" />
 
         <!--Enums-->
         <ObjectDataProvider x:Key="DeviceControlVisibilityList" MethodName="GetValues" ObjectType="{x:Type System:Enum}">
@@ -389,10 +390,11 @@
             <RowDefinition Height="140" />
         </Grid.RowDefinitions>
         <!--Header-->
-        <Border Grid.Row="0" Background="#eee" BorderBrush="#aaa" BorderThickness="0 0 0 1">
+        <Border Padding="3" Grid.Row="0" Background="#eee" BorderBrush="#aaa" BorderThickness="0 0 0 1">
             <Grid VerticalAlignment="Center">
                 <Grid>
                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
                         <ColumnDefinition />
                         <ColumnDefinition />
                         <ColumnDefinition />
@@ -413,7 +415,8 @@
                             </Style>
                         </ToggleButton.Style>
                     </ToggleButton>
-                    <ComboBox Grid.Column="2" x:Name="VisibilitySelector" SelectedIndex="0" ItemsSource="{Binding Source={StaticResource DeviceControlVisibilityList}}" />
+                    <TextBlock VerticalAlignment="Center" TextAlignment="Center" Grid.Column="2" Background="DarkRed" Foreground="White" Text="ReadOnly" Visibility="{Binding CameraStatus, Converter={StaticResource CameraStatusConverter}}" />
+                    <ComboBox Grid.Column="4" x:Name="VisibilitySelector" SelectedIndex="0" ItemsSource="{Binding Source={StaticResource DeviceControlVisibilityList}}" />
                     <!--<CheckBox Grid.Column="0" Content="Expand All" IsChecked="True" HorizontalAlignment="Left" Padding="2 0 5 0 "   VerticalAlignment="Center" />-->
                 </Grid>
             </Grid>

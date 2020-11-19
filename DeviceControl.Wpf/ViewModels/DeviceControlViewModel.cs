@@ -1,5 +1,6 @@
 ﻿using GenICam;
 using GigeVision.Core;
+using GigeVision.Core.Enums;
 using GigeVision.Core.Interfaces;
 using GigeVision.Core.Models;
 using Prism.Commands;
@@ -17,6 +18,8 @@ namespace DeviceControl.Wpf.ViewModels
     {
         private ICategory selectedCategory;
 
+        public Dictionary<string, string> RegistersDictionary { get; private set; }
+
         #region Properties
 
         /// <summary>
@@ -26,44 +29,11 @@ namespace DeviceControl.Wpf.ViewModels
 
         public ICommand LoadedWindowCommand { get; }
 
-        public GenVisibility CameraRegisterVisibility
-        {
-            get;
-            set;
-        }
+        public GenVisibility CameraRegisterVisibility { get; set; }
 
-        public bool IsBusy { get; set; }
+        public CameraStatus CameraStatus { get; set; }
 
         public bool IsExpanded { get; set; } = false;
-
-        public Int64 ValueToWrite
-        {
-            get;
-            set;
-        }
-
-        #endregion Properties
-
-        #region Commands
-
-        public DelegateCommand TestDataTriggerCommand { get; }
-        public DelegateCommand ExpandCommand { get; }
-
-        #endregion Commands
-
-        public DeviceControlViewModel(string ip)
-        {
-            LoadedWindowCommand = new DelegateCommand(WindowLoaded);
-            ExpandCommand = new DelegateCommand(ExecuteExpandCommand);
-
-            Gvcp gvcp = new Gvcp(ip);
-
-            Task.Run(async () =>
-            {
-                await gvcp.ReadAllRegisterAddressFromCameraAsync().ConfigureAwait(false);
-                Categories = gvcp.CategoryDictionary;
-            });
-        }
 
         public ICategory SelectedCategory
         {
@@ -73,13 +43,37 @@ namespace DeviceControl.Wpf.ViewModels
 
         public IGvcp Gvcp { get; }
         public ICamera Camera { get; }
+        private List<ICategory> CategoryDictionary { get; }
+
+        #endregion Properties
+
+        #region Commands
+
+        public DelegateCommand ExpandCommand { get; }
+
+        #endregion Commands
+
+        public DeviceControlViewModel(string ip)
+        {
+            LoadedWindowCommand = new DelegateCommand(WindowLoaded);
+            ExpandCommand = new DelegateCommand(ExecuteExpandCommand);
+
+            Gvcp = new Gvcp(ip);
+
+            Task.Run(async () =>
+            {
+                RegistersDictionary = await Gvcp.ReadAllRegisterAddressFromCameraAsync().ConfigureAwait(false);
+                Categories = Gvcp.CategoryDictionary;
+            });
+            CheckControl();
+        }
+
+        #region Methods
 
         private void WindowLoaded()
         {
             RaisePropertyChanged(nameof(Categories));
         }
-
-        #region Methods
 
         /// <summary>
         /// Expand Tree View
@@ -91,7 +85,16 @@ namespace DeviceControl.Wpf.ViewModels
             else
                 IsExpanded = true;
         }
-    }
 
-    #endregion Methods
+        private async void CheckControl()
+        {
+            while (true)
+            {
+                await Task.Delay(1000);
+                CameraStatus = await Gvcp.CheckCameraStatusAsync().ConfigureAwait(false);
+            }
+        }
+
+        #endregion Methods
+    }
 }

@@ -25,4 +25,8 @@
     <ProjectReference Include="..\GenICam\GenICam.csproj" />
     <ProjectReference Include="..\GigeVision.Core\GigeVision.Core.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Services\" />
+  </ItemGroup>
 </Project>
