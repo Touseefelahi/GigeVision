@@ -21,7 +21,6 @@ namespace DeviceControl.Wpf.Style
         public static readonly DependencyProperty ValueProperty =
             DependencyProperty.Register("Value", typeof(long), typeof(NumericUpDown), new PropertyMetadata(long.MinValue));
 
-
         public long Maximum
         {
             get { return (long)GetValue(MaximumProperty); }
@@ -53,26 +52,6 @@ namespace DeviceControl.Wpf.Style
             IncrementCommand = new DelegateCommand(GoUp);
             DecrementCommand = new DelegateCommand(GoDown);
             WriteValueCommand = new DelegateCommand(WriteValue);
-        }
-
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        public int Value
-        {
-            get => (int)GetValue(ValueProperty);
-            set => SetValue(ValueProperty, value);
-        }
-
-        public int Maximum
-        {
-            get => (int)GetValue(MaximumProperty);
-            set => SetValue(MaximumProperty, value);
-        }
-
-        public int Minimum
-        {
-            get => (int)GetValue(MinimumProperty);
-            set => SetValue(MinimumProperty, value);
         }
 
         public int Increment

@@ -934,6 +934,18 @@ namespace GigeVision.Core.Models
         {
             bool controlStatus = false;
             if (ControlSocket == null) return controlStatus;
+
+            try
+            {
+                ControlSocket = new UdpClient(cameraIP, PortGvcp);
+                ControlSocket.Client.ReceiveTimeout = 1000;
+                ControlSocket.Client.SendTimeout = 500;
+                CameraIpChanged?.Invoke(null, null);
+            }
+            catch (Exception)
+            {
+            }
+
             if (await GetControlAsync(ControlSocket).ConfigureAwait(false))
             {
                 controlStatus = true;
