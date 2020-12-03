@@ -63,31 +63,8 @@ namespace GigeVision.Core.Models
                     if (value != cameraIP)
                     {
                         cameraIP = value;
-                        try
-                        {
-                            try
-                            {
-                                ControlSocket?.Client.Close();
-                                ControlSocket?.Close();
-                            }
-                            catch (Exception)
-                            {
-                            }
-                            try
-                            {
-                                ControlSocket = new UdpClient(cameraIP, PortGvcp);
-                                ControlSocket.Client.ReceiveTimeout = 1000;
-                                ControlSocket.Client.SendTimeout = 500;
-                                CameraIpChanged?.Invoke(null, null);
-                            }
-                            catch (Exception)
-                            {
-                            }
-                        }
-                        catch (Exception)
-                        {
-                            throw;
-                        }
+                        Reconnect();
+                        CameraIpChanged?.Invoke(null, null);
                     }
                 }
             }
@@ -934,6 +911,9 @@ namespace GigeVision.Core.Models
         {
             bool controlStatus = false;
             if (ControlSocket == null) return controlStatus;
+
+            Reconnect();
+
             if (await GetControlAsync(ControlSocket).ConfigureAwait(false))
             {
                 controlStatus = true;
@@ -959,6 +939,27 @@ namespace GigeVision.Core.Models
                 RunHeartbeatThread();
             }
             return controlStatus;
+        }
+
+        private void Reconnect()
+        {
+            try
+            {
+                ControlSocket?.Client.Close();
+                ControlSocket?.Close();
+            }
+            catch (Exception)
+            {
+            }
+            try
+            {
+                ControlSocket = new UdpClient(cameraIP, PortGvcp);
+                ControlSocket.Client.ReceiveTimeout = 1000;
+                ControlSocket.Client.SendTimeout = 500;
+            }
+            catch (Exception)
+            {
+            }
         }
 
         /// <summary>

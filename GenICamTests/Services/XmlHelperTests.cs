@@ -21,14 +21,6 @@ namespace GenICam.Tests
         [TestMethod()]
         public void XmlHelperTest()
         {
-            XmlDocument xml = new XmlDocument();
-            xml.Load("GEV_B1020C_v209.xml");
-
-            Gvcp gvcp = new Gvcp(new GenPort(3956));
-            XmlHelper xmlHelper = new XmlHelper("Category", xml, gvcp.GenPort);
-            //var width = xmlHelper.CategoryDictionary["ImageSizeControl"].PFeatures["Width"] as GenInteger;
-
-            //var value = width.GetValue();
         }
     }
 }
