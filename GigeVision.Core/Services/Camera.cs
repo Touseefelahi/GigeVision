@@ -221,11 +221,6 @@ namespace GigeVision.Core.Models
         public bool IsRawFrame { get; set; } = true;
 
         /// <summary>
-        /// If enabled library will use C++ native code for stream reception
-        /// </summary>
-        public bool IsUsingCppForRx { get; set; }
-
-        /// <summary>
         /// If we set the external buffer using <see cref="SetBuffer(byte[])"/> this will be set
         /// true and software will copy stream on this buffer
         /// </summary>
@@ -347,18 +342,6 @@ namespace GigeVision.Core.Models
         /// <returns>Is streaming status</returns>
         public async Task<bool> StopStream()
         {
-            if (IsUsingCppForRx)
-            {
-                if (Environment.Is64BitProcess)
-                {
-                    CvInterop64.Stop();
-                }
-                else
-                {
-                    CvInterop.Stop();
-                }
-            }
-
             await Gvcp.WriteRegisterAsync(GvcpRegister.SCDA, 0).ConfigureAwait(false);
             if (await Gvcp.LeaveControl().ConfigureAwait(false))
             {
@@ -574,14 +557,7 @@ namespace GigeVision.Core.Models
 
         private void SetupRxThread()
         {
-            if (IsUsingCppForRx)
-            {
-                streamReceiver.StartRxCppThread();
-            }
-            else
-            {
-                streamReceiver.StartRxThread();
-            }
+            streamReceiver.StartRxThread();
         }
 
         private void SetRxBuffer()
@@ -622,10 +598,14 @@ namespace GigeVision.Core.Models
         private string GetMyIp()
         {
             string localIP = "";
-            foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
+            var allInterfaces = NetworkInterface.GetAllNetworkInterfaces();
+            var filteredList = allInterfaces.Where(a => a.NetworkInterfaceType == NetworkInterfaceType.Ethernet);
+            if (filteredList is not null)
+                allInterfaces = filteredList.ToArray();
+            foreach (NetworkInterface nic in allInterfaces)
             {
                 IPInterfaceProperties ipProp = nic.GetIPProperties();
-                var gwAddresses = ipProp.GatewayAddresses;
+                GatewayIPAddressInformationCollection gwAddresses = ipProp.GatewayAddresses;
                 if (gwAddresses.Count > 0 &&
                     gwAddresses.Any(g => g.Address.AddressFamily == AddressFamily.InterNetwork))
                 {
@@ -636,15 +616,10 @@ namespace GigeVision.Core.Models
                     localIP = ipProp.UnicastAddresses.First(d => d.Address.AddressFamily == AddressFamily.InterNetwork).Address.ToString();
                 }
                 if (!string.IsNullOrEmpty(localIP))
+                {
                     return localIP;
+                }
             }
-
-            //using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, 0))
-            //{
-            //    socket.Connect("8.8.8.8", 65530);
-            //    IPEndPoint endPoint = socket.LocalEndPoint as IPEndPoint;
-            //    localIP = endPoint.Address.ToString();
-            //}
             throw new Exception("System IP not found");
         }
     }
