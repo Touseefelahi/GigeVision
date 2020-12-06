@@ -63,31 +63,8 @@ namespace GigeVision.Core.Models
                     if (value != cameraIP)
                     {
                         cameraIP = value;
-                        try
-                        {
-                            try
-                            {
-                                ControlSocket?.Client.Close();
-                                ControlSocket?.Close();
-                            }
-                            catch (Exception)
-                            {
-                            }
-                            try
-                            {
-                                ControlSocket = new UdpClient(cameraIP, PortGvcp);
-                                ControlSocket.Client.ReceiveTimeout = 1000;
-                                ControlSocket.Client.SendTimeout = 500;
-                                CameraIpChanged?.Invoke(null, null);
-                            }
-                            catch (Exception)
-                            {
-                            }
-                        }
-                        catch (Exception)
-                        {
-                            throw;
-                        }
+                        ReconnectSocket();
+                        CameraIpChanged?.Invoke(null, null);
                     }
                 }
             }
@@ -103,12 +80,11 @@ namespace GigeVision.Core.Models
         /// </summary>
         public UdpClient ControlSocket { get; private set; }
 
+        public bool IsKeepingAlive { get; set; }
+
         /// <summary>
         /// If true, heartbeat command will be sent to the devices after regular interval
         /// </summary>
-
-        public bool IsKeepingAlive { get; set; }
-
         /// <summary>
         /// Register dictionary of camera
         /// </summary>
@@ -126,29 +102,52 @@ namespace GigeVision.Core.Models
         /// </summary>
         public EventHandler CameraIpChanged { get; set; }
 
+        private void ReconnectSocket()
+        {
+            try
+            {
+                try
+                {
+                    ControlSocket?.Client.Close();
+                    ControlSocket?.Close();
+                }
+                catch (Exception)
+                {
+                }
+                try
+                {
+                    ControlSocket = new UdpClient(cameraIP, PortGvcp);
+                    ControlSocket.Client.ReceiveTimeout = 1000;
+                    ControlSocket.Client.SendTimeout = 500;
+                }
+                catch (Exception)
+                {
+                }
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
         #region Status Commands
 
         /// <summary>
         /// Check camera status
         /// </summary>
-        /// <param name="ip">Ip Camera</param>
-        /// <returns>Camera Status: Available/Incontrol or Unavailable</returns>
+        /// <param name="ip">IP Camera</param>
+        /// <returns>Camera Status: Available/InControl or Unavailable</returns>
         public async Task<CameraStatus> CheckCameraStatusAsync(string ip)
         {
             if (ValidateIp(ip))
             {
                 var cameraStatusPacket = await ReadRegisterAsync(ip, GvcpRegister.CCP).ConfigureAwait(false);
-                switch (cameraStatusPacket.RegisterValue)
+                return cameraStatusPacket.RegisterValue switch
                 {
-                    default:
-                        return CameraStatus.UnAvailable;
-
-                    case 0:
-                        return CameraStatus.Available;
-
-                    case 2:
-                        return CameraStatus.InControl;
-                }
+                    0 => CameraStatus.Available,
+                    2 => CameraStatus.InControl,
+                    _ => CameraStatus.UnAvailable,
+                };
             }
             else
             {
@@ -159,7 +158,7 @@ namespace GigeVision.Core.Models
         /// <summary>
         /// Check camera status
         /// </summary>
-        /// <returns>Camera Status: Available/Incontrol or Unavailable</returns>
+        /// <returns>Camera Status: Available/InControl or Unavailable</returns>
         public async Task<CameraStatus> CheckCameraStatusAsync()
         {
             return await CheckCameraStatusAsync(CameraIp).ConfigureAwait(false);
@@ -203,24 +202,22 @@ namespace GigeVision.Core.Models
             gateWayBytes[3] = 0x01;
             Array.Copy(gateWayBytes, 0, forceIpCommand, 60, 4);//4bytes, TotalLength= 64
 
-            using (var client = new UdpClient())
+            using var client = new UdpClient();
+            client.Connect(IPAddress.Broadcast, 3956);
+            client.Client.SendTimeout = 100;
+            client.Client.ReceiveTimeout = 500;
+            var reply = await SendUdp(client, forceIpCommand, true).ConfigureAwait(false);
+            if (reply?.Length > 5)
             {
-                client.Connect(IPAddress.Broadcast, 3956);
-                client.Client.SendTimeout = 100;
-                client.Client.ReceiveTimeout = 500;
-                var reply = await SendUdp(client, forceIpCommand, true).ConfigureAwait(false);
-                if (reply?.Length > 5)
+                if (reply[3] == 0x05) //ForceIp acknowledgment
                 {
-                    if (reply[3] == 0x05) //ForceIp acknowledgment
+                    if (reply[0] == 0 && reply[1] == 0)
                     {
-                        if (reply[0] == 0 && reply[1] == 0)
-                        {
-                            return true;
-                        }
+                        return true;
                     }
                 }
-                return false;
             }
+            return false;
         }
 
         /// <summary>
@@ -567,16 +564,14 @@ namespace GigeVision.Core.Models
             if (ValidateIp(ip))
             {
                 GvcpCommand command = new GvcpCommand(registerAddress, GvcpCommandType.ReadReg, requestID: gvcpRequestID++);
-                using (UdpClient socket = new UdpClient())
-                {
-                    socket.Client.ReceiveTimeout = 1000;
-                    socket.Connect(ip, 3956);
-                    return await SendGvcpCommand(socket, command).ConfigureAwait(false);
-                }
+                using UdpClient socket = new UdpClient();
+                socket.Client.ReceiveTimeout = 1000;
+                socket.Connect(ip, 3956);
+                return await SendGvcpCommand(socket, command).ConfigureAwait(false);
             }
             else
             {
-                return new GvcpReply() { Error = "Ip is not valid" };
+                return new GvcpReply() { Error = "IP is not valid" };
             }
         }
 
@@ -861,16 +856,7 @@ namespace GigeVision.Core.Models
         /// <returns>Command Status</returns>
         private async Task<GvcpReply> WriteRegister(UdpClient socket, GvcpCommand gvcpCommand)
         {
-            await socket.SendAsync(gvcpCommand.CommandBytes, gvcpCommand.Length).ConfigureAwait(false);
-            Task<UdpReceiveResult> reply = socket.ReceiveAsync();
-            if (await Task.WhenAny(reply, Task.Delay(socket.Client.ReceiveTimeout)).ConfigureAwait(false) == reply)
-            {
-                return new GvcpReply(reply.Result.Buffer);
-            }
-            else
-            {
-                return new GvcpReply() { Error = "Couldn't Get Reply" };
-            }
+            return await SendGvcpCommand(socket, gvcpCommand).ConfigureAwait(false);
         }
 
         private async Task<bool> GetControlAsync(UdpClient socket)
@@ -882,17 +868,8 @@ namespace GigeVision.Core.Models
                 {
                     GvcpCommand controlCommand = new GvcpCommand(Converter.RegisterStringToByteArray(GvcpRegister.CCP.ToString("X")),
                         GvcpCommandType.WriteReg, 2, gvcpRequestID++);
-                    await socket.SendAsync(controlCommand.CommandBytes, controlCommand.Length).ConfigureAwait(false);
-                    var reply = await socket.ReceiveAsync().ConfigureAwait(false);
-                    if (reply.Buffer?.Length > 0)
-                    {
-                        var replyGvcp = new GvcpReply(reply.Buffer);
-                        return replyGvcp.Status == GvcpStatus.GEV_STATUS_SUCCESS;
-                    }
-                    else
-                    {
-                        return false;
-                    }
+                    var reply = await SendGvcpCommand(socket, controlCommand).ConfigureAwait(false);
+                    return reply.Status == GvcpStatus.GEV_STATUS_SUCCESS;
                 }
             }
             return false;
@@ -907,16 +884,14 @@ namespace GigeVision.Core.Models
             if (ValidateIp(ip))
             {
                 GvcpCommand command = new GvcpCommand(memoryAddress, GvcpCommandType.ReadMem, requestID: gvcpRequestID++);
-                using (UdpClient socket = new UdpClient())
-                {
-                    socket.Client.ReceiveTimeout = 1000;
-                    socket.Connect(ip, 3956);
-                    return await SendGvcpCommand(socket, command).ConfigureAwait(false);
-                }
+                using UdpClient socket = new UdpClient();
+                socket.Client.ReceiveTimeout = 1000;
+                socket.Connect(ip, 3956);
+                return await SendGvcpCommand(socket, command).ConfigureAwait(false);
             }
             else
             {
-                return new GvcpReply() { Error = "Ip is not valid" };
+                return new GvcpReply() { Error = "IP is not valid" };
             }
         }
 
@@ -969,13 +944,13 @@ namespace GigeVision.Core.Models
         /// Takes control of the devices
         /// </summary>
         /// <param name="KeepAlive">
-        /// If true thread will continously send heartbeat command to keep the devices in control
+        /// If true thread will continuously send heartbeat command to keep the devices in control
         /// </param>
         /// <returns>Control Status</returns>
         public async Task<bool> TakeControl(bool KeepAlive = true)
         {
             bool controlStatus = false;
-            if (ControlSocket == null) return controlStatus;
+            ReconnectSocket();
             if (await GetControlAsync(ControlSocket).ConfigureAwait(false))
             {
                 controlStatus = true;
@@ -984,6 +959,7 @@ namespace GigeVision.Core.Models
             {
                 return controlStatus;
             }
+
             if (KeepAlive)
             {
                 GvcpReply reply;
@@ -1029,7 +1005,7 @@ namespace GigeVision.Core.Models
         }
 
         /// <summary>
-        /// This function will send udp packet to the socket (ip/port)
+        /// This function will send UDP packet to the socket (IP/port)
         /// </summary>
         /// <param name="socket"></param>
         /// <param name="inputCommand"></param>
@@ -1037,7 +1013,7 @@ namespace GigeVision.Core.Models
         /// <returns></returns>
         private static async Task<byte[]> SendUdp(UdpClient socket, byte[] inputCommand, bool replyRequired = false, string optionalCommandNameForInformation = "UDP")
         {
-            var reply = new byte[0];
+            var reply = Array.Empty<byte>();
             var task = new Task(
                 delegate
                 {
@@ -1058,6 +1034,36 @@ namespace GigeVision.Core.Models
             task.Start();
             await task.ConfigureAwait(false);
             return reply;
+        }
+
+        private static async Task<GvcpReply> SendGvcpCommand(UdpClient socketTx, GvcpCommand command)
+        {
+            GvcpReply gvcpReply = new GvcpReply();
+            await socketTx.SendAsync(command.CommandBytes, command.Length).ConfigureAwait(false);
+            gvcpReply.IsSent = true;
+
+            Task<UdpReceiveResult> reply = socketTx.ReceiveAsync();
+            if (await Task.WhenAny(reply, Task.Delay(socketTx.Client.ReceiveTimeout)).ConfigureAwait(false) == reply)
+            {
+                gvcpReply.DetectCommand(reply.Result.Buffer);
+                gvcpReply.IPSender = reply.Result.RemoteEndPoint.Address.ToString();
+                gvcpReply.PortSender = reply.Result.RemoteEndPoint.Port;
+            }
+            return gvcpReply;
+        }
+
+        private static bool ValidateIp(string ipString)
+        {
+            if (string.IsNullOrWhiteSpace(ipString))
+            {
+                return false;
+            }
+            string[] splitValues = ipString.Split('.');
+            if (splitValues.Length != 4)
+            {
+                return false;
+            }
+            return splitValues.All(r => byte.TryParse(r, out byte tempForParsing));
         }
 
         private void RunHeartbeatThread()
@@ -1089,41 +1095,6 @@ namespace GigeVision.Core.Models
                 }
                 isHeartBeatThreadRunning = false;
             });
-        }
-
-        private async Task<GvcpReply> SendGvcpCommand(UdpClient socketTx, GvcpCommand command)
-        {
-            GvcpReply gvcpReply = new GvcpReply();
-            await socketTx.SendAsync(command.CommandBytes, command.Length).ConfigureAwait(false);
-            gvcpReply.IsSent = true;
-
-            var taskRx = socketTx.ReceiveAsync();
-            taskRx.Wait(socketTx.Client.ReceiveTimeout);
-            if (taskRx.IsCompleted)
-            {
-                if (taskRx.Result.Buffer != null)
-                {
-                    gvcpReply.DetectCommand(taskRx.Result.Buffer);
-                    gvcpReply.IPSender = taskRx.Result.RemoteEndPoint.Address.ToString();
-                    gvcpReply.PortSender = taskRx.Result.RemoteEndPoint.Port;
-                }
-            }
-
-            return gvcpReply;
-        }
-
-        private bool ValidateIp(string ipString)
-        {
-            if (string.IsNullOrWhiteSpace(ipString))
-            {
-                return false;
-            }
-            string[] splitValues = ipString.Split('.');
-            if (splitValues.Length != 4)
-            {
-                return false;
-            }
-            return splitValues.All(r => byte.TryParse(r, out byte tempForParsing));
         }
 
         #endregion Common Methods
