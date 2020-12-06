@@ -9,10 +9,14 @@ namespace GigeVision.Core.Enums
     public enum GvcpCommandType
     {
         Discovery = 0x0002,
-        Read = 0x0080,
-        ReadAck = 0x0081,
-        Write = 0x0082,
-        WriteAck = 0x0083,
-        Invalid = 0x84,
+        ReadReg = 0x0080,
+        ReadRegAck = 0x0081,
+        WriteReg = 0x0082,
+        WriteRegAck = 0x0083,
+        ReadMem = 0x0084,
+        ReadMemAck = 0x0085,
+        WriteMem = 0x0086,
+        WrireMemAck = 0x0087,
+        Invalid = 0x88,
     }
 }

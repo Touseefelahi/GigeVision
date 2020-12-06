@@ -131,19 +131,27 @@ namespace GigeVision.Core.Models
                     };
                     break;
 
-                case GvcpCommandType.Read:
-                    GenerateReadCommand(requestID);
+                case GvcpCommandType.ReadReg:
+                    GenerateReadRegisterCommand(requestID);
                     break;
 
-                case GvcpCommandType.Write:
-                    GenerateWriteCommand(requestID, valueToWrite);
+                case GvcpCommandType.WriteReg:
+                    GenerateWriteRegisterCommand(requestID, valueToWrite);
+                    break;
+
+                case GvcpCommandType.ReadMem:
+                    GenerateReadMemoryCommand(requestID);
+                    break;
+
+                case GvcpCommandType.WriteMem:
+                    GenerateReadMemoryCommand(requestID);
                     break;
             }
         }
 
         private void GenerateCommand(string[] addressess, ushort requestID)
         {
-            var commandHeader = GenerateCommandHeader(GvcpCommandType.Read, addressess.Length, requestID);
+            var commandHeader = GenerateCommandHeader(GvcpCommandType.ReadReg, addressess.Length, requestID);
             CommandBytes = new byte[8 + (addressess.Length * 4)];
             Array.Copy(commandHeader, 0, CommandBytes, 0, commandHeader.Length);
             var registerBytes = Converter.RegisterStringsToByteArray(addressess);
@@ -153,7 +161,7 @@ namespace GigeVision.Core.Models
         private void GenerateCommand(string[] addressess, uint[] valuesToWrite, ushort requestID)
         {
             if (addressess.Length != valuesToWrite.Length) throw new Exception("Length missmatch between address and values to write");
-            var commandHeader = GenerateCommandHeader(GvcpCommandType.Write, addressess.Length, requestID);
+            var commandHeader = GenerateCommandHeader(GvcpCommandType.WriteReg, addressess.Length, requestID);
 
             int index = 0;
             CommandBytes = new byte[8 + (addressess.Length * 4 * 2)];
@@ -170,7 +178,7 @@ namespace GigeVision.Core.Models
             }
         }
 
-        private void GenerateReadCommand(ushort requestID)
+        private void GenerateReadRegisterCommand(ushort requestID)
         {
             var packetLength = (short)(Address.Length);
             var bytes = new byte[]
@@ -186,7 +194,52 @@ namespace GigeVision.Core.Models
             Address.CopyTo(CommandBytes, bytes.Length);
         }
 
-        private void GenerateWriteCommand(ushort requestID, uint valueToWrite)
+        private void GenerateWriteRegisterCommand(ushort requestID, uint valueToWrite)
+        {
+            ushort packetLength = (ushort)(Address.Length * 2);
+            var bytes2 = new byte[]
+                        {
+                          GvcpHeader,
+                          flag,
+                          (byte)(((short)Type & 0xFF00) >> 8), (byte)Type,
+                          (byte)((packetLength & 0xFF00) >> 8), (byte)packetLength,
+                          (byte)((requestID & 0xFF00) >> 8), (byte)requestID,
+                        };
+            CommandBytes = new byte[bytes2.Length + (Address.Length * 2)];
+            bytes2.CopyTo(CommandBytes, 0);
+            Address.CopyTo(CommandBytes, bytes2.Length);
+
+            var bytes = BitConverter.GetBytes(valueToWrite);
+            Array.Reverse(bytes);
+            bytes.CopyTo(CommandBytes, CommandBytes.Length - 4);
+        }
+
+        private void GenerateReadMemoryCommand(ushort requestID)
+        {
+            //byte[] readFileHeader = { 0x42, 0x01, 0x00, 0x84, 0x00, 0x08,
+            //                    requestID[0], requestID[1],
+            //                    tempFileAddress[0], tempFileAddress[1], tempFileAddress[2], tempFileAddress[3],
+            //                    count[0], count[1], count[2], count[3] };
+            //client.Send(readFileHeader, readFileHeader.Length);
+
+            var packetLength = (short)(Address.Length) + 4;
+            var count = BitConverter.GetBytes((short)32);
+            var bytes = new byte[]
+            {
+                        GvcpHeader,
+                        flag,
+                        (byte)(((short)Type & 0xFF00) >> 8), (byte)Type,
+                        (byte)((packetLength & 0xFF00) >> 8), (byte)packetLength,
+                        (byte)((requestID & 0xFF00) >> 8), (byte)requestID,
+            };
+            Array.Reverse(count);
+            CommandBytes = new byte[bytes.Length + Address.Length + 2 + count.Length];
+            bytes.CopyTo(CommandBytes, 0);
+            Address.CopyTo(CommandBytes, bytes.Length);
+            count.CopyTo(CommandBytes, (bytes.Length + Address.Length + 2));
+        }
+
+        private void GenerateWriteMemoryCommand(ushort requestID, uint valueToWrite)
         {
             ushort packetLength = (ushort)(Address.Length * 2);
             var bytes2 = new byte[]
@@ -215,7 +268,7 @@ namespace GigeVision.Core.Models
                 requestID = (ushort)random.Next(1, 60000);
             }
 
-            ushort packetLength = (ushort)(4 * (type == GvcpCommandType.Write ? 2 : 1) * valuesToReadOrWrite);
+            ushort packetLength = (ushort)(4 * (type == GvcpCommandType.WriteReg ? 2 : 1) * valuesToReadOrWrite);
             return new byte[]
                         {
                           GvcpHeader,

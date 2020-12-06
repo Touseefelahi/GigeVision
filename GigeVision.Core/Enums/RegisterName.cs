@@ -4,34 +4,34 @@
     /// General Register names
     /// </summary>
     public enum RegisterName
-    {
+    {  
         /// <summary>
         /// Start stream
         /// </summary>
-        AcquisitionStartReg,
+        AcquisitionStart,
         /// <summary>
         /// Stop Stream
         /// </summary>
-        AcquisitionStopReg,
+        AcquisitionStop,
         /// <summary>
         /// Current Width Get/Set
         /// </summary>
-        WidthReg,
+        Width,
         /// <summary>
         /// Current height Get/Set
         /// </summary>
-        HeightReg,
+        Height,
         /// <summary>
         /// Current offset X Get/Set
         /// </summary>
-        OffsetXReg,
+        OffsetX,
         /// <summary>
         /// Current offset Y Get/Set
         /// </summary>
-        OffsetYReg,
+        OffsetY,
         /// <summary>
         /// Pixel format 
         /// </summary>
-        PixelFormatReg,        
+        PixelFormat,        
     }
 }

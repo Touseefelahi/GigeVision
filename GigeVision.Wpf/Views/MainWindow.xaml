@@ -1,0 +1,11 @@
+﻿<Window x:Class="GigeVision.Wpf.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:prism="http://prismlibrary.com/"
+        xmlns:userControls="clr-namespace:GigeVision.Wpf.Views"
+        prism:ViewModelLocator.AutoWireViewModel="True"
+        Title="{Binding Title}" Height="700" Width="500">
+    <Grid>
+        <userControls:DeviceControl />
+    </Grid>
+</Window>

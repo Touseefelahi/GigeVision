@@ -11,11 +11,6 @@ namespace GigeVision.Core.Interfaces
     public interface ICamera
     {
         /// <summary>
-        /// If enabled library will use C++ native library for Stream Reception
-        /// </summary>
-        bool IsUsingCppForRx { get; set; }
-
-        /// <summary>
         /// Motor Controller for camera, zoom/focus/iris control if any
         /// </summary>
         MotorControl MotorController { get; set; }
@@ -24,6 +19,12 @@ namespace GigeVision.Core.Interfaces
         /// Multicast IP: it will be applied only when IsMulticast Property is true
         /// </summary>
         string MulticastIP { get; set; }
+
+        /// <summary>
+        /// Receivers IP. Once the stream is on camera will stream to this IP address. It will be
+        /// automatically fetch the system IP if not set
+        /// </summary>
+        string RxIP { get; set; }
 
         /// <summary>
         /// Multicast Option
