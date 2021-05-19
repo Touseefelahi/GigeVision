@@ -159,49 +159,49 @@ namespace GigeVision.Core.Interfaces
         /// <summary>
         /// Read Register
         /// </summary>
-        /// <returns>Acknowledgement</returns>
+        /// <returns>Acknowledgment</returns>
         Task<GvcpReply> ReadRegisterAsync(GvcpRegister register);
 
         /// <summary>
         /// Read Register
         /// </summary>
-        /// <returns>Acknowledgement</returns>
+        /// <returns>Acknowledgment</returns>
         Task<GvcpReply> ReadRegisterAsync(string Ip, GvcpRegister register);
 
         /// <summary>
         /// Read Register
         /// </summary>
-        /// <returns>Acknowledgement</returns>
+        /// <returns>Acknowledgment</returns>
         Task<GvcpReply> ReadRegisterAsync(string Ip, byte[] registerAddress);
 
         /// <summary>
         /// Read Register
         /// </summary>
-        /// <returns>Acknowledgement</returns>
+        /// <returns>Acknowledgment</returns>
         Task<GvcpReply> ReadRegisterAsync(string Ip, string registerAddress);
 
         /// <summary>
         /// Read Register
         /// </summary>
-        /// <returns>Acknowledgement</returns>
+        /// <returns>Acknowledgment</returns>
         Task<GvcpReply> ReadRegisterAsync(byte[] registerAddressOrKey);
 
         /// <summary>
         /// Read Register
         /// </summary>
-        /// <returns>Acknowledgement</returns>
+        /// <returns>Acknowledgment</returns>
         Task<GvcpReply> ReadRegisterAsync(string registerAddressOrKey);
 
         /// <summary>
         /// Read Register
         /// </summary>
-        /// <returns>Acknowledgement</returns>
+        /// <returns>Acknowledgment</returns>
         Task<GvcpReply> ReadRegisterAsync(string Ip, string[] registerAddresses);
 
         /// <summary>
         /// Read Register
         /// </summary>
-        /// <returns>Acknowledgement</returns>
+        /// <returns>Acknowledgment</returns>
         Task<GvcpReply> ReadRegisterAsync(string[] registerAddresses);
 
         /// <summary>
@@ -273,18 +273,24 @@ namespace GigeVision.Core.Interfaces
         /// It will get all the devices from the network and then fires the event for updated list
         /// </summary>
         /// <param name="listUpdated">Event that will be fired once list is ready</param>
-        void GetAllGigeDevicesInNetworkAsnyc(Action<List<CameraInformation>> listUpdated);
+        /// <param name="networkIP">
+        /// Specify for multi network system if not there, it will select the default network
+        /// </param>
+        void GetAllGigeDevicesInNetworkAsnyc(Action<List<CameraInformation>> listUpdated, string networkIP = "");
 
         /// <summary>
         /// It will broadcast discovery command and get all the available devices in the network
         /// </summary>
+        /// <param name="networkIP">
+        /// Specify for multi network system if not there, it will select the default network
+        /// </param>
         /// <returns>List of Camera Information</returns>
-        Task<List<CameraInformation>> GetAllGigeDevicesInNetworkAsnyc();
+        Task<List<CameraInformation>> GetAllGigeDevicesInNetworkAsnyc(string networkIP = "");
 
         /// <summary>
         /// Check camera status
         /// </summary>
-        /// <param name="ip">Ip Camera</param>
+        /// <param name="ip">IP Camera</param>
         /// <returns>Camera Status: Available/Incontrol or Unavailable</returns>
         Task<CameraStatus> CheckCameraStatusAsync(string ip);
 
