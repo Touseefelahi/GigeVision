@@ -15,7 +15,7 @@ namespace GigeVision.Core.Models
         public readonly byte GvcpHeader = 0x42;
 
         /// <summary>
-        /// Flag for acknowledgement
+        /// Flag for acknowledgment
         /// </summary>
         public readonly byte flag = 0x01;
 
@@ -32,7 +32,7 @@ namespace GigeVision.Core.Models
         }
 
         /// <summary>
-        /// Geneartes GVCP Command
+        /// Generates GVCP Command
         /// </summary>
         /// <param name="address"></param>
         /// <param name="valuesToWrite"></param>
@@ -160,7 +160,7 @@ namespace GigeVision.Core.Models
 
         private void GenerateCommand(string[] addressess, uint[] valuesToWrite, ushort requestID)
         {
-            if (addressess.Length != valuesToWrite.Length) throw new Exception("Length missmatch between address and values to write");
+            if (addressess.Length != valuesToWrite.Length) throw new Exception("Length miss match between address and values to write");
             var commandHeader = GenerateCommandHeader(GvcpCommandType.WriteReg, addressess.Length, requestID);
 
             int index = 0;
@@ -261,7 +261,7 @@ namespace GigeVision.Core.Models
 
         private byte[] GenerateCommandHeader(GvcpCommandType type, int valuesToReadOrWrite = 1, uint requestID = 0)
         {
-            Random random = new Random();
+            Random random = new();
             Type = type;
             if (requestID == 0)
             {

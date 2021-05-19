@@ -36,7 +36,7 @@ namespace GigeVision.Core.Models
         /// </summary>
         public void StartRxThread()
         {
-            Thread threadDecode = new Thread(DecodePacketsRawSocket)
+            Thread threadDecode = new(DecodePacketsRawSocket)
             {
                 Priority = ThreadPriority.Highest,
                 Name = "Decode Packets Thread",
@@ -77,8 +77,8 @@ namespace GigeVision.Core.Models
             int packetID = 0;
             int bufferLength = 0;
             byte[] singlePacketBuf = new byte[10000];
-            Span<byte> singlePacket = new Span<byte>(singlePacketBuf);
-            Span<byte> cameraRawPacket = new Span<byte>(Camera.rawBytes);
+            Span<byte> singlePacket = new(singlePacketBuf);
+            Span<byte> cameraRawPacket = new(Camera.rawBytes);
             int packetRxCount = 0;//This is for full packet check
             try
             {

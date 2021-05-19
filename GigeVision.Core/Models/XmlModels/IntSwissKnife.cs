@@ -77,7 +77,7 @@ namespace GigeVision.Core.Models
                         if (register.Key.Equals(word) && !tempWord.Equals(word))
                         {
                             tempWord = word;
-                            tempValue = $"{(await Gvcp.ReadRegisterAsync(register.Value)).RegisterValue}";
+                            tempValue = $"{(await Gvcp.ReadRegisterAsync(register.Value).ConfigureAwait(false)).RegisterValue}";
                             intSwissKnife.Formula = intSwissKnife.Formula.Replace(word, tempValue);
                         }
                         else if (word.Equals(tempWord) && tempValue != string.Empty)
@@ -91,7 +91,7 @@ namespace GigeVision.Core.Models
             {
                 foreach (var pVarible in pVariableIntSwissKnifeDictionary)
                 {
-                    pVarible.Value.Value = (await ExecuteFormula(pVarible.Value)) as double?;
+                    pVarible.Value.Value = (await ExecuteFormula(pVarible.Value).ConfigureAwait(false)) as double?;
                     foreach (var word in intSwissKnife.Formula.Split())
                     {
                         if (pVarible.Key.Equals(word))
@@ -120,7 +120,7 @@ namespace GigeVision.Core.Models
                             else if (!tempWord.Equals(word))
                             {
                                 tempWord = word;
-                                tempValue = $"{(await Gvcp.ReadRegisterAsync(pVarible.Value.Register.Address)).RegisterValue}";
+                                tempValue = $"{(await Gvcp.ReadRegisterAsync(pVarible.Value.Register.Address).ConfigureAwait(false)).RegisterValue}";
                                 intSwissKnife.Formula = intSwissKnife.Formula.Replace(word, tempValue);
                             }
                             else if (word.Equals(tempWord) && tempValue != string.Empty)
@@ -133,7 +133,7 @@ namespace GigeVision.Core.Models
             var value = Evaluate(intSwissKnife.Formula);
 
             if (value is string pAddressValue)
-                Value = (await Gvcp.ReadRegisterAsync(pAddressValue)).RegisterValue;
+                Value = (await Gvcp.ReadRegisterAsync(pAddressValue).ConfigureAwait(false)).RegisterValue;
 
             if (value is double doubleValue)
                 Value = doubleValue;

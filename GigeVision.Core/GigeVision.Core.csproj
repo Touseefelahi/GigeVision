@@ -11,12 +11,14 @@
     <PackageTags>GigeVision, GeniCam, GVSP, GVCP</PackageTags>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>1.4.1</Version>
+    <Version>1.5</Version>
     <PackageLicenseFile>License.txt</PackageLicenseFile>
     <PackageIcon>gige.png</PackageIcon>
     <PackageIconUrl />
     <Platforms>AnyCPU;x64;x86</Platforms>
-    <PackageReleaseNotes>Improved GVSP Reception using raw sockets and Span&lt;byte&gt; With RaiseProperty</PackageReleaseNotes>
+    <PackageReleaseNotes>Fix Receiver IP Detection
+Fix Discovery for all cameras in network
+</PackageReleaseNotes>
     <LangVersion>9.0</LangVersion>
     <Configurations>Debug;Release;PublishLocally</Configurations>
   </PropertyGroup>

@@ -4,6 +4,7 @@ using GigeVision.Core.Interfaces;
 using GigeVision.Core.Services;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -235,7 +236,7 @@ namespace GigeVision.Core.Models
         /// It will get all the devices from the network and then fires the event for updated list
         /// </summary>
         /// <param name="listUpdated"></param>
-        public async void GetAllGigeDevicesInNetworkAsnyc(Action<List<CameraInformation>> listUpdated)
+        public async void GetAllGigeDevicesInNetworkAsnyc(Action<List<CameraInformation>> listUpdated, string networkIP = "")
         {
             var list = await GetAllGigeDevicesInNetworkAsnyc().ConfigureAwait(false);
             listUpdated?.Invoke(list);
@@ -244,30 +245,44 @@ namespace GigeVision.Core.Models
         /// <summary>
         /// It will get all the devices from the network and returns the list updated list
         /// </summary>
-        public async Task<List<CameraInformation>> GetAllGigeDevicesInNetworkAsnyc()
+        public async Task<List<CameraInformation>> GetAllGigeDevicesInNetworkAsnyc(string networkIP = "")
         {
             var cameraInfoList = new List<CameraInformation>();
             try
             {
                 using var socket = new UdpClient();
-                socket.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-                socket.Connect(IPAddress.Broadcast, PortGvcp);
-                socket.Client.ReceiveTimeout = 100;
-                socket.Client.SendTimeout = 50;
-                GvcpCommand discovery = new GvcpCommand(GvcpCommandType.Discovery);
+                if (string.IsNullOrEmpty(networkIP))
+                {
+                    using var socketIP = new UdpClient();
+                    socketIP.Connect(IPAddress.Parse("8.8.8.8"), PortGvcp);
+                    var ip = (socketIP.Client.LocalEndPoint as IPEndPoint)?.Address.GetAddressBytes();
+                    ip[3] = 255;
+                    socketIP.Close();
+                    socketIP.Dispose();
+                    socket.Connect(new IPAddress(ip), PortGvcp);
+                }
+                else
+                {
+                    var ip = IPAddress.Parse(networkIP).GetAddressBytes();
+                    ip[3] = 255;
+                    socket.Connect(new IPAddress(ip), PortGvcp);
+                }
+                socket.Client.SendTimeout = 100;
+                GvcpCommand discovery = new(GvcpCommandType.Discovery);
                 socket.Send(discovery.CommandBytes, discovery.Length);
                 int port = ((IPEndPoint)socket.Client.LocalEndPoint).Port;
+                using UdpClient udpClient = new();
                 socket.Close();
-                UdpClient udpClient = new UdpClient();
+                socket.Dispose();
                 var endPoint = new IPEndPoint(IPAddress.Any, port);
                 udpClient.Client.Bind(endPoint);
                 while (true)//listen for devices
                 {
-                    await Task.Delay(5).ConfigureAwait(false);
-                    if (udpClient.Available > 255)
+                    Task<UdpReceiveResult> taskRecievePacket = udpClient.ReceiveAsync();
+                    if (await Task.WhenAny(taskRecievePacket, Task.Delay(500)).ConfigureAwait(false) == taskRecievePacket)
                     {
-                        var packet = udpClient.Receive(ref endPoint);
-                        cameraInfoList.Add(DecodeDiscoveryPacket(packet));
+                        if (taskRecievePacket.Result.Buffer.Length > 255)
+                            cameraInfoList.Add(DecodeDiscoveryPacket(taskRecievePacket.Result.Buffer));
                     }
                     else
                     {
@@ -277,7 +292,7 @@ namespace GigeVision.Core.Models
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
             }
             return cameraInfoList;
@@ -563,8 +578,8 @@ namespace GigeVision.Core.Models
         {
             if (ValidateIp(ip))
             {
-                GvcpCommand command = new GvcpCommand(registerAddress, GvcpCommandType.ReadReg, requestID: gvcpRequestID++);
-                using UdpClient socket = new UdpClient();
+                GvcpCommand command = new(registerAddress, GvcpCommandType.ReadReg, requestID: gvcpRequestID++);
+                using UdpClient socket = new();
                 socket.Client.ReceiveTimeout = 1000;
                 socket.Connect(ip, 3956);
                 return await SendGvcpCommand(socket, command).ConfigureAwait(false);
@@ -643,14 +658,14 @@ namespace GigeVision.Core.Models
             if (cameraRegisterContainer.TypeValue is IntegerRegister integerRegister)
             {
                 if (integerRegister.MinParameter != null)
-                    await integerRegister.MinParameter.ExecuteFormula(integerRegister.MaxParameter);
+                    await integerRegister.MinParameter.ExecuteFormula(integerRegister.MaxParameter).ConfigureAwait(false);
 
                 if (integerRegister.MaxParameter != null)
-                    await integerRegister.MaxParameter.ExecuteFormula(integerRegister.MaxParameter);
+                    await integerRegister.MaxParameter.ExecuteFormula(integerRegister.MaxParameter).ConfigureAwait(false);
 
                 if (integerRegister.ValueParameter is IntSwissKnife intSwissKnife)
                 {
-                    await intSwissKnife.ExecuteFormula(intSwissKnife);
+                    await intSwissKnife.ExecuteFormula(intSwissKnife).ConfigureAwait(false);
                     integerRegister.ValueParameter = intSwissKnife;
                 }
                 if (integerRegister.ValueParameter is MaskedIntReg maskedIntReg)
@@ -661,7 +676,7 @@ namespace GigeVision.Core.Models
             if (cameraRegisterContainer.Register is CameraRegister cameraRegister)
             {
                 if (cameraRegister.Address != null)
-                    gvcpReply = await ReadRegisterAsync(CameraIp, Converter.RegisterStringToByteArray(cameraRegister.Address));
+                    gvcpReply = await ReadRegisterAsync(CameraIp, Converter.RegisterStringToByteArray(cameraRegister.Address)).ConfigureAwait(false);
             }
 
             return gvcpReply;
@@ -673,19 +688,19 @@ namespace GigeVision.Core.Models
             {
                 foreach (var pVariable in pVariablesCameraRegister)
                 {
-                    RegistersDictionary.Where(x => x.Value.Register != null).Where(x => x.Value.Register.Address == pVariable.Value).First().Value.Register.Value = (await ReadRegisterAsync(pVariable.Value)).RegisterValue;
+                    RegistersDictionary.First(x => x.Value.Register != null && x.Value.Register.Address == pVariable.Value).Value.Register.Value = (await ReadRegisterAsync(pVariable.Value).ConfigureAwait(false)).RegisterValue;
                 }
             }
             else if (intSwissKnife.VariableParameter is Dictionary<string, IntSwissKnife> pVariableIntSwissKnifeDictionary)
             {
                 foreach (var item in pVariableIntSwissKnifeDictionary.Values)
                 {
-                    await ReadIntSwissKnifeVariables(item);
+                    await ReadIntSwissKnifeVariables(item).ConfigureAwait(false);
                 }
             }
             else if (intSwissKnife.VariableParameter is IntSwissKnife pVariableIntSwissKnife)
             {
-                await ReadIntSwissKnifeVariables(pVariableIntSwissKnife);
+                await ReadIntSwissKnifeVariables(pVariableIntSwissKnife).ConfigureAwait(false);
             }
         }
 

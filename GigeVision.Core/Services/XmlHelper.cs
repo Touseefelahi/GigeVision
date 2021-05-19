@@ -14,13 +14,6 @@ namespace GigeVision.Core.Services
     /// </summary>
     public class XmlHelper
     {
-        private string NamespaceName { get; set; } = "ns";
-        private string NamespacePrefix { get; set; } = string.Empty;
-        private XmlNamespaceManager XmlNamespaceManager { get; set; } = null;
-        private XmlDocument XmlDocument { get; set; } = null;
-
-        private IGvcp Gvcp { get; set; }
-
         /// <summary>
         /// the main method to read xml file
         /// </summary>
@@ -158,6 +151,13 @@ namespace GigeVision.Core.Services
                 }
             }
         }
+
+        private string NamespaceName { get; } = "ns";
+        private string NamespacePrefix { get; } = string.Empty;
+        private XmlNamespaceManager XmlNamespaceManager { get; set; } = null;
+        private XmlDocument XmlDocument { get; set; } = null;
+
+        private IGvcp Gvcp { get; set; }
 
         #region Helpers
 
