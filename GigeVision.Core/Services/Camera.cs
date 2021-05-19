@@ -3,6 +3,7 @@ using GigeVision.Core.Interfaces;
 using Stira.WpfCore;
 using System;
 using System.Linq;
+using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Threading.Tasks;
@@ -536,6 +537,54 @@ namespace GigeVision.Core.Models
             return true;
         }
 
+        public string GetMyIp()
+        {
+            UnicastIPAddressInformation mostSuitableIp = null;
+
+            var networkInterfaces = NetworkInterface.GetAllNetworkInterfaces();
+
+            foreach (var network in networkInterfaces)
+            {
+                if (network.OperationalStatus != OperationalStatus.Up)
+                    continue;
+
+                var properties = network.GetIPProperties();
+
+                if (properties.GatewayAddresses.Count == 0)
+                    continue;
+
+                foreach (var address in properties.UnicastAddresses)
+                {
+                    if (address.Address.AddressFamily != AddressFamily.InterNetwork)
+                        continue;
+
+                    if (IPAddress.IsLoopback(address.Address))
+                        continue;
+
+                    if (!address.IsDnsEligible)
+                    {
+                        if (mostSuitableIp == null)
+                            mostSuitableIp = address;
+                        continue;
+                    }
+
+                    // The best IP is the IP got from DHCP server
+                    if (address.PrefixOrigin != PrefixOrigin.Dhcp)
+                    {
+                        if (mostSuitableIp == null || !mostSuitableIp.IsDnsEligible)
+                            mostSuitableIp = address;
+                        continue;
+                    }
+
+                    return address.Address.ToString();
+                }
+            }
+
+            return mostSuitableIp != null
+                ? mostSuitableIp.Address.ToString()
+                : "";
+        }
+
         private bool SetRxIP()
         {
             try
@@ -595,7 +644,7 @@ namespace GigeVision.Core.Models
             await SyncParameters().ConfigureAwait(false);
         }
 
-        private string GetMyIp()
+        private string GetMyIp_old()
         {
             string localIP = "";
             var allInterfaces = NetworkInterface.GetAllNetworkInterfaces();
