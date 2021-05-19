@@ -117,6 +117,7 @@ namespace GigeVision.Core.Models
             if (buffer?.Length > 7)
             {
                 Status = (GvcpStatus)((buffer[0] << 8) | (buffer[1]));
+                IsSent = true;
                 IsSentAndReplyReceived = true;
                 GvcpCommandType commandType = (GvcpCommandType)((buffer[2] << 8) | (buffer[3]));
                 if (Enum.IsDefined(typeof(GvcpCommandType), commandType))
