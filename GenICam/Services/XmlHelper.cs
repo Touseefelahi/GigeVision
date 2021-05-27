@@ -21,6 +21,8 @@ namespace GenICam
 
         public List<ICategory> CategoryDictionary { get; private set; }
 
+        public XmlNode Xmlns { get; private set; }
+
         /// <summary>
         /// the main method to read XML file
         /// </summary>
@@ -33,11 +35,11 @@ namespace GenICam
             var xmlRoot = xmlDocument.FirstChild.NextSibling;
             if (xmlRoot.Attributes != null)
             {
-                var xmlns = xmlRoot.Attributes["xmlns"];
-                if (xmlns != null)
+                Xmlns = xmlRoot.Attributes["xmlns"];
+                if (Xmlns != null)
                 {
                     XmlNamespaceManager = new XmlNamespaceManager(xmlDocument.NameTable);
-                    XmlNamespaceManager.AddNamespace(NamespaceName, xmlns.Value);
+                    XmlNamespaceManager.AddNamespace(NamespaceName, Xmlns.Value);
                     NamespacePrefix = $"{NamespaceName}:";
                 }
             }
@@ -45,18 +47,70 @@ namespace GenICam
             GenPort = genPort;
             var categoryList = XmlDocument.DocumentElement.GetElementsByTagName("Category").Item(0);
 
-            CategoryDictionary = new List<ICategory>();
+            CategoryDictionary = GetCategoryFeatures(categoryList);
+
+            TempDictionary.Clear();
+        }
+
+        private List<ICategory> GetCategoryFeatures(XmlNode categoryList)
+        {
+            var categoryDictionary = new List<ICategory>();
 
             foreach (XmlNode category in categoryList.ChildNodes)
             {
-                var list = GetAllCategoryFeatures(category);
+                var list = ReadCategoryFeature(category);
+                if (list.Count < 1)
+                    continue;
                 var genCategory = new GenCategory() { GroupName = category.InnerText, CategoryProperties = GetCategoryProperties(category) };
                 genCategory.PFeatures = list;
-                CategoryDictionary.Add(genCategory);
+                categoryDictionary.Add(genCategory);
             }
+            return categoryDictionary;
+        }
+
+        private List<ICategory> GetSubCategoryFeatures(XmlNode categoryList)
+        {
+            var categoryDictionary = new List<ICategory>();
+
+            foreach (XmlNode category in categoryList.ChildNodes)
+            {
+                var list = ReadCategoryFeature(category);
+                if (list.Count < 1)
+                    continue;
+                foreach (var genCategory in list)
+                {
+                    categoryDictionary.Add(genCategory);
+                }
+            }
+            return categoryDictionary;
         }
 
         #region GenIcam Getters
+
+        private List<ICategory> ReadCategoryFeature(XmlNode node)
+        {
+            var pFeatures = new List<ICategory>();
+            ICategory category = null;
+            if (node.Name != "pFeature")
+                return pFeatures;
+
+            var pNode = LookForChildInsideAllParents(node, node.InnerText);
+
+            if (pNode != null)
+            {
+                if (pNode.Name == "Category")
+                {
+                    category = new GenCategory() { GroupName = node.InnerText, CategoryProperties = GetCategoryProperties(node) };
+                    category.PFeatures = GetSubCategoryFeatures(pNode);
+                }
+                else
+                {
+                    category = GetGenCategory(pNode);
+                }
+                pFeatures.Add(category);
+            }
+            return pFeatures;
+        }
 
         private ICategory GetGenCategory(XmlNode node)
         {
@@ -95,58 +149,11 @@ namespace GenICam
             return genCategory;
         }
 
-        private List<ICategory> GetAllCategoryFeatures(XmlNode node)
-        {
-            var pFeatures = new List<ICategory>();
-            var category = GetGenCategory(node);
-
-            if (category is null)
-            {
-                var pNode = LookForChildInsideAllParents(node, node.InnerText);
-
-                if (pNode != null)
-                    category = GetGenCategory(pNode);
-                else
-                    pNode = node;
-
-                if (category is null)
-                {
-                    foreach (XmlNode childNode in pNode.ChildNodes)
-                    {
-                        pNode = LookForChildInsideAllParents(childNode, childNode.InnerText);
-                        if (pNode != null)
-                        {
-                            category = GetGenCategory(pNode);
-                            if (category is null)
-                            {
-                                category = new GenCategory() { GroupName = childNode.InnerText };
-                                category.PFeatures = GetAllCategoryFeatures(pNode);
-                            }
-                        }
-                        if (childNode.Name == "pFeature")
-                            pFeatures.Add(category);
-                    }
-                }
-                else
-                {
-                    if (pNode.Name == "pFeature")
-                        pFeatures.Add(category);
-                }
-            }
-            else
-            {
-                if (node.Name == "pFeature")
-                    pFeatures.Add(category);
-            }
-
-            return pFeatures;
-        }
-
         private ICategory GetFloatCategory(XmlNode xmlNode)
         {
             var categoryPropreties = GetCategoryProperties(xmlNode);
 
-            Dictionary<string, IntSwissKnife> expressions = new Dictionary<string, IntSwissKnife>();
+            Dictionary<string, IMathematical> expressions = new Dictionary<string, IMathematical>();
             IPValue pValue = null;
             double min = 0, max = 0, value = 0;
             Int64 inc = 0;
@@ -158,42 +165,48 @@ namespace GenICam
                 switch (node.Name)
                 {
                     case "Value":
-                        value = double.Parse(node.InnerText);
+                        double.TryParse(node.InnerText, out value);
 
                         break;
 
                     case "Min":
-                        min = double.Parse(node.InnerText);
+                        double.TryParse(node.InnerText, out min);
                         break;
 
                     case "Max":
-                        max = double.Parse(node.InnerText);
+                        double.TryParse(node.InnerText, out max);
                         break;
 
                     case "pMin":
                         pNode = ReadPNode(xmlNode.ParentNode, node.InnerText);
-                        expressions.Add(node.Name, GetIntSwissKnife(pNode));
+                        if (pNode != null)
+                            expressions.Add(node.Name, GetFormula(pNode));
+
                         break;
 
                     case "pMax":
                         pNode = ReadPNode(xmlNode.ParentNode, node.InnerText);
-                        expressions.Add(node.Name, GetIntSwissKnife(pNode));
+                        if (pNode != null)
+                            expressions.Add(node.Name, GetFormula(pNode));
                         break;
 
                     case "Inc":
-                        inc = Int64.Parse(node.InnerText);
+                        Int64.TryParse(node.InnerText, out inc);
                         break;
 
                     case "pValue":
 
                         pNode = ReadPNode(xmlNode.ParentNode, node.InnerText);
-                        pValue = GetRegister(pNode);
-                        if (pValue is null)
-                            pValue = GetIntSwissKnife(pNode);
+                        if (pNode != null)
+                        {
+                            pValue = GetRegister(pNode);
+                            if (pValue is null)
+                                pValue = GetFormula(pNode);
+                        }
                         break;
 
                     case "Representation":
-                        representation = Enum.Parse<Representation>(node.InnerText);
+                        Enum.TryParse<Representation>(node.InnerText, out representation);
                         break;
 
                     case "Unit":
@@ -212,15 +225,18 @@ namespace GenICam
         {
             var categoryPropreties = GetCategoryProperties(xmlNode);
 
-            Dictionary<string, IntSwissKnife> expressions = new Dictionary<string, IntSwissKnife>();
+            Dictionary<string, IMathematical> expressions = new Dictionary<string, IMathematical>();
 
             IPValue pValue = null;
             if (xmlNode.SelectSingleNode(NamespacePrefix + "pValue", XmlNamespaceManager) is XmlNode pValueNode)
             {
                 XmlNode pNode = ReadPNode(xmlNode.ParentNode, pValueNode.InnerText);
-                pValue = GetRegister(pNode);
-                if (pValue is null)
-                    pValue = GetIntSwissKnife(pNode);
+                if (pNode != null)
+                {
+                    pValue = GetRegister(pNode);
+                    if (pValue is null)
+                        pValue = GetFormula(pNode);
+                }
                 //expressions.Add(pValueNode.Name, GetIntSwissKnife(pNode));
             }
 
@@ -242,24 +258,32 @@ namespace GenICam
                 if (isImplementedNode != null)
                 {
                     isImplementedExpr = ReadPNode(xmlNode.ParentNode, isImplementedNode.InnerText);
-
-                    isImplementedValue = GetRegister(isImplementedExpr);
-                    if (isImplementedValue is null)
-                        isImplementedValue = GetIntSwissKnife(isImplementedExpr);
-                    if (isImplementedValue is null)
-                        isImplementedValue = GetGenCategory(isImplementedExpr);
+                    if (isImplementedExpr != null)
+                    {
+                        isImplementedValue = GetRegister(isImplementedExpr);
+                        if (isImplementedValue is null)
+                            isImplementedValue = GetFormula(isImplementedExpr);
+                        if (isImplementedValue is null)
+                            isImplementedValue = GetGenCategory(isImplementedExpr);
+                    }
                 }
-
-                var entryValue = UInt32.Parse(enumEntry.SelectSingleNode(NamespacePrefix + "Value", XmlNamespaceManager).InnerText);
+                uint entryValue;
+                UInt32.TryParse(enumEntry.SelectSingleNode(NamespacePrefix + "Value", XmlNamespaceManager).InnerText, out entryValue);
                 entry.Add(enumEntry.Attributes["Name"].Value, new EnumEntry(entryValue, isImplementedValue));
             }
+            IPValue pValue = null;
 
             var enumPValue = xmlNode.SelectSingleNode(NamespacePrefix + "pValue", XmlNamespaceManager);
-            var enumPValueNode = ReadPNode(enumPValue.ParentNode, enumPValue.InnerText);
-
-            IPValue pValue = GetRegister(enumPValueNode);
-            if (pValue is null)
-                pValue = GetIntSwissKnife(enumPValueNode);
+            if (enumPValue != null)
+            {
+                var enumPValueNode = ReadPNode(enumPValue.ParentNode, enumPValue.InnerText);
+                if (enumPValueNode != null)
+                {
+                    pValue = GetRegister(enumPValueNode);
+                    if (pValue is null)
+                        pValue = GetFormula(enumPValueNode);
+                }
+            }
 
             return new GenEnumeration(categoryProperties, entry, pValue);
         }
@@ -292,7 +316,7 @@ namespace GenICam
             Representation representation = Representation.PureNumber;
             XmlNode pNode;
 
-            Dictionary<string, IntSwissKnife> expressions = new Dictionary<string, IntSwissKnife>();
+            Dictionary<string, IMathematical> expressions = new Dictionary<string, IMathematical>();
 
             IPValue pValue = null;
 
@@ -301,43 +325,51 @@ namespace GenICam
                 switch (node.Name)
                 {
                     case "Value":
-                        value = Int64.Parse(node.InnerText);
+                        Int64.TryParse(node.InnerText, out value);
 
                         break;
 
                     case "Min":
-                        min = Int64.Parse(node.InnerText);
+                        Int64.TryParse(node.InnerText, out min);
                         break;
 
                     case "Max":
-                        max = Int64.Parse(node.InnerText);
+                        Int64.TryParse(node.InnerText, out max);
                         break;
 
                     case "pMin":
                         pNode = ReadPNode(xmlNode.ParentNode, node.InnerText);
-                        expressions.Add(node.Name, GetIntSwissKnife(pNode));
+                        if (pNode != null)
+                            expressions.Add(node.Name, GetFormula(pNode));
+
                         break;
 
                     case "pMax":
                         pNode = ReadPNode(xmlNode.ParentNode, node.InnerText);
-                        expressions.Add(node.Name, GetIntSwissKnife(pNode));
+                        if (pNode != null)
+                            expressions.Add(node.Name, GetFormula(pNode));
+
                         break;
 
                     case "Inc":
-                        inc = Int64.Parse(node.InnerText);
+                        Int64.TryParse(node.InnerText, out inc);
+
                         break;
 
                     case "pValue":
 
                         pNode = ReadPNode(xmlNode.ParentNode, node.InnerText);
-                        pValue = GetRegister(pNode);
-                        if (pValue is null)
-                            pValue = GetIntSwissKnife(pNode);
+                        if (pNode != null)
+                        {
+                            pValue = GetRegister(pNode);
+                            if (pValue is null)
+                                pValue = GetFormula(pNode);
+                        }
 
                         break;
 
                     case "Representation":
-                        representation = Enum.Parse<Representation>(node.InnerText);
+                        Enum.TryParse<Representation>(node.InnerText, out representation);
                         break;
 
                     case "Unit":
@@ -354,22 +386,25 @@ namespace GenICam
 
         private ICategory GetCommandCategory(XmlNode xmlNode)
         {
-            Dictionary<string, IntSwissKnife> expressions = new Dictionary<string, IntSwissKnife>();
+            Dictionary<string, IMathematical> expressions = new Dictionary<string, IMathematical>();
             IPValue pValue = null;
             var categoryProperties = GetCategoryProperties(xmlNode);
 
             Int64 commandValue = 0;
             var commandValueNode = xmlNode.SelectSingleNode(NamespacePrefix + "CommandValue", XmlNamespaceManager);
             if (commandValueNode != null)
-                commandValue = Int64.Parse(commandValueNode.InnerText);
+                Int64.TryParse(commandValueNode.InnerText, out commandValue);
 
             var pValueNode = xmlNode.SelectSingleNode(NamespacePrefix + "pValue", XmlNamespaceManager);
 
             var pNode = ReadPNode(xmlNode.ParentNode, pValueNode.InnerText);
 
-            pValue = GetRegister(pNode);
-            if (pValue is null)
-                pValue = GetIntSwissKnife(pNode);
+            if (pNode != null)
+            {
+                pValue = GetRegister(pNode);
+                if (pValue is null)
+                    pValue = GetFormula(pNode);
+            }
 
             return new GenCommand(categoryProperties, commandValue, pValue, null);
         }
@@ -404,10 +439,12 @@ namespace GenICam
 
         private IRegister GetFloatReg(XmlNode xmlNode)
         {
-            Dictionary<string, IntSwissKnife> registers = new Dictionary<string, IntSwissKnife>();
+            Dictionary<string, IMathematical> registers = new Dictionary<string, IMathematical>();
 
-            Int64 address = 0;
+            Int64? address = null;
+            object pAddress = null;
             var addressNode = xmlNode.SelectSingleNode(NamespacePrefix + "Address", XmlNamespaceManager);
+
             if (addressNode != null)
             {
                 if (addressNode.InnerText.StartsWith("0x"))
@@ -416,27 +453,70 @@ namespace GenICam
                     address = Int64.Parse(addressNode.InnerText);
             }
 
+            if (xmlNode.SelectSingleNode(NamespacePrefix + "pAddress", XmlNamespaceManager) is XmlNode pFeatureNode)
+            {
+                var pNode = ReadPNode(xmlNode.ParentNode, pFeatureNode.InnerText);
+
+                if (pNode != null)
+                {
+                    switch (pNode.Name)
+                    {
+                        case "IntSwissKnife":
+                        case "SwissKnife":
+                            pAddress = GetIntSwissKnife(pNode);
+                            break;
+
+                        case "IntConverter":
+                        case "Converter":
+                            pAddress = GetConverter(pNode);
+                            break;
+
+                        default:
+                            pAddress = GetRegister(pNode);
+                            if (pAddress is null)
+                                pAddress = GetGenCategory(pNode);
+                            break;
+                    }
+
+                    if (pAddress is null)
+                        pAddress = GetGenCategory(pNode);
+                }
+
+            }
+
+
             ushort length = ushort.Parse(xmlNode.SelectSingleNode(NamespacePrefix + "Length", XmlNamespaceManager).InnerText);
             GenAccessMode accessMode = (GenAccessMode)Enum.Parse(typeof(GenAccessMode), xmlNode.SelectSingleNode(NamespacePrefix + "AccessMode", XmlNamespaceManager).InnerText);
 
-            if (xmlNode.SelectSingleNode(NamespacePrefix + "pAddress", XmlNamespaceManager) is XmlNode pFeatureNode)
-            {
-                registers.Add(pFeatureNode.InnerText, GetIntSwissKnife(ReadPNode(xmlNode.ParentNode, pFeatureNode.InnerText)));
-            }
 
-            return new GenIntReg(address, length, accessMode, registers, GenPort);
+            return new GenIntReg(address, length, accessMode, registers, pAddress, GenPort);
         }
 
         private IPValue GetGenInteger(XmlNode xmlNode)
         {
             Int64 value = 0;
-
+            IPValue pValue = null;
             foreach (XmlNode node in xmlNode.ChildNodes)
             {
                 switch (node.Name)
                 {
                     case "Value":
-                        value = Int64.Parse(node.InnerText);
+                        if (node.InnerText.StartsWith("0x"))
+                            value = Int64.Parse(node.InnerText.Substring(2), System.Globalization.NumberStyles.HexNumber);
+                        else
+                            Int64.TryParse(node.InnerText, out value);
+                        break;
+
+                    case "pValue":
+                        var pValueNode = ReadPNode(xmlNode.ParentNode, node.InnerText);
+                        if (pValueNode != null)
+                        {
+                            pValue = GetRegister(pValueNode);
+                            if (pValue is null)
+                                pValue = GetIntSwissKnife(pValueNode);
+                            if (pValue is null)
+                                pValue = GetConverter(pValueNode);
+                        }
                         break;
 
                     default:
@@ -444,15 +524,17 @@ namespace GenICam
                 }
             }
 
-            return new GenInteger(value);
+            return new GenInteger(value, pValue);
         }
 
         private IRegister GetIntReg(XmlNode xmlNode)
         {
-            Dictionary<string, IntSwissKnife> expressions = new Dictionary<string, IntSwissKnife>();
+            Dictionary<string, IMathematical> expressions = new Dictionary<string, IMathematical>();
 
-            Int64 address = 0;
+            Int64? address = null;
+            object pAddress = null;
             var addressNode = xmlNode.SelectSingleNode(NamespacePrefix + "Address", XmlNamespaceManager);
+
             if (addressNode != null)
             {
                 if (addressNode.InnerText.StartsWith("0x"))
@@ -465,16 +547,44 @@ namespace GenICam
             GenAccessMode accessMode = (GenAccessMode)Enum.Parse(typeof(GenAccessMode), xmlNode.SelectSingleNode(NamespacePrefix + "AccessMode", XmlNamespaceManager).InnerText);
 
             if (xmlNode.SelectSingleNode(NamespacePrefix + "pAddress", XmlNamespaceManager) is XmlNode pFeatureNode)
-                expressions.Add(pFeatureNode.InnerText, GetIntSwissKnife(ReadPNode(xmlNode.ParentNode, pFeatureNode.InnerText)));
+            {
+                var pNode = ReadPNode(xmlNode.ParentNode, pFeatureNode.InnerText);
 
-            return new GenIntReg(address, length, accessMode, expressions, GenPort);
+                if (pNode != null)
+                {
+                    switch (pNode.Name)
+                    {
+                        case "IntSwissKnife":
+                        case "SwissKnife":
+                            pAddress = GetIntSwissKnife(pNode);
+                            break;
+
+                        case "IntConverter":
+                        case "Converter":
+                            pAddress = GetConverter(pNode);
+                            break;
+
+                        default:
+                            pAddress = GetRegister(pNode);
+                            if (pAddress is null)
+                                pAddress = GetGenCategory(pNode);
+                            break;
+                    }
+
+                    if (pAddress is null)
+                        pAddress = GetGenCategory(pNode);
+                }
+
+            }
+
+
+            return new GenIntReg(address, length, accessMode, expressions, pAddress, GenPort);
         }
 
-        private IRegister GetMaskedIntReg(XmlNode xmlNode)
+        private GenMaskedIntReg GetMaskedIntReg(XmlNode xmlNode)
         {
-            Dictionary<string, IntSwissKnife> expressions = new Dictionary<string, IntSwissKnife>();
-
-            Int64 address = 0;
+            Int64? address = null;
+            object pAddress = null;
             var addressNode = xmlNode.SelectSingleNode(NamespacePrefix + "Address", XmlNamespaceManager);
 
             if (addressNode != null)
@@ -489,9 +599,61 @@ namespace GenICam
             GenAccessMode accessMode = Enum.Parse<GenAccessMode>(xmlNode.SelectSingleNode(NamespacePrefix + "AccessMode", XmlNamespaceManager).InnerText);
 
             if (xmlNode.SelectSingleNode(NamespacePrefix + "pAddress", XmlNamespaceManager) is XmlNode pFeatureNode)
-                expressions.Add(pFeatureNode.InnerText, GetIntSwissKnife(ReadPNode(xmlNode.ParentNode, pFeatureNode.InnerText)));
+            {
+                var pNode = ReadPNode(xmlNode.ParentNode, pFeatureNode.InnerText);
 
-            return new GenMaskedIntReg(address, length, accessMode, expressions, GenPort);
+                if (pNode != null)
+                {
+                    switch (pNode.Name)
+                    {
+                        case "IntSwissKnife":
+                        case "SwissKnife":
+                            pAddress = GetIntSwissKnife(pNode);
+                            break;
+
+                        case "IntConverter":
+                        case "Converter":
+                            pAddress = GetConverter(pNode);
+                            break;
+
+                        default:
+                            pAddress = GetRegister(pNode);
+                            if (pAddress is null)
+                                pAddress = GetGenCategory(pNode);
+                            break;
+                    }
+
+                    if (pAddress is null)
+                        pAddress = GetGenCategory(pNode);
+                }
+
+            }
+
+
+            short? lsb = null, msb = null;
+            byte? bit = null;
+            var lsbNode = xmlNode.SelectSingleNode(NamespacePrefix + "LSB", XmlNamespaceManager);
+            var msbNode = xmlNode.SelectSingleNode(NamespacePrefix + "MSB", XmlNamespaceManager);
+            var bitNode = xmlNode.SelectSingleNode(NamespacePrefix + "Bit", XmlNamespaceManager);
+
+            if (lsbNode != null)
+                lsb = short.Parse(lsbNode.InnerText);
+            if (msbNode != null)
+                msb = short.Parse(msbNode.InnerText);
+            if (bitNode != null)
+                bit = byte.Parse(bitNode.InnerText);
+            return new GenMaskedIntReg(address, length, msb, lsb, bit, accessMode, pAddress, GenPort);
+        }
+
+        public IMathematical GetFormula(XmlNode xmlNode)
+        {
+            if (xmlNode.Name == "IntConverter" || xmlNode.Name == "Converter")
+                return GetConverter(xmlNode);
+
+            if (xmlNode.Name == "IntSwissKnife" || xmlNode.Name != "SwissKnife")
+                return GetIntSwissKnife(xmlNode);
+
+            return null;
         }
 
         private IntSwissKnife GetIntSwissKnife(XmlNode xmlNode)
@@ -499,7 +661,9 @@ namespace GenICam
             if (xmlNode.Name != "IntSwissKnife" && xmlNode.Name != "SwissKnife")
                 return null;
 
-            Dictionary<string, object> pVariables = new Dictionary<string, object>();
+            Dictionary<string, IPValue> pVariables = new Dictionary<string, IPValue>();
+            Dictionary<string, double> constants = new Dictionary<string, double>();
+            Dictionary<string, string> expressions = new Dictionary<string, string>();
 
             string formula = string.Empty;
 
@@ -511,19 +675,42 @@ namespace GenICam
                     case "pVariable":
                         //pVariable could be IntSwissKnife, SwissKnife, Integer, IntReg, Float, FloatReg,
 
-                        object pVariable = null;
+                        IPValue pVariable = null;
                         var pNode = ReadPNode(xmlNode.ParentNode, node.InnerText);
-                        pVariable = pNode.Name switch
+                        if (pNode != null)
                         {
-                            "IntSwissKnife" => GetIntSwissKnife(pNode),
-                            "SwissKnife" => GetGenCategory(pNode),
-                            _ => GetRegister(pNode)
-                        };
+                            switch (pNode.Name)
+                            {
+                                case "IntSwissKnife":
+                                case "SwissKnife":
+                                    pVariable = GetIntSwissKnife(pNode);
+                                    break;
 
-                        if (pVariable is null)
-                            pVariable = GetGenCategory(pNode);
+                                case "IntConverter":
+                                case "Converter":
+                                    pVariable = GetConverter(pNode);
+                                    break;
 
-                        pVariables.Add(node.Attributes["Name"].Value, pVariable);
+                                default:
+                                    pVariable = GetRegister(pNode);
+                                    if (pVariable is null)
+                                        pVariable = GetGenCategory(pNode) as IPValue;
+                                    break;
+                            }
+
+                            if (pVariable is null)
+                                pVariable = GetGenCategory(pNode) as IPValue;
+
+                            pVariables.Add(node.Attributes["Name"].Value, pVariable);
+                        }
+                        break;
+
+                    case "Constant":
+                        constants.Add(node.Attributes["Name"].Value, double.Parse(node.InnerText));
+                        break;
+
+                    case "Expression":
+                        expressions.Add(node.Attributes["Name"].Value, node.InnerText);
                         break;
 
                     case "Formula":
@@ -537,7 +724,94 @@ namespace GenICam
             if (pVariables.Count == 0)
             {
             }
-            return new IntSwissKnife(formula, pVariables);
+            return new IntSwissKnife(formula, pVariables, constants, expressions);
+        }
+
+        private Converter GetConverter(XmlNode xmlNode)
+        {
+            if (xmlNode.Name != "IntConverter" && xmlNode.Name != "Converter")
+                return null;
+
+            Dictionary<string, IPValue> pVariables = new Dictionary<string, IPValue>();
+
+            string formulaFrom = string.Empty;
+            string formulaTo = string.Empty;
+            IPValue pValue = null;
+            Slope slope = Slope.None;
+
+            foreach (XmlNode node in xmlNode.ChildNodes)
+            {
+                //child could be either pVariable or Formula
+                switch (node.Name)
+                {
+                    case "pVariable":
+                        //pVariable could be IntSwissKnife, SwissKnife, Integer, IntReg, Float, FloatReg,
+
+                        IPValue pVariable = null;
+                        var pNode = ReadPNode(xmlNode.ParentNode, node.InnerText);
+                        if (pNode != null)
+                        {
+                            switch (pNode.Name)
+                            {
+                                case "IntSwissKnife":
+                                case "SwissKnife":
+                                    pVariable = GetIntSwissKnife(pNode);
+                                    break;
+
+                                case "IntConverter":
+                                case "Converter":
+                                    pVariable = GetConverter(pNode);
+                                    break;
+
+                                default:
+                                    pVariable = GetRegister(pNode);
+                                    if (pVariable is null)
+                                        pVariable = GetGenCategory(pNode) as IPValue;
+                                    break;
+                            }
+
+                            if (pVariable is null)
+                                pVariable = GetGenCategory(pNode) as IPValue;
+
+                            pVariables.Add(node.Attributes["Name"].Value, pVariable);
+                        }
+                        break;
+
+                    case "FormulaTo":
+                        formulaTo = node.InnerText;
+                        break;
+
+                    case "FormulaFrom":
+                        formulaFrom = node.InnerText;
+                        break;
+
+                    case "pValue":
+                        var pValueNode = ReadPNode(node.ParentNode, node.InnerText);
+                        if (pValueNode != null)
+                        {
+                            pValue = GetRegister(pValueNode);
+                            if (pValue is null)
+                                pValue = GetIntSwissKnife(pValueNode);
+                            if (pValue is null)
+                                pValue = GetConverter(pValueNode);
+                            if (pValue is null)
+                                pValue = GetGenCategory(pValueNode) as IPValue;
+                        }
+                        break;
+
+                    case "Slope":
+                        slope = Enum.Parse<Slope>(node.InnerText);
+
+                        break;
+
+                    default:
+                        break;
+                }
+            }
+            if (pVariables.Count == 0)
+            {
+            }
+            return new Converter(formulaTo, formulaFrom, pValue, slope, pVariables);
         }
 
         /// <summary>
@@ -551,9 +825,16 @@ namespace GenICam
                 xmlNode = LookForChildInsideAllParents(xmlNode, xmlNode.InnerText);
 
             GenVisibility visibilty = GenVisibility.Beginner;
-            string toolTip = "", description = "";
+            string displayName = "", toolTip = "", description = "";
             bool isStreamable = false;
-            string name = xmlNode.Attributes["Name"].Value;
+
+            //if (xmlNode.SelectSingleNode(NamespacePrefix + "DisplayName", XmlNamespaceManager) is XmlNode displayNameNode)
+            //    displayName = displayNameNode.InnerText;
+
+            if (displayName == "")
+            {
+                displayName = xmlNode.Attributes["Name"].Value;
+            }
 
             if (xmlNode.SelectSingleNode(NamespacePrefix + "Visibility", XmlNamespaceManager) is XmlNode visibilityNode)
                 visibilty = Enum.Parse<GenVisibility>(visibilityNode.InnerText);
@@ -574,7 +855,7 @@ namespace GenICam
             if (xmlNode.ParentNode.Attributes["Comment"] != null)
                 rootName = xmlNode.ParentNode.Attributes["Comment"].Value;
 
-            return new CategoryProperties(rootName, name, toolTip, description, visibilty, isStreamable);
+            return new CategoryProperties(rootName, displayName, toolTip, description, visibilty, isStreamable);
         }
 
         #endregion GenIcam Getters
