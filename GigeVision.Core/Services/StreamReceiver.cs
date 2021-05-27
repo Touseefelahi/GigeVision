@@ -54,7 +54,22 @@ namespace GigeVision.Core.Models
         /// </summary>
         public void StartRxThread()
         {
-            Thread threadDecode = new Thread(DecodePacketsRawSocket)
+            Action action = null;
+            switch (Camera.Gvcp.RegistersDictionary["XmlVersion"])
+            {
+                case "http://www.genicam.org/GenApi/Version_1_1":
+                    action = DecodePacketsRawSocketVersion1;
+                    break;
+
+                case "http://www.genicam.org/GenApi/Version_1_0":
+                    action = DecodePacketsRawSocketVersion0;
+                    break;
+
+                default:
+                    break;
+            }
+
+            Thread threadDecode = new Thread(action.Invoke)
             {
                 Priority = ThreadPriority.Highest,
                 Name = "Decode Packets Thread",
@@ -89,7 +104,7 @@ namespace GigeVision.Core.Models
             }
         }
 
-        private void DecodePacketsRawSocket()
+        private void DecodePacketsRawSocketVersion1()
         {
             //Todo: make a rolling buffer here and swap the memory
             int packetID = 0;
@@ -104,7 +119,68 @@ namespace GigeVision.Core.Models
                 while (Camera.IsStreaming)
                 {
                     length = socketRxRaw.Receive(singlePacket);
-                    if (length > 44) //Packet
+                    if (singlePacket[4] == 0x83) //Packet
+                    {
+                        packetRxCount++;
+                        packetID = (singlePacket[18] << 8) | singlePacket[19];
+
+                        if (packetID < finalPacketID) //Check for final packet because final packet length maybe lesser than the regular packets
+                        {
+                            bufferLength = length - 20;
+                            Span<byte> slicedRowInImage = cameraRawPacket.Slice((packetID - 1) * bufferLength, bufferLength);
+                            singlePacket.Slice(20, bufferLength).CopyTo(slicedRowInImage);
+                        }
+                        else
+                        {
+                            Span<byte> slicedRowInImage = cameraRawPacket.Slice((packetID - 1) * bufferLength, length - 20);
+                            singlePacket.Slice(20, length - 20).CopyTo(slicedRowInImage);
+                        }
+                    }
+                    else if (singlePacket[4] == 0x82)
+                    {
+                        if (finalPacketID == 0)
+                        {
+                            finalPacketID = packetID - 1;
+                        }
+                        //Checking if we receive all packets. Here 2 means we are allowing 1 packet miss
+                        if (Math.Abs(packetRxCount - finalPacketID) < 2)
+                        {
+                            if (Camera.frameReadyAction != null)
+                            {
+                                Camera.frameReadyAction?.Invoke(Camera.rawBytes);
+                            }
+                            else
+                            {
+                                Camera.FrameReady?.Invoke(null, Camera.rawBytes);
+                            }
+                        }
+                        packetRxCount = 0;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Camera.Updates?.Invoke(null, ex.Message);
+                _ = Camera.StopStream();
+            }
+        }
+
+        private void DecodePacketsRawSocketVersion0()
+        {
+            //Todo: make a rolling buffer here and swap the memory
+            int packetID = 0;
+            int bufferLength = 0;
+            byte[] singlePacketBuf = new byte[10000];
+            Span<byte> singlePacket = new Span<byte>(singlePacketBuf);
+            Span<byte> cameraRawPacket = new Span<byte>(Camera.rawBytes);
+            int packetRxCount = 0;//This is for full packet check
+            try
+            {
+                int length = socketRxRaw.Receive(singlePacket);
+                while (Camera.IsStreaming)
+                {
+                    length = socketRxRaw.Receive(singlePacket);
+                    if (singlePacket[4] == 0x03) //Packet
                     {
                         packetRxCount++;
                         packetID = (singlePacket[6] << 8) | singlePacket[7];
@@ -112,16 +188,16 @@ namespace GigeVision.Core.Models
                         if (packetID < finalPacketID) //Check for final packet because final packet length maybe lesser than the regular packets
                         {
                             bufferLength = length - 8;
-                            var slicedRowInImage = cameraRawPacket.Slice((packetID - 1) * bufferLength, bufferLength);
+                            Span<byte> slicedRowInImage = cameraRawPacket.Slice((packetID - 1) * bufferLength, bufferLength);
                             singlePacket.Slice(8, bufferLength).CopyTo(slicedRowInImage);
                         }
                         else
                         {
-                            var slicedRowInImage = cameraRawPacket.Slice((packetID - 1) * bufferLength, length - 8);
+                            Span<byte> slicedRowInImage = cameraRawPacket.Slice((packetID - 1) * bufferLength, length - 8);
                             singlePacket.Slice(8, length - 8).CopyTo(slicedRowInImage);
                         }
                     }
-                    else if (length == 16) //Trailer packet size=16, Header Packet Size=44
+                    else if (singlePacket[4] == 0x02)
                     {
                         if (finalPacketID == 0)
                         {
@@ -151,6 +227,8 @@ namespace GigeVision.Core.Models
         }
 
         #region OldCode
+
+        private IntPtr intPtr;
 
         private void SetupSocketRx()
         {
@@ -229,7 +307,7 @@ namespace GigeVision.Core.Models
                 _ = Camera.StopStream();
             }
         }
-        IntPtr intPtr;
+
         private void RxCpp()
         {
             intPtr = new IntPtr();
