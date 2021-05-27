@@ -7,7 +7,7 @@ namespace GenICam
         /// <summary>
         /// Register Address in hex format
         /// </summary>
-        Int64 Address { get; }
+        Int64? Address { get; }
 
         /// <summary>
         /// Register Length
