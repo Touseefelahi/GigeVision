@@ -37,9 +37,26 @@ namespace GenICam
 
         public async Task<string> GetValue()
         {
-            var reply = await Get(Length);
-            Value = ASCIIEncoding.ASCII.GetString(reply.MemoryValue);
+            var key = (await GetAddress()).ToString();
 
+            if (TempDictionary.Formula.ContainsKey(key))
+                Value = TempDictionary.Formula[key] as string;
+            else
+            {
+
+            var reply = await Get(Length);
+            try
+            {
+                if (!(reply.MemoryValue is null))
+                    Value = Encoding.ASCII.GetString(reply.MemoryValue);
+                if (!TempDictionary.Formula.ContainsKey(key))
+                    TempDictionary.Formula.Add(key, Value);
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            }
             return Value;
         }
 
@@ -78,9 +95,11 @@ namespace GenICam
             return await GenPort.Write(pBuffer, Address, length);
         }
 
-        public long GetAddress()
+        public async Task<long?> GetAddress()
         {
-            return Address;
+            if (Address is long address)
+                return address;
+            return null;
         }
 
         public long GetLength()

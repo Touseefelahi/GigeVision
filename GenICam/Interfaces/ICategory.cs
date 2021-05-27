@@ -9,7 +9,7 @@ namespace GenICam
         string GroupName { get; }
         List<ICategory> PFeatures { get; set; }
         IPValue PValue { get; }
-        Dictionary<string, IntSwissKnife> Expressions { get; }
+        Dictionary<string, IMathematical> Expressions { get; }
 
         CategoryProperties CategoryProperties { get; }
     }

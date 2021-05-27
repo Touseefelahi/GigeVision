@@ -9,7 +9,7 @@ namespace GenICam
         public Int64 Value { get; set; }
         public Int64 CommandValue { get; private set; }
 
-        public GenCommand(CategoryProperties categoryProperties, Int64 commandValue, IPValue pValue, Dictionary<string, IntSwissKnife> expressions)
+        public GenCommand(CategoryProperties categoryProperties, Int64 commandValue, IPValue pValue, Dictionary<string, IMathematical> expressions)
         {
             CategoryProperties = categoryProperties;
             CommandValue = commandValue;

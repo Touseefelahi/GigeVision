@@ -13,20 +13,16 @@ namespace GenICam
 
         List<long> GetListOfValidValue();
 
-        long GetMax();
+        Task<long> GetMax();
 
-        long GetMin();
+        Task<long> GetMin();
 
         Representation GetRepresentation();
 
         string GetUnit();
 
-        Task<long> GetValue();
-
         void ImposeMax(long max);
 
         void ImposeMin(long min);
-
-        void SetValue(long value);
     }
 }

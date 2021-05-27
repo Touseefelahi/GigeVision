@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -7,131 +6,99 @@ using System.Threading.Tasks;
 
 namespace GenICam
 {
-    /// <summary>
-    /// this is a mathematical class for register parameter computations
-    /// </summary>
-    public class IntSwissKnife : IMathematical
+    public class Converter : IMathematical
     {
-        /// <summary>
-        /// SwisKinfe Variable Parameters
-        /// </summary>
         private Dictionary<string, IPValue> PVariables { get; set; }
-        /// <summary>
-        /// SwisKinfe Constants Values
-        /// </summary>
-        private Dictionary<string, double> Constants { get; set; }
-        /// <summary>
-        /// SwisKinfe Expressions
-        /// </summary>
-        private Dictionary<string, string> Expressions { get; set; }
+        private string FormulaFrom { get; set; }
+        private string FormulaTo { get; set; }
 
-        /// <summary>
-        /// Formula Expression
-        /// </summary>
-        private string Formula { get; set; }
+        private Slope Slope { get; set; }
 
-        /// <summary>
-        /// Formula Result
-        /// </summary>
-        public Task<double> Value { get; private set; }
+        public IPValue PValue { get; private set; }
 
-        /// <summary>
-        /// Main Method that calculate the given formula
-        /// </summary>
-        /// <param name="gvcp"></param>
-        /// <param name="formula"></param>
-        /// <param name="pVarible"></param>
-        /// <param name="value"></param>
-        public IntSwissKnife(string formula, Dictionary<string, IPValue> pVaribles, Dictionary<string, double> constants = null, Dictionary<string, string> expressions = null)
+        public Task<double> Value
         {
-            PVariables = pVaribles;
-            Formula = formula;
-            Constants = constants;
-            Expressions = expressions;
+            get
+            {
+                return ExecuteFormulaFrom();
+            }
+            set
+            {
+                Value = ExecuteFormulaTo();
+            }
+        }
+
+        public Converter(string formulaTo, string formulaFrom, IPValue pValue, Slope slope, Dictionary<string, IPValue> pVariables = null)
+        {
+            FormulaTo = formulaTo;
+            FormulaFrom = formulaFrom;
+
+
             //Prepare Expression
-            Formula = Formula.Replace(" ", "");
+            FormulaTo = FormulaTo.Replace(" ", "");
+            FormulaFrom = FormulaFrom.Replace(" ", "");
             List<char> opreations = new List<char> { '(', '+', '-', '/', '*', '=', '?', ':', ')', '>', '<', '&', '|', '^', '~', '%' };
 
             foreach (var character in opreations)
             {
                 if (opreations.Where(x => x == character).Count() > 0)
                 {
-                    Formula = Formula.Replace($"{character}", $" {character} ");
-                    if (Expressions != null)
-                    {
-                        foreach (var expression in Expressions.ToList())
-                        {
-                            Expressions[expression.Key] = expression.Value.Replace($"{character}", $" {character} ");
-                        }
-                    }
+                    FormulaTo = FormulaTo.Replace($"{character}", $" {character} ");
+                    FormulaFrom = FormulaFrom.Replace($"{character}", $" {character} ");
                 }
             }
 
-            Value = ExecuteFormula();
+
+            PVariables = pVariables;
+            PValue = pValue;
+            Slope = slope;
+
+            new Action((async () => await ExecuteFormulaFrom())).Invoke();
+            new Action((async () => await ExecuteFormulaTo())).Invoke();
+
         }
 
-        /// <summary>
-        /// this method calculates the formula and returns the result
-        /// </summary>
-        /// <param name="intSwissKnife"></param>
-        /// <returns></returns>
-        private async Task<double> ExecuteFormula()
+        private async Task<double> ExecuteFormulaFrom()
         {
-            if (Expressions != null)
+            foreach (var word in FormulaFrom.Split())
             {
-                foreach (var expression in Expressions.ToList())
-                {
-                    foreach (var word in expression.Value.Split())
-                    {
-                        await ReadExpressionPValues(word);
 
-                        foreach (var constant in Constants)
-                        {
-                            if (constant.Key.Equals(word))
-                            {
-                                Expressions[expression.Key] = expression.Value.Replace(word, constant.Value.ToString());
-                                break;
-                            }
-                        }
+                if (word.Equals("TO"))
+                {
+                    double? value = null;
+
+                    value = await PValue.GetValue();
+
+                    if (value is null)
+                        throw new Exception("Failed to read register value", new InvalidDataException());
+
+                    FormulaFrom = FormulaFrom.Replace(word, value.ToString());
+                }
+
+                foreach (var pVariable in PVariables)
+                {
+
+
+                    if (pVariable.Key.Equals(word))
+                    {
+                        double? value = null;
+
+                        value = await pVariable.Value.GetValue();
+
+                        if (value is null)
+                            throw new Exception("Failed to read register value", new InvalidDataException());
+
+                        FormulaFrom = FormulaFrom.Replace(word, value.ToString());
                     }
+
+
                 }
             }
-
-            foreach (var word in Formula.Split())
-            {
-                await ReadExpressionPValues(word);
-
-                if (Constants != null)
-                {
-                    foreach (var constant in Constants)
-                    {
-                        if (constant.Key.Equals(word))
-                        {
-                            Formula = Formula.Replace(word, constant.Value.ToString());
-
-                            break;
-                        }
-                    }
-                }
-
-                if (Expressions != null)
-                {
-                    foreach (var expression in Expressions)
-                    {
-                        if (expression.Key.Equals(word))
-                        {
-                            Formula = Formula.Replace(word, expression.Value);
-                            break;
-                        }
-                    }
-                }
-            }
-
 
             double result;
-            if (Formula != string.Empty)
+            if (FormulaFrom != string.Empty)
             {
-                string formula = Formula;
+                string formula = FormulaFrom;
                 string equation = "";
                 while (formula.Contains('+') || formula.Contains('-') || formula.Contains('/') || formula.Contains('*'))
                 {
@@ -168,31 +135,79 @@ namespace GenICam
             return 0;
         }
 
-        /// <summary>
-        /// Helper To Read SwissKinfe Experssion Parameters
-        /// </summary>
-        /// <param name="word"></param>
-        /// <returns></returns>
-        private async Task ReadExpressionPValues(string word)
+        private async Task<double> ExecuteFormulaTo()
         {
-            if (PVariables != null)
+            foreach (var word in FormulaTo.Split())
             {
+                if (word.Equals("FROM"))
+                {
+                    double? value = null;
+
+                    value = await PValue.GetValue();
+
+                    if (value is null)
+                        throw new Exception("Failed to read register value", new InvalidDataException());
+
+                    FormulaTo = FormulaTo.Replace(word, value.ToString());
+                }
+
                 foreach (var pVariable in PVariables)
                 {
+
                     if (pVariable.Key.Equals(word))
                     {
                         double? value = null;
+
                         value = await pVariable.Value.GetValue();
 
                         if (value is null)
                             throw new Exception("Failed to read register value", new InvalidDataException());
-                        Formula = Formula.Replace(word, value.ToString());
-                        break;
+
+                        FormulaTo = FormulaTo.Replace(word, value.ToString());
                     }
                 }
             }
-        }
 
+            double result;
+            if (FormulaTo != string.Empty)
+            {
+                string formula = FormulaTo;
+                string equation = "";
+                while (formula.Contains('+') || formula.Contains('-') || formula.Contains('/') || formula.Contains('*'))
+                {
+                    foreach (var item in formula.Split('(', StringSplitOptions.None))
+                    {
+                        equation = item;
+                        if (item.Contains(')'))
+                            equation = item.Substring(0, item.IndexOf(')'));
+
+
+                        if (equation.Contains('+') || equation.Contains('-') || equation.Contains('/') || equation.Contains('*'))
+                        {
+                            var last = equation.Replace(" ", "");
+                            last = last.Substring(0, last.Length - 1);
+                            if (last != "+" || last != "-" || last != "/" || last != "*")
+                            {
+                                result = Evaluate(last);
+                                if (formula.Contains($"({last})"))
+                                    formula = formula.Replace($"({last})", result.ToString());
+                                else
+                                    formula = formula.Replace(last, result.ToString());
+                            }
+                        }
+
+                        if (formula.Contains($"({equation})"))
+                            formula = formula.Replace($"({equation})", equation);
+
+                    }
+                    return Evaluate(formula);
+                }
+
+            }
+
+            return 0;
+
+        }
 
         /// <summary>
         /// this method evaluate the formula expression
@@ -408,13 +423,7 @@ namespace GenICam
                 return 0;
             throw new InvalidDataException("Failed to read the formula");
         }
-        /// <summary>
-        /// Helper To Calculate Math Opreations
-        /// </summary>
-        /// <param name="opreator"></param>
-        /// <param name="opreators"></param>
-        /// <param name="values"></param>
-        /// <returns></returns>
+
         private static bool DoMathOpreation(string opreator, Stack<string> opreators, Stack<double> values)
         {
             bool tempBoolean = false;
@@ -643,11 +652,6 @@ namespace GenICam
             return tempBoolean;
         }
 
-        /// <summary>
-        /// Parse Hexdecimal String to Actual Integer 
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
         private static long GetLongValueFromString(string value)
         {
             if (value.StartsWith("0x"))
@@ -666,23 +670,15 @@ namespace GenICam
             return 0;
         }
 
-        /// <summary>
-        /// Get SwissKinfe Value
-        /// </summary>
-        /// <returns></returns>
-        public async Task<Int64> GetValue()
+        public async Task<long> GetValue()
         {
-            return (Int64)await ExecuteFormula();
+            return await PValue.GetValue();
         }
 
-        /// <summary>
-        /// Set SwissKnife Value
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        public Task<IReplyPacket> SetValue(long value)
+        public async Task<IReplyPacket> SetValue(long value)
         {
-            throw new NotImplementedException();
+            return await PValue.SetValue(value);
         }
+
     }
 }
