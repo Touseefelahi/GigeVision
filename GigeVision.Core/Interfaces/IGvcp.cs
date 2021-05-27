@@ -42,6 +42,7 @@ namespace GigeVision.Core.Interfaces
         /// Dictionary for registers
         /// </summary>
         Dictionary<string, string> RegistersDictionary { get; set; }
+        public Dictionary<string, IPValue> RegistersDictionaryValues { get; set; }
 
         /// <summary>
         /// Write Register: it will send the GVCP command to the specified socket
