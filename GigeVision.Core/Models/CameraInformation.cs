@@ -1,12 +1,16 @@
 ﻿using GigeVision.Core.Enums;
+using Stira.WpfCore;
 
 namespace GigeVision.Core.Models
 {
     /// <summary>
     /// Discovery Packet Information for GigeCamera
     /// </summary>
-    public class CameraInformation
+    public class CameraInformation : BaseNotifyPropertyChanged
     {
+        private CameraStatus status;
+        private string iP;
+
         /// <summary>
         /// Discovery Packet Information for GigeCamera
         /// </summary>
@@ -18,7 +22,18 @@ namespace GigeVision.Core.Models
         /// <summary>
         /// Camera IP
         /// </summary>
-        public string IP { get; set; }
+        public string IP
+        {
+            get { return iP; }
+            set
+            {
+                if (iP != value)
+                {
+                    iP = value;
+                    OnPropertyChanged(nameof(IP));
+                }
+            }
+        }
 
         /// <summary>
         /// Camera MAC address
@@ -46,7 +61,7 @@ namespace GigeVision.Core.Models
         public string ManufacturerName { get; set; }
 
         /// <summary>
-        /// Device Manufactuere Specific Information
+        /// Device Manufacture Specific Information
         /// </summary>
         public string ManufacturerSpecificInformation { get; set; }
 
@@ -63,6 +78,22 @@ namespace GigeVision.Core.Models
         /// <summary>
         /// Device Status
         /// </summary>
-        public CameraStatus Status { get; set; }
+        public CameraStatus Status
+        {
+            get { return status; }
+            set
+            {
+                if (status != value)
+                {
+                    status = value;
+                    OnPropertyChanged(nameof(Status));
+                }
+            }
+        }
+
+        public override string ToString()
+        {
+            return IP;
+        }
     }
 }
