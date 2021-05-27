@@ -10,8 +10,8 @@ namespace GenICam
         /// <summary>
         /// Register Address in hex format
         /// </summary>
-        public Int64 Address { get; private set; }
-
+        public Int64? Address { get; private set; }
+        public object PAddress { get; private set; }
         /// <summary>
         /// Register Length
         /// </summary>
@@ -22,12 +22,13 @@ namespace GenICam
         /// </summary>
         public GenAccessMode AccessMode { get; private set; }
 
-        public Dictionary<string, IntSwissKnife> Expressions { get; set; }
+        public Dictionary<string, IMathematical> Expressions { get; set; }
         public IGenPort GenPort { get; }
 
-        public GenIntReg(long address, long length, GenAccessMode accessMode, Dictionary<string, IntSwissKnife> expressions, IGenPort genPort)
+        public GenIntReg(long? address, long length, GenAccessMode accessMode, Dictionary<string, IMathematical> expressions, object pAddress, IGenPort genPort)
         {
             Address = address;
+            PAddress = pAddress;
             Length = length;
             AccessMode = accessMode;
             Expressions = expressions;
@@ -36,17 +37,32 @@ namespace GenICam
 
         public async Task<IReplyPacket> Get(long length)
         {
-            return await GenPort.Read(Address, Length);
+            if (Address is long adress)
+                return await GenPort.Read(adress, Length);
+            else if (PAddress is IntSwissKnife pAddress)
+                return await GenPort.Read(await pAddress.GetValue(), Length);
+
+            return null;
         }
 
         public async Task<IReplyPacket> Set(byte[] pBuffer, long length)
         {
-            return await GenPort.Write(pBuffer, Address, length);
+            if (Address is long adress)
+                return await GenPort.Write(pBuffer, adress, length);
+            else if (PAddress is IntSwissKnife pAddress)
+                return await GenPort.Write(pBuffer, await pAddress.GetValue(), length);
+
+            return null;
         }
 
-        public long GetAddress()
+        public async Task<long?> GetAddress()
         {
-            return Address;
+            if (Address is long address)
+                return address;
+            else if (PAddress is IntSwissKnife swissKnife)
+                return (long)(await swissKnife.GetValue());
+
+            return null;
         }
 
         public long GetLength()
@@ -56,9 +72,16 @@ namespace GenICam
 
         public async Task<long> GetValue()
         {
-            var reply = await Get(Length);
             Int64 value = 0;
+            
+            var key = (await GetAddress()).ToString();
 
+            if (TempDictionary.Formula.ContainsKey(key))
+                value = (long)TempDictionary.Formula[key];
+            else
+            {
+
+            var reply = await Get(Length);
             if (reply.MemoryValue != null)
             {
                 switch (Length)
@@ -84,8 +107,40 @@ namespace GenICam
             {
                 value = (Int64)reply.RegisterValue;
             }
-
+                if (!TempDictionary.Formula.ContainsKey(key))
+                    TempDictionary.Formula.Add(key, value);
+            }
             return value;
         }
+
+        public async Task<IReplyPacket> SetValue(long value)
+        {
+            IReplyPacket reply = null;
+            if (AccessMode != GenAccessMode.RO)
+            {
+                var length = GetLength();
+                byte[] pBuffer = new byte[length];
+
+                switch (length)
+                {
+                    case 2:
+                        pBuffer = BitConverter.GetBytes((UInt16)value);
+                        break;
+
+                    case 4:
+                        pBuffer = BitConverter.GetBytes((Int32)value);
+                        break;
+
+                    case 8:
+                        pBuffer = BitConverter.GetBytes(value);
+                        break;
+                }
+
+                reply = await Set(pBuffer, length);
+            }
+
+            return reply;
+        }
+
     }
 }

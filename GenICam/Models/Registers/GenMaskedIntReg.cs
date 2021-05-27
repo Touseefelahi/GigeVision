@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace GenICam
@@ -9,38 +11,55 @@ namespace GenICam
         /// <summary>
         /// Register Address in hex format
         /// </summary>
-        public Int64 Address { get; private set; }
+        public Int64? Address { get; private set; }
+        public object PAddress { get; private set; }
 
         /// <summary>
         /// Register Length
         /// </summary>
         public Int64 Length { get; private set; }
+        public short? MSB { get; private set; }
+        public short? LSB { get; private set; }
+        public byte? Bit { get; private set; }
 
         /// <summary>
         /// Register Access Mode
         /// </summary>
         public GenAccessMode AccessMode { get; private set; }
 
-        public Dictionary<string, IntSwissKnife> Expressions { get; set; }
+        public Dictionary<string, IMathematical> Expressions { get; set; }
         public IGenPort GenPort { get; }
 
-        public GenMaskedIntReg(long address, long length, GenAccessMode accessMode, Dictionary<string, IntSwissKnife> expressions, IGenPort genPort)
+        public GenMaskedIntReg(long? address, long length, short? msb, short? lsb, byte? bit, GenAccessMode accessMode, object pAddress, IGenPort genPort)
         {
-            Expressions = expressions;
             GenPort = genPort;
             Address = address;
             Length = length;
+            MSB = msb;
+            LSB = lsb;
+            Bit = bit;
             AccessMode = accessMode;
+            PAddress = pAddress;
         }
 
-        public async Task<IReplyPacket> Get(long length)
+        private async Task<IReplyPacket> Get(long length)
         {
-            return await GenPort.Read(Address, Length);
+            if (Address is long adress)
+                return await GenPort.Read(adress, Length);
+            else if (PAddress is IntSwissKnife pAddress)
+                return await GenPort.Read(await pAddress.GetValue(), Length);
+
+            return null;
         }
 
-        public long GetAddress()
+        public async Task<long?> GetAddress()
         {
-            return Address;
+            if (Address is long address)
+                return address;
+            else if (PAddress is IntSwissKnife swissKnife)
+                return (long)(await swissKnife.GetValue());
+
+            return null;
         }
 
         public long GetLength()
@@ -50,44 +69,114 @@ namespace GenICam
 
         public async Task<IReplyPacket> Set(byte[] pBuffer, long length)
         {
-            return await GenPort.Write(pBuffer, Address, length);
+            if (Address is long adress)
+                return await GenPort.Write(pBuffer, adress, length);
+            else if (PAddress is IntSwissKnife pAddress)
+                return await GenPort.Write(pBuffer, await pAddress.GetValue(), length);
+
+            return null;
         }
 
         public async Task<long> GetValue()
         {
-            var reply = await Get(Length);
             Int64 value = 0;
 
-            await Task.Run(() =>
+            var key = (await GetAddress()).ToString();
+
+            if (TempDictionary.Formula.ContainsKey(key))
+                value = ReadMask((long)TempDictionary.Formula[key]);
+            else
             {
-                if (reply.MemoryValue != null)
+                var reply = await Get(Length);
+
+                await Task.Run(() =>
                 {
-                    switch (Length)
+                    if (reply.MemoryValue != null)
                     {
-                        case 2:
-                            value = BitConverter.ToUInt16(reply.MemoryValue);
-                            break;
+                        switch (Length)
+                        {
+                            case 2:
+                                value = BitConverter.ToUInt16(reply.MemoryValue);
+                                break;
 
-                        case 4:
-                            value = BitConverter.ToUInt32(reply.MemoryValue);
-                            break;
+                            case 4:
+                                value = BitConverter.ToUInt32(reply.MemoryValue);
+                                break;
 
-                        case 8:
-                            value = BitConverter.ToInt64(reply.MemoryValue);
-                            break;
+                            case 8:
+                                value = BitConverter.ToInt64(reply.MemoryValue);
+                                break;
 
-                        default:
-                            value = BitConverter.ToInt64(reply.MemoryValue);
-                            break;
+                            default:
+                                value = BitConverter.ToInt64(reply.MemoryValue);
+                                break;
+                        }
                     }
-                }
-                else
-                {
-                    value = (Int64)reply.RegisterValue;
-                }
-            });
+                    else
+                    {
+                        value = ReadMask(reply.RegisterValue);
+                    }
+                });
+                if (!TempDictionary.Formula.ContainsKey(key))
+                    TempDictionary.Formula.Add(key, value);
+                
+            }
+            return value;
+        }
+
+        public long ReadMask(long registerValue)
+        {
+            var mask = 0xFFFF0000;
+            Int64 value = 0;
+
+            if (MSB is short msb && LSB is short lsb)
+            {
+                var msbMask = mask >> msb;
+                var lsbMask = mask >> lsb;
+                mask = msbMask | lsbMask;
+                var shift = (short)((Length * 8) - 1) - lsb;
+                value = (Int64)(registerValue & mask) >> shift;
+            }
+            else if (Bit is byte bit)
+            {
+                var bytesValue = BitConverter.GetBytes(registerValue);
+
+                var bits = new BitArray(bytesValue);
+
+                if (bits[bit])
+                    value = (long)Math.Pow(2, (bit));
+            }
 
             return value;
+        }
+
+        public async Task<IReplyPacket> SetValue(long value)
+        {
+            IReplyPacket reply = null;
+            if (AccessMode != GenAccessMode.RO)
+            {
+                var length = GetLength();
+                byte[] pBuffer = new byte[length];
+
+                switch (length)
+                {
+                    case 2:
+                        pBuffer = BitConverter.GetBytes((UInt16)value);
+                        break;
+
+                    case 4:
+                        pBuffer = BitConverter.GetBytes((Int32)value);
+                        break;
+
+                    case 8:
+                        pBuffer = BitConverter.GetBytes(value);
+                        break;
+                }
+
+                reply = await Set(pBuffer, length);
+            }
+
+            return reply;
         }
     }
 }

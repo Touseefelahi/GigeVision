@@ -11,7 +11,7 @@ namespace GenICam
         public bool Value { get; set; }
         public bool ValueToWrite { get; set; }
 
-        public GenBoolean(CategoryProperties categoryProperties, IPValue pValue, Dictionary<string, IntSwissKnife> expressions)
+        public GenBoolean(CategoryProperties categoryProperties, IPValue pValue, Dictionary<string, IMathematical> expressions)
         {
             SetValueCommand = new DelegateCommand(ExecuteSetValueCommand);
             CategoryProperties = categoryProperties;
@@ -23,51 +23,20 @@ namespace GenICam
 
         public async Task<bool> GetValue()
         {
+            Int64? value = null;
             if (PValue is IRegister Register)
             {
                 if (Register.AccessMode != GenAccessMode.WO)
-                {
-                    Int64 value = 0;
-                    var length = Register.GetLength();
-                    byte[] pBuffer = new byte[length];
+                    value = await Register.GetValue();
 
-                    var reply = await Register.Get(length);
-
-                    if (reply.IsSentAndReplyReceived && reply.Reply[0] == 0)
-                    {
-                        if (reply.MemoryValue != null)
-                            pBuffer = reply.MemoryValue;
-                        else
-                            pBuffer = BitConverter.GetBytes(reply.RegisterValue);
-
-                        switch (length)
-                        {
-                            case 2:
-                                value = BitConverter.ToUInt16(pBuffer);
-                                break;
-
-                            case 4:
-                                value = BitConverter.ToUInt32(pBuffer);
-                                break;
-
-                            case 8:
-                                value = BitConverter.ToInt64(pBuffer);
-                                break;
-                        }
-                    }
-                    if (value == 1)
-                        return true;
-                    else
-                        return false;
-                }
             }
             else if (PValue is IntSwissKnife intSwissKnife)
-            {
-                if (intSwissKnife.Value == 1)
-                    return true;
-                else
-                    return false;
-            }
+                value = await intSwissKnife.GetValue();
+
+            if (value == 1)
+                Value = true;
+            else if (value == 0)
+                Value = false;
 
             return Value;
         }

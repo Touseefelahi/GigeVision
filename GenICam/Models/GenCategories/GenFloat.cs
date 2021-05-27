@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace GenICam
 {
-    public class GenFloat : GenCategory, IGenFloat
+    public class GenFloat : GenCategory, IGenFloat, IPValue
     {
         public double Min { get; private set; }
         public double Max { get; set; }
@@ -19,7 +19,7 @@ namespace GenICam
         public uint DisplayPrecision { get; private set; }
         public double ValueToWrite { get; set; }
 
-        public GenFloat(CategoryProperties categoryProperties, double min, double max, long inc, IncMode incMode, Representation representation, double value, string unit, IPValue pValue, Dictionary<string, IntSwissKnife> expressions)
+        public GenFloat(CategoryProperties categoryProperties, double min, double max, long inc, IncMode incMode, Representation representation, double value, string unit, IPValue pValue, Dictionary<string, IMathematical> expressions)
         {
             CategoryProperties = categoryProperties;
             Min = min;
@@ -82,17 +82,17 @@ namespace GenICam
                 return null;
         }
 
-        public double GetMax()
+        public async Task<double> GetMax()
         {
-            var pMax = ReadIntSwissKnife("pMax");
+            var pMax = await ReadIntSwissKnife("pMax");
             if (pMax != null) Max = (double)pMax;
 
             return Max;
         }
 
-        public double GetMin()
+        public async Task<double> GetMin()
         {
-            var pMin = ReadIntSwissKnife("pMin");
+            var pMin = await ReadIntSwissKnife("pMin");
             if (pMin != null) Min = (double)pMin;
 
             return Min;
@@ -108,7 +108,7 @@ namespace GenICam
             throw new NotImplementedException();
         }
 
-        public async Task<double> GetValue()
+        public async Task<long> GetValue()
         {
             double value = Value;
 
@@ -116,53 +116,48 @@ namespace GenICam
             {
                 if (Register.AccessMode != GenAccessMode.WO)
                 {
-                    var length = Register.GetLength();
-                    var reply = await Register.Get(length);
+                    value = await Register.GetValue();
 
-                    byte[] pBuffer;
-                    if (reply.IsSentAndReplyReceived && reply.Reply[0] == 0)
+                    byte[] pBuffer = BitConverter.GetBytes(value);
+
+                    if (Representation == Representation.HexNumber)
+                        Array.Reverse(pBuffer);
+
+                    switch (pBuffer.Length)
                     {
-                        if (reply.MemoryValue != null)
-                            pBuffer = reply.MemoryValue;
-                        else
-                            pBuffer = BitConverter.GetBytes(reply.RegisterValue);
+                        case 2:
+                            value = BitConverter.ToUInt16(pBuffer); ;
+                            break;
 
-                        if (Representation == Representation.HexNumber)
-                            Array.Reverse(pBuffer);
+                        case 4:
+                            value = BitConverter.ToUInt32(pBuffer);
+                            break;
 
-                        switch (length)
-                        {
-                            case 2:
-                                value = BitConverter.ToUInt16(pBuffer); ;
-                                break;
-
-                            case 4:
-                                value = BitConverter.ToUInt32(pBuffer);
-                                break;
-
-                            case 8:
-                                value = BitConverter.ToInt64(pBuffer);
-                                break;
-                        }
+                        case 8:
+                            value = BitConverter.ToInt64(pBuffer);
+                            break;
                     }
                 }
             }
+
             else if (PValue is IntSwissKnife intSwissKnife)
             {
-                value = (Int64)intSwissKnife.Value;
+                value = await intSwissKnife.GetValue();
             }
 
-            return value;
+            return (long)value;
         }
 
-        public async void SetValue(double value)
+        public async Task<IReplyPacket> SetValue(long value)
         {
+            IReplyPacket reply = null;
+
             if (PValue is IRegister Register)
             {
                 if (Register.AccessMode != GenAccessMode.RO)
                 {
                     if ((value % Inc) != 0)
-                        return;
+                        return null;
 
                     var length = Register.GetLength();
                     byte[] pBuffer = new byte[length];
@@ -182,14 +177,16 @@ namespace GenICam
                             break;
                     }
 
-                    var reply = await Register.Set(pBuffer, length);
+                    reply = await Register.Set(pBuffer, length);
                     if (reply.IsSentAndReplyReceived && reply.Reply[0] == 0)
                         Value = value;
+
                 }
             }
 
             ValueToWrite = Value;
             RaisePropertyChanged(nameof(ValueToWrite));
+            return reply;
         }
 
         public void ImposeMax(double max)
@@ -205,11 +202,11 @@ namespace GenICam
         public async void SetupFeatures()
         {
             Value = await GetValue();
-            Max = GetMax();
-            Min = GetMin();
+            Max = await GetMax();
+            Min = await GetMin();
         }
 
-        private Int64? ReadIntSwissKnife(string pNode)
+        private async Task<Int64?> ReadIntSwissKnife(string pNode)
         {
             if (Expressions == null)
                 return null;
@@ -220,18 +217,23 @@ namespace GenICam
             var pValueNode = Expressions[pNode];
             if (pValueNode is IntSwissKnife intSwissKnife)
             {
-                return (Int64)intSwissKnife.Value;
+                return await intSwissKnife.GetValue();
             }
 
             return null;
         }
 
-        private void ExecuteSetValueCommand()
+        private async void ExecuteSetValueCommand()
         {
             if (Value != ValueToWrite)
             {
-                SetValue(ValueToWrite);
+                await SetValue((long)ValueToWrite);
             }
+        }
+
+        public async void SetValue(double value)
+        {
+            await SetValue((long)value);
         }
     }
 }
