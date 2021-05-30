@@ -8,9 +8,6 @@ namespace GenICam
 {
     public class GenBoolean : GenCategory, IGenBoolean
     {
-        public bool Value { get; set; }
-        public bool ValueToWrite { get; set; }
-
         public GenBoolean(CategoryProperties categoryProperties, IPValue pValue, Dictionary<string, IMathematical> expressions)
         {
             SetValueCommand = new DelegateCommand(ExecuteSetValueCommand);
@@ -21,17 +18,19 @@ namespace GenICam
                 SetupFeatures();
         }
 
+        public bool Value { get; set; }
+        public bool ValueToWrite { get; set; }
+
         public async Task<bool> GetValue()
         {
             Int64? value = null;
             if (PValue is IRegister Register)
             {
                 if (Register.AccessMode != GenAccessMode.WO)
-                    value = await Register.GetValue();
-
+                    value = await Register.GetValue().ConfigureAwait(false);
             }
             else if (PValue is IntSwissKnife intSwissKnife)
-                value = await intSwissKnife.GetValue();
+                value = await intSwissKnife.GetValue().ConfigureAwait(false);
 
             if (value == 1)
                 Value = true;
@@ -49,7 +48,7 @@ namespace GenICam
                 byte[] pBuffer = new byte[length];
                 pBuffer[0] = Convert.ToByte(value);
 
-                var reply = await Register.Set(pBuffer, length);
+                var reply = await Register.Set(pBuffer, length).ConfigureAwait(false);
                 if (reply.IsSentAndReplyReceived && reply.Reply[0] == 0)
                     Value = value;
             }

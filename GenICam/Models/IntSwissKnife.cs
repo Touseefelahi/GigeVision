@@ -13,29 +13,6 @@ namespace GenICam
     public class IntSwissKnife : IMathematical
     {
         /// <summary>
-        /// SwisKinfe Variable Parameters
-        /// </summary>
-        private Dictionary<string, IPValue> PVariables { get; set; }
-        /// <summary>
-        /// SwisKinfe Constants Values
-        /// </summary>
-        private Dictionary<string, double> Constants { get; set; }
-        /// <summary>
-        /// SwisKinfe Expressions
-        /// </summary>
-        private Dictionary<string, string> Expressions { get; set; }
-
-        /// <summary>
-        /// Formula Expression
-        /// </summary>
-        private string Formula { get; set; }
-
-        /// <summary>
-        /// Formula Result
-        /// </summary>
-        public Task<double> Value { get; private set; }
-
-        /// <summary>
         /// Main Method that calculate the given formula
         /// </summary>
         /// <param name="gvcp"></param>
@@ -71,128 +48,29 @@ namespace GenICam
         }
 
         /// <summary>
-        /// this method calculates the formula and returns the result
+        /// Formula Result
         /// </summary>
-        /// <param name="intSwissKnife"></param>
-        /// <returns></returns>
-        private async Task<double> ExecuteFormula()
-        {
-            if (Expressions != null)
-            {
-                foreach (var expression in Expressions.ToList())
-                {
-                    foreach (var word in expression.Value.Split())
-                    {
-                        await ReadExpressionPValues(word);
-
-                        foreach (var constant in Constants)
-                        {
-                            if (constant.Key.Equals(word))
-                            {
-                                Expressions[expression.Key] = expression.Value.Replace(word, constant.Value.ToString());
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-
-            foreach (var word in Formula.Split())
-            {
-                await ReadExpressionPValues(word);
-
-                if (Constants != null)
-                {
-                    foreach (var constant in Constants)
-                    {
-                        if (constant.Key.Equals(word))
-                        {
-                            Formula = Formula.Replace(word, constant.Value.ToString());
-
-                            break;
-                        }
-                    }
-                }
-
-                if (Expressions != null)
-                {
-                    foreach (var expression in Expressions)
-                    {
-                        if (expression.Key.Equals(word))
-                        {
-                            Formula = Formula.Replace(word, expression.Value);
-                            break;
-                        }
-                    }
-                }
-            }
-
-
-            double result;
-            if (Formula != string.Empty)
-            {
-                string formula = Formula;
-                string equation = "";
-                while (formula.Contains('+') || formula.Contains('-') || formula.Contains('/') || formula.Contains('*'))
-                {
-                    foreach (var item in formula.Split('(', StringSplitOptions.None))
-                    {
-                        equation = item;
-                        if (item.Contains(')'))
-                            equation = item.Substring(0, item.IndexOf(')'));
-
-
-                        if (equation.Contains('+') || equation.Contains('-') || equation.Contains('/') || equation.Contains('*'))
-                        {
-                            var last = equation.Replace(" ", "");
-                            last = last.Substring(0, last.Length - 1);
-                            if (last != "+" || last != "-" || last != "/" || last != "*")
-                            {
-                                result = Evaluate(last);
-                                if (formula.Contains($"({last})"))
-                                    formula = formula.Replace($"({last})", result.ToString());
-                                else
-                                    formula = formula.Replace(last, result.ToString());
-                            }
-                        }
-
-                        if (formula.Contains($"({equation})"))
-                            formula = formula.Replace($"({equation})", equation);
-
-                    }
-                    return Evaluate(formula);
-                }
-
-            }
-
-            return 0;
-        }
+        public Task<double> Value { get; private set; }
 
         /// <summary>
-        /// Helper To Read SwissKinfe Experssion Parameters
+        /// SwisKinfe Variable Parameters
         /// </summary>
-        /// <param name="word"></param>
-        /// <returns></returns>
-        private async Task ReadExpressionPValues(string word)
-        {
-            if (PVariables != null)
-            {
-                foreach (var pVariable in PVariables)
-                {
-                    if (pVariable.Key.Equals(word))
-                    {
-                        double? value = null;
-                        value = await pVariable.Value.GetValue();
+        private Dictionary<string, IPValue> PVariables { get; set; }
 
-                        if (value is null)
-                            throw new Exception("Failed to read register value", new InvalidDataException());
-                        Formula = Formula.Replace(word, value.ToString());
-                        break;
-                    }
-                }
-            }
-        }
+        /// <summary>
+        /// SwisKinfe Constants Values
+        /// </summary>
+        private Dictionary<string, double> Constants { get; set; }
 
+        /// <summary>
+        /// SwisKinfe Expressions
+        /// </summary>
+        private Dictionary<string, string> Expressions { get; set; }
+
+        /// <summary>
+        /// Formula Expression
+        /// </summary>
+        private string Formula { get; set; }
 
         /// <summary>
         /// this method evaluate the formula expression
@@ -206,8 +84,6 @@ namespace GenICam
             foreach (var character in opreations)
                 if (opreations.Where(x => x == character).Count() > 0)
                     expression = expression.Replace($"{character}", $" {character} ");
-
-
 
             Stack<string> opreators = new Stack<string>();
             Stack<double> values = new Stack<double>();
@@ -230,7 +106,6 @@ namespace GenICam
 
                     values.Push(tempNumber);
                     //valuesList.Last().Push(values.Peek());
-
                 }
                 else
                 {
@@ -317,6 +192,7 @@ namespace GenICam
                             isLeft = false;
                             isRight = false;
                             break;
+
                         case "+":
                         case "-":
                         case "/":
@@ -360,7 +236,6 @@ namespace GenICam
                                 opreator = opreators.Pop();
                                 tempBoolean = DoMathOpreation(opreator, opreators, values);
 
-
                                 if (opreators.Count > 0)
                                 {
                                     if (opreators.Peek().Equals("?"))
@@ -377,14 +252,12 @@ namespace GenICam
                                         opreators.Pop();
                                     }
                                 }
-
                             }
 
                             isPower = false;
                             isLeft = false;
                             isRight = false;
                             break;
-
 
                         case "":
 
@@ -408,6 +281,26 @@ namespace GenICam
                 return 0;
             throw new InvalidDataException("Failed to read the formula");
         }
+
+        /// <summary>
+        /// Get SwissKinfe Value
+        /// </summary>
+        /// <returns></returns>
+        public async Task<Int64> GetValue()
+        {
+            return (Int64)await ExecuteFormula().ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Set SwissKnife Value
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public Task<IReplyPacket> SetValue(long value)
+        {
+            throw new NotImplementedException();
+        }
+
         /// <summary>
         /// Helper To Calculate Math Opreations
         /// </summary>
@@ -427,16 +320,12 @@ namespace GenICam
                 {
                     if (opreators.Count > 0 && values.Count > 0)
                     {
-
                         if (opreators.Peek().Equals("*"))
                             tempBoolean = DoMathOpreation(opreators.Pop(), opreators, values);
 
-
                         if (opreators.Peek().Equals("/"))
                             tempBoolean = DoMathOpreation(opreators.Pop(), opreators, values);
-
                     }
-
 
                     value = (double)values.Pop();
                     value = (double)values.Pop() + value;
@@ -449,10 +338,8 @@ namespace GenICam
                         if (opreators.Peek().Equals("*"))
                             tempBoolean = DoMathOpreation(opreators.Pop(), opreators, values);
 
-
                         if (opreators.Peek().Equals("/"))
                             tempBoolean = DoMathOpreation(opreators.Pop(), opreators, values);
-
                     }
                     value = (double)values.Pop();
                     value = (double)values.Pop() - value;
@@ -463,21 +350,18 @@ namespace GenICam
                     value = (double)values.Pop();
                     value = (double)values.Pop() * value;
                     values.Push(value);
-
                 }
                 else if (opreator.Equals("**"))
                 {
                     value = (double)values.Pop();
                     value = Math.Pow(values.Pop(), value);
                     values.Push(value);
-
                 }
                 else if (opreator.Equals("/"))
                 {
                     value = (double)values.Pop();
                     value = (double)values.Pop() / value;
                     values.Push(value);
-
                 }
                 else if (opreator.Equals("="))
                 {
@@ -488,7 +372,6 @@ namespace GenICam
                     {
                         tempBoolean = true;
                     }
-
                 }
                 else if (opreator.Equals("<>"))
                 {
@@ -564,7 +447,6 @@ namespace GenICam
                     integerValue = ((int)GetLongValueFromString(values.Pop().ToString()) << integerValue);
                     values.Push(integerValue);
                 }
-
             }
             if (opreator.Equals(":"))
             {
@@ -644,7 +526,7 @@ namespace GenICam
         }
 
         /// <summary>
-        /// Parse Hexdecimal String to Actual Integer 
+        /// Parse Hexdecimal String to Actual Integer
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
@@ -667,22 +549,122 @@ namespace GenICam
         }
 
         /// <summary>
-        /// Get SwissKinfe Value
+        /// this method calculates the formula and returns the result
         /// </summary>
+        /// <param name="intSwissKnife"></param>
         /// <returns></returns>
-        public async Task<Int64> GetValue()
+        private async Task<double> ExecuteFormula()
         {
-            return (Int64)await ExecuteFormula();
+            if (Expressions != null)
+            {
+                foreach (var expression in Expressions.ToList())
+                {
+                    foreach (var word in expression.Value.Split())
+                    {
+                        await ReadExpressionPValues(word).ConfigureAwait(false);
+
+                        foreach (var constant in Constants)
+                        {
+                            if (constant.Key.Equals(word))
+                            {
+                                Expressions[expression.Key] = expression.Value.Replace(word, constant.Value.ToString());
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            foreach (var word in Formula.Split())
+            {
+                await ReadExpressionPValues(word).ConfigureAwait(false);
+
+                if (Constants != null)
+                {
+                    foreach (var constant in Constants)
+                    {
+                        if (constant.Key.Equals(word))
+                        {
+                            Formula = Formula.Replace(word, constant.Value.ToString());
+
+                            break;
+                        }
+                    }
+                }
+
+                if (Expressions != null)
+                {
+                    foreach (var expression in Expressions)
+                    {
+                        if (expression.Key.Equals(word))
+                        {
+                            Formula = Formula.Replace(word, expression.Value);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            double result;
+            if (Formula != string.Empty)
+            {
+                string formula = Formula;
+                string equation = "";
+                while (formula.Contains('+') || formula.Contains('-') || formula.Contains('/') || formula.Contains('*'))
+                {
+                    foreach (var item in formula.Split('(', StringSplitOptions.None))
+                    {
+                        equation = item;
+                        if (item.Contains(')'))
+                            equation = item.Substring(0, item.IndexOf(')'));
+
+                        if (equation.Contains('+') || equation.Contains('-') || equation.Contains('/') || equation.Contains('*'))
+                        {
+                            var last = equation.Replace(" ", "");
+                            last = last.Substring(0, last.Length - 1);
+                            if (last != "+" || last != "-" || last != "/" || last != "*")
+                            {
+                                result = Evaluate(last);
+                                if (formula.Contains($"({last})"))
+                                    formula = formula.Replace($"({last})", result.ToString());
+                                else
+                                    formula = formula.Replace(last, result.ToString());
+                            }
+                        }
+
+                        if (formula.Contains($"({equation})"))
+                            formula = formula.Replace($"({equation})", equation);
+                    }
+                    return Evaluate(formula);
+                }
+            }
+
+            return 0;
         }
 
         /// <summary>
-        /// Set SwissKnife Value
+        /// Helper To Read SwissKinfe Experssion Parameters
         /// </summary>
-        /// <param name="value"></param>
+        /// <param name="word"></param>
         /// <returns></returns>
-        public Task<IReplyPacket> SetValue(long value)
+        private async Task ReadExpressionPValues(string word)
         {
-            throw new NotImplementedException();
+            if (PVariables != null)
+            {
+                foreach (var pVariable in PVariables)
+                {
+                    if (pVariable.Key.Equals(word))
+                    {
+                        double? value = null;
+                        value = await pVariable.Value.GetValue().ConfigureAwait(false);
+
+                        if (value is null)
+                            throw new Exception("Failed to read register value", new InvalidDataException());
+                        Formula = Formula.Replace(word, value.ToString());
+                        break;
+                    }
+                }
+            }
         }
     }
 }

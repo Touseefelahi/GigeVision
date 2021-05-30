@@ -8,25 +8,30 @@ namespace GigeVision.Core.WpfTest
     /// </summary>
     public partial class MainWindow : Window
     {
-        private readonly Camera camera;
+        private Camera camera;
 
-        private readonly Gvcp gvcp;
+        private Gvcp gvcp;
 
         public MainWindow()
         {
             InitializeComponent();
             DataContext = this;
-            camera = new();
-            camera.IP = "192.168.10.197";
-            gvcp = new();
-            camera.FrameReady += FrameReady;
-            image.WidthImage = 640;
-            image.HeightImage = 480;
+            Loaded += MainWindow_Loaded;
         }
 
         public byte[] RawBytes { get; set; }
 
         public int FrameCounter { get; set; }
+
+        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            camera = new();
+            camera.IP = "192.168.10.244";
+            gvcp = new();
+            camera.FrameReady += FrameReady;
+            image.WidthImage = 640;
+            image.HeightImage = 480;
+        }
 
         private void FrameReady(object sender, byte[] e)
         {
@@ -35,7 +40,7 @@ namespace GigeVision.Core.WpfTest
 
         private async void Button_Click(object sender, RoutedEventArgs e)
         {
-            await camera.StartStreamAsync("192.168.10.172").ConfigureAwait(false);
+            await camera.StartStreamAsync("192.168.10.227").ConfigureAwait(false);
         }
 
         private async void Button_Click_1(object sender, RoutedEventArgs e)

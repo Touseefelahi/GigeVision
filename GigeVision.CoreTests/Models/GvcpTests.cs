@@ -36,19 +36,19 @@ namespace GigeVision.Core.Models.Tests
         [TestMethod()]
         public async Task ReadRegisterAsyncTest()
         {
-            GvcpReply value = await gvcp.ReadRegisterAsync(ipCamera, Enums.GvcpRegister.CCP);
+            GvcpReply value = await gvcp.ReadRegisterAsync(ipCamera, Enums.GvcpRegister.CCP).ConfigureAwait(false);
             if (value.IsSentAndReplyReceived)
             {
                 Assert.IsTrue(value.IsValid);
             }
 
-            GvcpReply value2 = await gvcp.ReadRegisterAsync(Enums.GvcpRegister.CCP);
+            GvcpReply value2 = await gvcp.ReadRegisterAsync(Enums.GvcpRegister.CCP).ConfigureAwait(false);
             if (value2.IsSentAndReplyReceived)
             {
                 Assert.IsTrue(value2.IsValid);
             }
 
-            GvcpReply value3 = await gvcp.ReadRegisterAsync("0xA00");
+            GvcpReply value3 = await gvcp.ReadRegisterAsync("0xA00").ConfigureAwait(false);
             if (value3.IsSentAndReplyReceived)
             {
                 Assert.IsTrue(value3.IsValid);
@@ -58,7 +58,7 @@ namespace GigeVision.Core.Models.Tests
         [TestMethod()]
         public async Task GetAllGigeDevicesInNetworkAsnycTest()
         {
-            List<CameraInformation> devices = await gvcp.GetAllGigeDevicesInNetworkAsnyc();
+            List<CameraInformation> devices = await gvcp.GetAllGigeDevicesInNetworkAsnyc().ConfigureAwait(false);
             if (devices.Count > 0)
             {
                 Assert.IsTrue(true);
@@ -71,7 +71,7 @@ namespace GigeVision.Core.Models.Tests
             // var registers = await gvcp.ReadAllRegisterAddressFromCameraAsync().ConfigureAwait(false);
             GvcpReply reply = await gvcp.WriteRegisterAsync(Enums.GvcpRegister.CCP, 2).ConfigureAwait(false);
             // var repply = await gvcp.WriteRegisterAsync(ipCamera, Enums.GvcpRegister.SCDA, 1);
-            await Task.Delay(1000);
+            await Task.Delay(1000).ConfigureAwait(false);
             //var reply = await gvcp.WriteRegisterAsync(registers["AcquisitionStartReg"], 1);
         }
 

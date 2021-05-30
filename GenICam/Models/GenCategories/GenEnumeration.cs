@@ -8,6 +8,17 @@ namespace GenICam
 {
     public class GenEnumeration : GenCategory, IGenEnumeration
     {
+        public GenEnumeration(CategoryProperties categoryProperties, Dictionary<string, EnumEntry> entries, IPValue pValue, Dictionary<string, IMathematical> expressions = null)
+        {
+            CategoryProperties = categoryProperties;
+            Entries = entries;
+            PValue = pValue;
+            Expressions = expressions;
+            SetValueCommand = new DelegateCommand(ExecuteSetValueCommand);
+            if (CategoryProperties.Visibility != GenVisibility.Invisible)
+                SetupFeatures();
+        }
+
         /// <summary>
         /// Enumeration Entry List
         /// </summary>
@@ -20,28 +31,16 @@ namespace GenICam
 
         public long ValueToWrite { get; set; }
 
-        public GenEnumeration(CategoryProperties categoryProperties, Dictionary<string, EnumEntry> entries, IPValue pValue, Dictionary<string, IMathematical> expressions = null)
-        {
-            CategoryProperties = categoryProperties;
-            Entries = entries;
-            PValue = pValue;
-            Expressions = expressions;
-            SetValueCommand = new DelegateCommand(ExecuteSetValueCommand);
-            if (CategoryProperties.Visibility != GenVisibility.Invisible)
-                SetupFeatures();
-        }
-
         public async Task<long> GetIntValue()
         {
             if (PValue is IRegister register)
             {
-                 if (register.AccessMode != GenAccessMode.WO)  
-                    return await PValue.GetValue();
-                
+                if (register.AccessMode != GenAccessMode.WO)
+                    return await PValue.GetValue().ConfigureAwait(false);
             }
             else if (PValue is IntSwissKnife intSwissKnife)
             {
-                return await intSwissKnife.GetValue();
+                return await intSwissKnife.GetValue().ConfigureAwait(false);
             }
 
             return Value;
@@ -76,7 +75,7 @@ namespace GenICam
                             break;
                     }
 
-                    var reply = await Register.Set(pBuffer, length);
+                    var reply = await Register.Set(pBuffer, length).ConfigureAwait(false);
 
                     if (reply.IsSentAndReplyReceived && reply.Reply[0] == 0)
                         Value = value;
@@ -114,13 +113,12 @@ namespace GenICam
 
         public EnumEntry GetCurrentEntry(long entryValue)
         {
-            return Entries.Values.Where(x => x.Value == entryValue).FirstOrDefault();
+            return Entries.Values.FirstOrDefault(x => x.Value == entryValue);
         }
 
         public async void SetupFeatures()
         {
             Value = (long)(await GetIntValue());
-
             ValueToWrite = Entries.Values.ToList().IndexOf(GetCurrentEntry(Value));
         }
 

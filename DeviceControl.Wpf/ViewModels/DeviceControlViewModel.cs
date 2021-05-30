@@ -90,7 +90,7 @@ namespace DeviceControl.Wpf.ViewModels
         {
             while (true)
             {
-                await Task.Delay(1000);
+                await Task.Delay(1000).ConfigureAwait(false);
                 CameraStatus = await Gvcp.CheckCameraStatusAsync().ConfigureAwait(false);
             }
         }

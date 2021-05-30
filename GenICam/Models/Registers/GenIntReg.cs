@@ -40,9 +40,9 @@ namespace GenICam
         public async Task<IReplyPacket> Get(long length)
         {
             if (Address is long adress)
-                return await GenPort.Read(adress, Length);
+                return await GenPort.Read(adress, Length).ConfigureAwait(false);
             else if (PAddress is IntSwissKnife pAddress)
-                return await GenPort.Read(await pAddress.GetValue(), Length);
+                return await GenPort.Read(await pAddress.GetValue().ConfigureAwait(false), Length).ConfigureAwait(false);
 
             return null;
         }
@@ -52,7 +52,7 @@ namespace GenICam
             if (Address is long adress)
                 return await GenPort.Write(pBuffer, adress, length).ConfigureAwait(false);
             else if (PAddress is IntSwissKnife pAddress)
-                return await GenPort.Write(pBuffer, await pAddress.GetValue(), length);
+                return await GenPort.Write(pBuffer, await pAddress.GetValue().ConfigureAwait(false), length).ConfigureAwait(false);
 
             return null;
         }
@@ -62,7 +62,7 @@ namespace GenICam
             if (Address is long address)
                 return address;
             else if (PAddress is IntSwissKnife swissKnife)
-                return (long)(await swissKnife.GetValue());
+                return (long)(await swissKnife.GetValue().ConfigureAwait(false));
 
             return null;
         }
@@ -76,13 +76,13 @@ namespace GenICam
         {
             Int64 value = 0;
 
-            var key = (await GetAddress()).ToString();
+            var key = (await GetAddress().ConfigureAwait(false)).ToString();
 
             if (TempDictionary.Formula.ContainsKey(key))
                 value = (long)TempDictionary.Formula[key];
             else
             {
-                var reply = await Get(Length);
+                var reply = await Get(Length).ConfigureAwait(false);
                 if (reply.MemoryValue != null)
                 {
                     switch (Length)

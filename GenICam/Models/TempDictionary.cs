@@ -1,17 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
 
 namespace GenICam
 {
     public static class TempDictionary
     {
-        public static Dictionary<string, object> Formula { get; set; }
-
         static TempDictionary()
         {
             Formula = new Dictionary<string, object>();
         }
+
+        public static Dictionary<string, object> Formula { get; set; }
 
         public static void Clear()
         {

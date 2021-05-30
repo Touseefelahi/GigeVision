@@ -282,7 +282,7 @@ namespace GigeVision.Core.Models
             }
             try
             {
-                if (Gvcp.RegistersDictionary.Count == 0)
+                if (Gvcp.RegistersDictionary.Count < 10)
                 {
                     await SyncParameters().ConfigureAwait(false);
                 }
@@ -536,10 +536,10 @@ namespace GigeVision.Core.Models
             {
                 Updates?.Invoke(this, ex.Message);
             }
-            if (Gvcp.RegistersDictionary.Count > 0)
-            {
-                MotorController.CheckMotorControl(Gvcp.RegistersDictionary);
-            }
+            //if (Gvcp.RegistersDictionary.Count > 0)
+            //{
+            //    MotorController.CheckMotorControl(Gvcp.RegistersDictionary);
+            //}
             return true;
         }
 

@@ -37,14 +37,14 @@ namespace GenICam
 
         public async Task<string> GetValue()
         {
-            var key = (await GetAddress()).ToString();
+            var key = (await GetAddress().ConfigureAwait(false)).ToString();
 
             if (TempDictionary.Formula.ContainsKey(key))
                 Value = TempDictionary.Formula[key] as string;
             else
             {
 
-            var reply = await Get(Length);
+            var reply = await Get(Length).ConfigureAwait(false);
             try
             {
                 if (!(reply.MemoryValue is null))
@@ -70,7 +70,7 @@ namespace GenICam
                     byte[] pBuffer = new byte[length];
                     pBuffer = ASCIIEncoding.ASCII.GetBytes(value);
 
-                    var reply = await Register.Set(pBuffer, length);
+                    var reply = await Register.Set(pBuffer, length).ConfigureAwait(false);
                     if (reply.IsSentAndReplyReceived && reply.Reply[0] == 0)
                     {
                         if (reply.MemoryValue != null)
@@ -87,12 +87,12 @@ namespace GenICam
 
         public async Task<IReplyPacket> Get(long length)
         {
-            return await GenPort.Read(Address, Length);
+            return await GenPort.Read(Address, Length).ConfigureAwait(false);
         }
 
         public async Task<IReplyPacket> Set(byte[] pBuffer, long length)
         {
-            return await GenPort.Write(pBuffer, Address, length);
+            return await GenPort.Write(pBuffer, Address, length).ConfigureAwait(false);
         }
 
         public async Task<long?> GetAddress()
@@ -109,7 +109,7 @@ namespace GenICam
 
         public async void SetupFeatures()
         {
-            Value = await GetValue();
+            Value = await GetValue().ConfigureAwait(false);
         }
     }
 }

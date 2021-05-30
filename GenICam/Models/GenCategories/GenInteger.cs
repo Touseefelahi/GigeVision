@@ -8,6 +8,35 @@ namespace GenICam
 {
     public class GenInteger : GenCategory, IGenInteger, IPValue
     {
+        public GenInteger(CategoryProperties categoryProperties, long min, long max, long inc, IncMode incMode, Representation representation, long value, string unit, IPValue pValue, Dictionary<string, IMathematical> expressions)
+        {
+            CategoryProperties = categoryProperties;
+            Min = min;
+            if (max == 0)
+                max = Int32.MaxValue;
+
+            Max = max;
+            if (inc == 0)
+                inc = 1;
+
+            Inc = inc;
+            IncMode = incMode;
+            Representation = representation;
+            Value = value;
+            Unit = unit;
+            PValue = pValue;
+            Expressions = expressions;
+            SetValueCommand = new DelegateCommand(ExecuteSetValueCommand);
+
+            SetupFeatures();
+        }
+
+        public GenInteger(long value, IPValue pValue = null)
+        {
+            Value = value;
+            PValue = pValue;
+        }
+
         public bool PIsLocked { get; internal set; }
 
         public Representation Representation { get; internal set; }
@@ -39,46 +68,16 @@ namespace GenICam
         public string Unit { get; private set; }
         public long ValueToWrite { get; set; }
 
-        public GenInteger(CategoryProperties categoryProperties, long min, long max, long inc, IncMode incMode, Representation representation, long value, string unit, IPValue pValue, Dictionary<string, IMathematical> expressions)
-        {
-            CategoryProperties = categoryProperties;
-            Min = min;
-            if (max == 0)
-                max = Int32.MaxValue;
-
-            Max = max;
-            if (inc == 0)
-                inc = 1;
-
-            Inc = inc;
-            IncMode = incMode;
-            Representation = representation;
-            Value = value;
-            Unit = unit;
-            PValue = pValue;
-            Expressions = expressions;
-            SetValueCommand = new DelegateCommand(ExecuteSetValueCommand);
-
-            SetupFeatures();
-        }
-
-        public GenInteger(long value, IPValue pValue = null)
-        {
-            Value = value;
-            PValue = pValue;
-        }
-
         public async Task<Int64> GetValue()
         {
             if (PValue is IRegister register)
             {
                 if (register.AccessMode != GenAccessMode.WO)
-                    return await PValue.GetValue();
-
+                    return await PValue.GetValue().ConfigureAwait(false);
             }
             else if (PValue is IntSwissKnife intSwissKnife)
             {
-                return await intSwissKnife.GetValue();
+                return await intSwissKnife.GetValue().ConfigureAwait(false);
             }
 
             return Value;
@@ -111,7 +110,7 @@ namespace GenICam
                                 break;
                         }
 
-                        reply = await Register.Set(pBuffer, length);
+                        reply = await Register.Set(pBuffer, length).ConfigureAwait(false);
                         if (reply.IsSentAndReplyReceived && reply.Reply[0] == 0)
                             Value = value;
                     }
@@ -124,7 +123,7 @@ namespace GenICam
 
         public async Task<Int64> GetMin()
         {
-            var pMin = await ReadIntSwissKnife("pMin");
+            var pMin = await ReadIntSwissKnife("pMin").ConfigureAwait(false);
             if (pMin != null)
                 return (Int64)pMin;
 
@@ -133,7 +132,7 @@ namespace GenICam
 
         public async Task<Int64> GetMax()
         {
-            var pMax = await ReadIntSwissKnife("pMax");
+            var pMax = await ReadIntSwissKnife("pMax").ConfigureAwait(false);
             if (pMax != null)
                 return (Int64)pMax;
 
@@ -186,6 +185,14 @@ namespace GenICam
             throw new NotImplementedException();
         }
 
+        public async void SetupFeatures()
+        {
+            Value = await GetValue();
+            Max = await GetMax();
+            Min = await GetMin();
+            ValueToWrite = Value;
+        }
+
         private async Task<Int64?> ReadIntSwissKnife(string pNode)
         {
             if (Expressions == null)
@@ -197,24 +204,16 @@ namespace GenICam
             var pValueNode = Expressions[pNode];
             if (pValueNode is IntSwissKnife intSwissKnife)
             {
-                return await intSwissKnife.GetValue();
+                return await intSwissKnife.GetValue().ConfigureAwait(false);
             }
 
             return null;
         }
 
-        public async void SetupFeatures()
-        {
-            Value = await GetValue();
-            Max = await GetMax();
-            Min = await GetMin();
-            ValueToWrite = Value;
-        }
-
         private async void ExecuteSetValueCommand()
         {
             if (Value != ValueToWrite)
-                await SetValue(ValueToWrite);
+                await SetValue(ValueToWrite).ConfigureAwait(false);
         }
     }
 }

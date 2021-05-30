@@ -8,31 +8,10 @@ namespace GenICam
 {
     public class Converter : IMathematical
     {
-        private Dictionary<string, IPValue> PVariables { get; set; }
-        private string FormulaFrom { get; set; }
-        private string FormulaTo { get; set; }
-
-        private Slope Slope { get; set; }
-
-        public IPValue PValue { get; private set; }
-
-        public Task<double> Value
-        {
-            get
-            {
-                return ExecuteFormulaFrom();
-            }
-            set
-            {
-                Value = ExecuteFormulaTo();
-            }
-        }
-
         public Converter(string formulaTo, string formulaFrom, IPValue pValue, Slope slope, Dictionary<string, IPValue> pVariables = null)
         {
             FormulaTo = formulaTo;
             FormulaFrom = formulaFrom;
-
 
             //Prepare Expression
             FormulaTo = FormulaTo.Replace(" ", "");
@@ -48,166 +27,33 @@ namespace GenICam
                 }
             }
 
-
             PVariables = pVariables;
             PValue = pValue;
             Slope = slope;
 
-            new Action((async () => await ExecuteFormulaFrom())).Invoke();
-            new Action((async () => await ExecuteFormulaTo())).Invoke();
-
+            new Action((async () => await ExecuteFormulaFrom().ConfigureAwait(false))).Invoke();
+            new Action((async () => await ExecuteFormulaTo().ConfigureAwait(false))).Invoke();
         }
 
-        private async Task<double> ExecuteFormulaFrom()
+        public IPValue PValue { get; private set; }
+
+        public Task<double> Value
         {
-            foreach (var word in FormulaFrom.Split())
+            get
             {
-
-                if (word.Equals("TO"))
-                {
-                    double? value = null;
-
-                    value = await PValue.GetValue();
-
-                    if (value is null)
-                        throw new Exception("Failed to read register value", new InvalidDataException());
-
-                    FormulaFrom = FormulaFrom.Replace(word, value.ToString());
-                }
-
-                foreach (var pVariable in PVariables)
-                {
-
-
-                    if (pVariable.Key.Equals(word))
-                    {
-                        double? value = null;
-
-                        value = await pVariable.Value.GetValue();
-
-                        if (value is null)
-                            throw new Exception("Failed to read register value", new InvalidDataException());
-
-                        FormulaFrom = FormulaFrom.Replace(word, value.ToString());
-                    }
-
-
-                }
+                return ExecuteFormulaFrom();
             }
-
-            double result;
-            if (FormulaFrom != string.Empty)
+            set
             {
-                string formula = FormulaFrom;
-                string equation = "";
-                while (formula.Contains('+') || formula.Contains('-') || formula.Contains('/') || formula.Contains('*'))
-                {
-                    foreach (var item in formula.Split('(', StringSplitOptions.None))
-                    {
-                        equation = item;
-                        if (item.Contains(')'))
-                            equation = item.Substring(0, item.IndexOf(')'));
-
-
-                        if (equation.Contains('+') || equation.Contains('-') || equation.Contains('/') || equation.Contains('*'))
-                        {
-                            var last = equation.Replace(" ", "");
-                            last = last.Substring(0, last.Length - 1);
-                            if (last != "+" || last != "-" || last != "/" || last != "*")
-                            {
-                                result = Evaluate(last);
-                                if (formula.Contains($"({last})"))
-                                    formula = formula.Replace($"({last})", result.ToString());
-                                else
-                                    formula = formula.Replace(last, result.ToString());
-                            }
-                        }
-
-                        if (formula.Contains($"({equation})"))
-                            formula = formula.Replace($"({equation})", equation);
-
-                    }
-                    return Evaluate(formula);
-                }
-
+                Value = ExecuteFormulaTo();
             }
-
-            return 0;
         }
 
-        private async Task<double> ExecuteFormulaTo()
-        {
-            foreach (var word in FormulaTo.Split())
-            {
-                if (word.Equals("FROM"))
-                {
-                    double? value = null;
+        private Dictionary<string, IPValue> PVariables { get; set; }
+        private string FormulaFrom { get; set; }
+        private string FormulaTo { get; set; }
 
-                    value = await PValue.GetValue();
-
-                    if (value is null)
-                        throw new Exception("Failed to read register value", new InvalidDataException());
-
-                    FormulaTo = FormulaTo.Replace(word, value.ToString());
-                }
-
-                foreach (var pVariable in PVariables)
-                {
-
-                    if (pVariable.Key.Equals(word))
-                    {
-                        double? value = null;
-
-                        value = await pVariable.Value.GetValue();
-
-                        if (value is null)
-                            throw new Exception("Failed to read register value", new InvalidDataException());
-
-                        FormulaTo = FormulaTo.Replace(word, value.ToString());
-                    }
-                }
-            }
-
-            double result;
-            if (FormulaTo != string.Empty)
-            {
-                string formula = FormulaTo;
-                string equation = "";
-                while (formula.Contains('+') || formula.Contains('-') || formula.Contains('/') || formula.Contains('*'))
-                {
-                    foreach (var item in formula.Split('(', StringSplitOptions.None))
-                    {
-                        equation = item;
-                        if (item.Contains(')'))
-                            equation = item.Substring(0, item.IndexOf(')'));
-
-
-                        if (equation.Contains('+') || equation.Contains('-') || equation.Contains('/') || equation.Contains('*'))
-                        {
-                            var last = equation.Replace(" ", "");
-                            last = last.Substring(0, last.Length - 1);
-                            if (last != "+" || last != "-" || last != "/" || last != "*")
-                            {
-                                result = Evaluate(last);
-                                if (formula.Contains($"({last})"))
-                                    formula = formula.Replace($"({last})", result.ToString());
-                                else
-                                    formula = formula.Replace(last, result.ToString());
-                            }
-                        }
-
-                        if (formula.Contains($"({equation})"))
-                            formula = formula.Replace($"({equation})", equation);
-
-                    }
-                    return Evaluate(formula);
-                }
-
-            }
-
-            return 0;
-
-        }
+        private Slope Slope { get; set; }
 
         /// <summary>
         /// this method evaluate the formula expression
@@ -221,8 +67,6 @@ namespace GenICam
             foreach (var character in opreations)
                 if (opreations.Where(x => x == character).Count() > 0)
                     expression = expression.Replace($"{character}", $" {character} ");
-
-
 
             Stack<string> opreators = new Stack<string>();
             Stack<double> values = new Stack<double>();
@@ -245,7 +89,6 @@ namespace GenICam
 
                     values.Push(tempNumber);
                     //valuesList.Last().Push(values.Peek());
-
                 }
                 else
                 {
@@ -332,6 +175,7 @@ namespace GenICam
                             isLeft = false;
                             isRight = false;
                             break;
+
                         case "+":
                         case "-":
                         case "/":
@@ -375,7 +219,6 @@ namespace GenICam
                                 opreator = opreators.Pop();
                                 tempBoolean = DoMathOpreation(opreator, opreators, values);
 
-
                                 if (opreators.Count > 0)
                                 {
                                     if (opreators.Peek().Equals("?"))
@@ -392,14 +235,12 @@ namespace GenICam
                                         opreators.Pop();
                                     }
                                 }
-
                             }
 
                             isPower = false;
                             isLeft = false;
                             isRight = false;
                             break;
-
 
                         case "":
 
@@ -424,6 +265,16 @@ namespace GenICam
             throw new InvalidDataException("Failed to read the formula");
         }
 
+        public async Task<long> GetValue()
+        {
+            return await PValue.GetValue().ConfigureAwait(false);
+        }
+
+        public async Task<IReplyPacket> SetValue(long value)
+        {
+            return await PValue.SetValue(value).ConfigureAwait(false);
+        }
+
         private static bool DoMathOpreation(string opreator, Stack<string> opreators, Stack<double> values)
         {
             bool tempBoolean = false;
@@ -436,16 +287,12 @@ namespace GenICam
                 {
                     if (opreators.Count > 0 && values.Count > 0)
                     {
-
                         if (opreators.Peek().Equals("*"))
                             tempBoolean = DoMathOpreation(opreators.Pop(), opreators, values);
 
-
                         if (opreators.Peek().Equals("/"))
                             tempBoolean = DoMathOpreation(opreators.Pop(), opreators, values);
-
                     }
-
 
                     value = (double)values.Pop();
                     value = (double)values.Pop() + value;
@@ -458,10 +305,8 @@ namespace GenICam
                         if (opreators.Peek().Equals("*"))
                             tempBoolean = DoMathOpreation(opreators.Pop(), opreators, values);
 
-
                         if (opreators.Peek().Equals("/"))
                             tempBoolean = DoMathOpreation(opreators.Pop(), opreators, values);
-
                     }
                     value = (double)values.Pop();
                     value = (double)values.Pop() - value;
@@ -472,21 +317,18 @@ namespace GenICam
                     value = (double)values.Pop();
                     value = (double)values.Pop() * value;
                     values.Push(value);
-
                 }
                 else if (opreator.Equals("**"))
                 {
                     value = (double)values.Pop();
                     value = Math.Pow(values.Pop(), value);
                     values.Push(value);
-
                 }
                 else if (opreator.Equals("/"))
                 {
                     value = (double)values.Pop();
                     value = (double)values.Pop() / value;
                     values.Push(value);
-
                 }
                 else if (opreator.Equals("="))
                 {
@@ -497,7 +339,6 @@ namespace GenICam
                     {
                         tempBoolean = true;
                     }
-
                 }
                 else if (opreator.Equals("<>"))
                 {
@@ -573,7 +414,6 @@ namespace GenICam
                     integerValue = ((int)GetLongValueFromString(values.Pop().ToString()) << integerValue);
                     values.Push(integerValue);
                 }
-
             }
             if (opreator.Equals(":"))
             {
@@ -670,15 +510,142 @@ namespace GenICam
             return 0;
         }
 
-        public async Task<long> GetValue()
+        private async Task<double> ExecuteFormulaFrom()
         {
-            return await PValue.GetValue();
+            foreach (var word in FormulaFrom.Split())
+            {
+                if (word.Equals("TO"))
+                {
+                    double? value = null;
+
+                    value = await PValue.GetValue().ConfigureAwait(false);
+
+                    if (value is null)
+                        throw new Exception("Failed to read register value", new InvalidDataException());
+
+                    FormulaFrom = FormulaFrom.Replace(word, value.ToString());
+                }
+
+                foreach (var pVariable in PVariables)
+                {
+                    if (pVariable.Key.Equals(word))
+                    {
+                        double? value = null;
+
+                        value = await pVariable.Value.GetValue().ConfigureAwait(false);
+
+                        if (value is null)
+                            throw new Exception("Failed to read register value", new InvalidDataException());
+
+                        FormulaFrom = FormulaFrom.Replace(word, value.ToString());
+                    }
+                }
+            }
+
+            double result;
+            if (FormulaFrom != string.Empty)
+            {
+                string formula = FormulaFrom;
+                string equation = "";
+                while (formula.Contains('+') || formula.Contains('-') || formula.Contains('/') || formula.Contains('*'))
+                {
+                    foreach (var item in formula.Split('(', StringSplitOptions.None))
+                    {
+                        equation = item;
+                        if (item.Contains(')'))
+                            equation = item.Substring(0, item.IndexOf(')'));
+
+                        if (equation.Contains('+') || equation.Contains('-') || equation.Contains('/') || equation.Contains('*'))
+                        {
+                            var last = equation.Replace(" ", "");
+                            last = last.Substring(0, last.Length - 1);
+                            if (last != "+" || last != "-" || last != "/" || last != "*")
+                            {
+                                result = Evaluate(last);
+                                if (formula.Contains($"({last})"))
+                                    formula = formula.Replace($"({last})", result.ToString());
+                                else
+                                    formula = formula.Replace(last, result.ToString());
+                            }
+                        }
+
+                        if (formula.Contains($"({equation})"))
+                            formula = formula.Replace($"({equation})", equation);
+                    }
+                    return Evaluate(formula);
+                }
+            }
+
+            return 0;
         }
 
-        public async Task<IReplyPacket> SetValue(long value)
+        private async Task<double> ExecuteFormulaTo()
         {
-            return await PValue.SetValue(value);
-        }
+            foreach (var word in FormulaTo.Split())
+            {
+                if (word.Equals("FROM"))
+                {
+                    double? value = null;
 
+                    value = await PValue.GetValue().ConfigureAwait(false);
+
+                    if (value is null)
+                        throw new Exception("Failed to read register value", new InvalidDataException());
+
+                    FormulaTo = FormulaTo.Replace(word, value.ToString());
+                }
+
+                foreach (var pVariable in PVariables)
+                {
+                    if (pVariable.Key.Equals(word))
+                    {
+                        double? value = null;
+
+                        value = await pVariable.Value.GetValue().ConfigureAwait(false);
+
+                        if (value is null)
+                            throw new Exception("Failed to read register value", new InvalidDataException());
+
+                        FormulaTo = FormulaTo.Replace(word, value.ToString());
+                    }
+                }
+            }
+
+            double result;
+            if (FormulaTo != string.Empty)
+            {
+                string formula = FormulaTo;
+                string equation = "";
+                while (formula.Contains('+') || formula.Contains('-') || formula.Contains('/') || formula.Contains('*'))
+                {
+                    foreach (var item in formula.Split('(', StringSplitOptions.None))
+                    {
+                        equation = item;
+                        if (item.Contains(')'))
+                            equation = item.Substring(0, item.IndexOf(')'));
+
+                        if (equation.Contains('+') || equation.Contains('-') || equation.Contains('/') || equation.Contains('*'))
+                        {
+                            var last = equation.Replace(" ", "");
+                            last = last.Substring(0, last.Length - 1);
+                            if (last != "+" || last != "-" || last != "/" || last != "*")
+                            {
+                                result = Evaluate(last);
+                                if (formula.Contains($"({last})"))
+                                    formula = formula.Replace($"({last})", result.ToString());
+                                else
+                                    formula = formula.Replace(last, result.ToString());
+                            }
+                        }
+
+                        if (formula.Contains($"({equation})"))
+                            formula = formula.Replace($"({equation})", equation);
+                    }
+                    return Evaluate(formula);
+                }
+            }
+
+            return 0;
+        }
     }
 }

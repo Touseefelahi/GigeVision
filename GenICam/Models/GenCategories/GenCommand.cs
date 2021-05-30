@@ -6,9 +6,6 @@ namespace GenICam
 {
     public class GenCommand : GenCategory, IGenCommand
     {
-        public Int64 Value { get; set; }
-        public Int64 CommandValue { get; private set; }
-
         public GenCommand(CategoryProperties categoryProperties, Int64 commandValue, IPValue pValue, Dictionary<string, IMathematical> expressions)
         {
             CategoryProperties = categoryProperties;
@@ -18,6 +15,9 @@ namespace GenICam
 
             SetValueCommand = new DelegateCommand(Execute);
         }
+
+        public Int64 Value { get; set; }
+        public Int64 CommandValue { get; private set; }
 
         public async void Execute()
         {
@@ -41,7 +41,7 @@ namespace GenICam
                         break;
                 }
 
-                await Register.Set(pBuffer, length);
+                await Register.Set(pBuffer, length).ConfigureAwait(false);
             };
         }
 

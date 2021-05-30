@@ -396,7 +396,7 @@ namespace GigeVision.Core.Models
                     if (RegistersDictionary.ContainsKey(category.CategoryProperties.Name))
                         continue;
 
-                    RegistersDictionary.Add(category.CategoryProperties.Name, $"0x{ await genRegister.GetAddress():X4}");
+                    RegistersDictionary.Add(category.CategoryProperties.Name, $"0x{ await genRegister.GetAddress().ConfigureAwait(false):X4}");
                 }
                 else if (category.PValue is IPValue pValue)
                 {
@@ -405,7 +405,7 @@ namespace GigeVision.Core.Models
                         if (RegistersDictionary.ContainsKey(category.CategoryProperties.Name))
                             continue;
 
-                        RegistersDictionary.Add(category.CategoryProperties.Name, $"0x{await register.GetAddress():X4}");
+                        RegistersDictionary.Add(category.CategoryProperties.Name, $"0x{await register.GetAddress().ConfigureAwait(false):X4}");
                     }
                 }
             }
