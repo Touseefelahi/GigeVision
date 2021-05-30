@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace GigeVision.Core.Interfaces
 {
     /// <summary>
-    /// Camera class is responsible to initilize the stream and receive the stream
+    /// Camera class is responsible to initialize the stream and receive the stream
     /// </summary>
     public interface ICamera
     {
@@ -107,9 +107,8 @@ namespace GigeVision.Core.Interfaces
         /// </summary>
         /// <param name="rxIP">If rxIP is not provided, method will detect system IP and use it</param>
         /// <param name="rxPort">It will set randomly when not provided</param>
-        /// <param name="frameReady">If not Null this action will be called on frameready</param>
         /// <returns></returns>
-        Task<bool> StartStreamAsync(string rxIP = null, int rxPort = 0, Action<byte[]> frameReady = null);
+        Task<bool> StartStreamAsync(string rxIP = null, int rxPort = 0);
 
         /// <summary>
         /// Stops the camera stream and leave camera control

@@ -16,11 +16,6 @@ namespace GigeVision.Core.Models
     public class Camera : BaseNotifyPropertyChanged, ICamera
     {
         /// <summary>
-        /// frame ready action
-        /// </summary>
-        public Action<byte[]> frameReadyAction;
-
-        /// <summary>
         /// Raw bytes
         /// </summary>
         internal byte[] rawBytes;
@@ -247,10 +242,9 @@ namespace GigeVision.Core.Models
         /// <param name="rxPort">It will set randomly when not provided</param>
         /// <param name="frameReady">If not null this event will be raised</param>
         /// <returns></returns>
-        public async Task<bool> StartStreamAsync(string rxIP = null, int rxPort = 0, Action<byte[]> frameReady = null)
+        public async Task<bool> StartStreamAsync(string rxIP = null, int rxPort = 0)
         {
             string ip2Send;
-            frameReadyAction = frameReady;
             if (string.IsNullOrEmpty(rxIP))
             {
                 if (string.IsNullOrEmpty(RxIP) && !SetRxIP())
