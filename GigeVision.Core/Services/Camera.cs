@@ -282,10 +282,6 @@ namespace GigeVision.Core.Models
             {
                 RxIP = rxIP;
             }
-            else
-            {
-                RxIP = rxIP;
-            }
             ip2Send = RxIP;
             if (IsMulticast)
             {
@@ -562,17 +558,13 @@ namespace GigeVision.Core.Models
                 //        Gvcp.RegistersDictionary[nameof(RegisterName.PixelFormat)],
                 //    };
 
-                //    GvcpReply reply2 = await Gvcp.ReadRegisterAsync(registersToRead).ConfigureAwait(false);
+                // GvcpReply reply2 = await Gvcp.ReadRegisterAsync(registersToRead).ConfigureAwait(false);
 
-                //    if (reply2.Status == GvcpStatus.GEV_STATUS_SUCCESS)
-                //    {
-                //        Width = reply2.RegisterValues[0];
-                //        Height = reply2.RegisterValues[1];
-                //        OffsetX = reply2.RegisterValues[2];
-                //        OffsetY = reply2.RegisterValues[3];
-                //        PixelFormat = (PixelFormat)reply2.RegisterValues[4];
+                // if (reply2.Status == GvcpStatus.GEV_STATUS_SUCCESS) { Width =
+                // reply2.RegisterValues[0]; Height = reply2.RegisterValues[1]; OffsetX =
+                // reply2.RegisterValues[2]; OffsetY = reply2.RegisterValues[3]; PixelFormat = (PixelFormat)reply2.RegisterValues[4];
                 bytesPerPixel = (uint)3;
-                //    }
+                // }
             }
             catch (Exception ex)
             {
