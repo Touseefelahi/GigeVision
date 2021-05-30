@@ -1,7 +1,7 @@
-﻿using System;
+﻿using Stira.WpfCore;
+using System;
 using System.Net;
 using System.Net.Sockets;
-using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace GigeVision.Core.Models
@@ -9,14 +9,12 @@ namespace GigeVision.Core.Models
     /// <summary>
     /// Receives the stream
     /// </summary>
-    public class StreamReceiver
+    public class StreamReceiver : BaseNotifyPropertyChanged
     {
         private readonly Camera Camera;
-
-        private UdpClient socketRx;
-        private IPEndPoint endPoint;
         private Socket socketRxRaw;
         private int finalPacketID = 0;
+        private bool isDecodingAsVersion2;
 
         /// <summary>
         /// Receives the GigeStream
@@ -28,6 +26,22 @@ namespace GigeVision.Core.Models
         }
 
         /// <summary>
+        /// If software read the GVSP stream as version 2
+        /// </summary>
+        public bool IsDecodingAsVersion2
+        {
+            get { return isDecodingAsVersion2; }
+            set
+            {
+                if (isDecodingAsVersion2 != value)
+                {
+                    isDecodingAsVersion2 = value;
+                    OnPropertyChanged(nameof(IsDecodingAsVersion2));
+                }
+            }
+        }
+
+        /// <summary>
         /// Resets the final packet ID
         /// </summary>
         public void ResetPacketSize()
@@ -36,40 +50,11 @@ namespace GigeVision.Core.Models
         }
 
         /// <summary>
-        /// It starts Thread using C++ library
-        /// </summary>
-        public void StartRxCppThread()
-        {
-            Thread threadDecode = new Thread(RxCpp)
-            {
-                Priority = ThreadPriority.Highest,
-                Name = "Decode C++ Packets Thread",
-                IsBackground = true
-            };
-            threadDecode.Start();
-        }
-
-        /// <summary>
         /// Start Rx thread using .Net
         /// </summary>
         public void StartRxThread()
         {
-            Action action = null;
-            switch (Camera.Gvcp.RegistersDictionary["XmlVersion"])
-            {
-                case "http://www.genicam.org/GenApi/Version_1_1":
-                    action = DecodePacketsRawSocketVersion1;
-                    break;
-
-                case "http://www.genicam.org/GenApi/Version_1_0":
-                    action = DecodePacketsRawSocketVersion0;
-                    break;
-
-                default:
-                    break;
-            }
-
-            Thread threadDecode = new Thread(action.Invoke)
+            Thread threadDecode = new(DecodePacketsRawSocket)
             {
                 Priority = ThreadPriority.Highest,
                 Name = "Decode Packets Thread",
@@ -92,7 +77,7 @@ namespace GigeVision.Core.Models
                 socketRxRaw.Bind(new IPEndPoint(IPAddress.Any, Camera.PortRx));
                 if (Camera.IsMulticast)
                 {
-                    var mcastOption = new MulticastOption(IPAddress.Parse(Camera.MulticastIP), IPAddress.Any);
+                    MulticastOption mcastOption = new MulticastOption(IPAddress.Parse(Camera.MulticastIP), IPAddress.Any);
                     socketRxRaw.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership, mcastOption);
                 }
                 socketRxRaw.ReceiveTimeout = 1000;
@@ -104,39 +89,47 @@ namespace GigeVision.Core.Models
             }
         }
 
-        private void DecodePacketsRawSocketVersion1()
+        private void DecodePacketsRawSocket()
         {
-            //Todo: make a rolling buffer here and swap the memory
-            int packetID = 0;
-            int bufferLength = 0;
-            byte[] singlePacketBuf = new byte[10000];
-            Span<byte> singlePacket = new Span<byte>(singlePacketBuf);
-            Span<byte> cameraRawPacket = new Span<byte>(Camera.rawBytes);
-            int packetRxCount = 0;//This is for full packet check
+            int packetID = 0, bufferLength = 0, bufferStart = 0;
+            Span<byte> singlePacket = new byte[10000];
+            Span<byte> cameraRawPacket = new(Camera.rawBytes);
+            int packetRxCount = 0; //This is for full packet check
+            finalPacketID = 0;
             try
             {
                 int length = socketRxRaw.Receive(singlePacket);
+                Camera.IsStreaming = length > 10;
+                int payloadOffset = 8;
+                int packetIDIndex = 6;
+                int dataIdentifier = 0x03;
+                int dataEndIdentifier = 0x02;
+                IsDecodingAsVersion2 = ((singlePacket[4] & 0xF0) >> 4) == 8;
+                if (IsDecodingAsVersion2)
+                {
+                    payloadOffset = 20;
+                    packetIDIndex = 18;
+                    dataIdentifier = 0x83;
+                    dataEndIdentifier = 0x82;
+                }
                 while (Camera.IsStreaming)
                 {
                     length = socketRxRaw.Receive(singlePacket);
-                    if (singlePacket[4] == 0x83) //Packet
+                    if (singlePacket[4] == dataIdentifier) //Packet
                     {
                         packetRxCount++;
-                        packetID = (singlePacket[18] << 8) | singlePacket[19];
-
+                        packetID = (singlePacket[packetIDIndex] << 8) | singlePacket[packetIDIndex + 1];
                         if (packetID < finalPacketID) //Check for final packet because final packet length maybe lesser than the regular packets
                         {
-                            bufferLength = length - 20;
-                            Span<byte> slicedRowInImage = cameraRawPacket.Slice((packetID - 1) * bufferLength, bufferLength);
-                            singlePacket.Slice(20, bufferLength).CopyTo(slicedRowInImage);
+                            bufferLength = length - payloadOffset;
                         }
-                        else
-                        {
-                            Span<byte> slicedRowInImage = cameraRawPacket.Slice((packetID - 1) * bufferLength, length - 20);
-                            singlePacket.Slice(20, length - 20).CopyTo(slicedRowInImage);
-                        }
+                        bufferStart = (packetID - 1) * bufferLength; //This use buffer length of regular packet
+                        bufferLength = length - payloadOffset;  //This will only change for final packet
+                        Span<byte> slicedRowInImage = cameraRawPacket.Slice(bufferStart, bufferLength);
+                        singlePacket.Slice(payloadOffset, bufferLength).CopyTo(slicedRowInImage);
+                        continue;
                     }
-                    else if (singlePacket[4] == 0x82)
+                    if (singlePacket[4] == dataEndIdentifier)
                     {
                         if (finalPacketID == 0)
                         {
@@ -145,14 +138,8 @@ namespace GigeVision.Core.Models
                         //Checking if we receive all packets. Here 2 means we are allowing 1 packet miss
                         if (Math.Abs(packetRxCount - finalPacketID) < 2)
                         {
-                            if (Camera.frameReadyAction != null)
-                            {
-                                Camera.frameReadyAction?.Invoke(Camera.rawBytes);
-                            }
-                            else
-                            {
-                                Camera.FrameReady?.Invoke(null, Camera.rawBytes);
-                            }
+                            // Camera.frameReadyAction?.Invoke(Camera.rawBytes);
+                            Camera.FrameReady?.Invoke(null, Camera.rawBytes);
                         }
                         packetRxCount = 0;
                     }
@@ -165,14 +152,17 @@ namespace GigeVision.Core.Models
             }
         }
 
-        private void DecodePacketsRawSocketVersion0()
+        /// <summary>
+        /// This is old method for decoding GVSP stream of version 1.2 only
+        /// </summary>
+        private void DecodePacketsRawSocket_12()
         {
             //Todo: make a rolling buffer here and swap the memory
             int packetID = 0;
             int bufferLength = 0;
             byte[] singlePacketBuf = new byte[10000];
-            Span<byte> singlePacket = new Span<byte>(singlePacketBuf);
-            Span<byte> cameraRawPacket = new Span<byte>(Camera.rawBytes);
+            Span<byte> singlePacket = new(singlePacketBuf);
+            Span<byte> cameraRawPacket = new(Camera.rawBytes);
             int packetRxCount = 0;//This is for full packet check
             try
             {
@@ -206,14 +196,7 @@ namespace GigeVision.Core.Models
                         //Checking if we receive all packets. Here 2 means we are allowing 1 packet miss
                         if (Math.Abs(packetRxCount - finalPacketID) < 2)
                         {
-                            if (Camera.frameReadyAction != null)
-                            {
-                                Camera.frameReadyAction?.Invoke(Camera.rawBytes);
-                            }
-                            else
-                            {
-                                Camera.FrameReady?.Invoke(null, Camera.rawBytes);
-                            }
+                            Camera.FrameReady?.Invoke(null, Camera.rawBytes);
                         }
                         packetRxCount = 0;
                     }
@@ -225,144 +208,5 @@ namespace GigeVision.Core.Models
                 _ = Camera.StopStream();
             }
         }
-
-        #region OldCode
-
-        private IntPtr intPtr;
-
-        private void SetupSocketRx()
-        {
-            try
-            {
-                socketRx?.Client.Close();
-                socketRx?.Close();
-            }
-            catch (Exception) { }
-            try
-            {
-                socketRx = new UdpClient(Camera.PortRx);
-                endPoint = new IPEndPoint(IPAddress.Any, Camera.PortRx);
-            }
-            catch (Exception ex)
-            {
-                Camera.Updates?.Invoke(null, ex.Message);
-            }
-
-            if (Camera.IsMulticast)
-            {
-                Thread.Sleep(500);
-                IPAddress multicastAddress = IPAddress.Parse(Camera.MulticastIP);
-                socketRx.JoinMulticastGroup(multicastAddress);
-            }
-            socketRx.Client.ReceiveTimeout = 1000;
-            socketRx.Client.ReceiveBufferSize = (int)(Camera.Payload * Camera.Height * 5);
-        }
-
-        private void DecodePackets()
-        {
-            int packetID = 0;
-            int bufferLength = 0;
-            byte[] singlePacket;
-            try
-            {
-                singlePacket = socketRx.Receive(ref endPoint);
-                while (Camera.IsStreaming)
-                {
-                    singlePacket = socketRx.Receive(ref endPoint);
-                    if (singlePacket.Length > 44) //Packet
-                    {
-                        packetID = (singlePacket[6] << 8) | singlePacket[7];
-
-                        if (packetID < finalPacketID) //Check for final packet because final packet length maybe lesser than the regular packets
-                        {
-                            bufferLength = singlePacket.Length - 8;
-                            Buffer.BlockCopy(singlePacket, 8, Camera.rawBytes, (packetID - 1) * bufferLength, bufferLength);
-                        }
-                        else
-                        {
-                            Buffer.BlockCopy(singlePacket, 8, Camera.rawBytes, (packetID - 1) * bufferLength, singlePacket.Length - 8);
-                        }
-                    }
-                    else if (singlePacket.Length == 16) //Trailer packet size=16, Header Packet Size=44
-                    {
-                        if (finalPacketID == 0)
-                        {
-                            finalPacketID = packetID - 1;
-                        }
-
-                        if (Camera.frameReadyAction != null)
-                        {
-                            Camera.frameReadyAction?.Invoke(Camera.rawBytes);
-                        }
-                        else
-                        {
-                            Camera.FrameReady?.Invoke(intPtr, Camera.rawBytes);
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Camera.Updates?.Invoke(null, ex.Message);
-                _ = Camera.StopStream();
-            }
-        }
-
-        private void RxCpp()
-        {
-            intPtr = new IntPtr();
-            try
-            {
-                if (Camera.IsRawFrame)
-                {
-                    if (Environment.Is64BitProcess)
-                    {
-                        CvInterop64.GetRawFrame(Camera.PortRx, Camera.IsMulticast ? Camera.MulticastIP : null, out intPtr, RawFrameReady);
-                    }
-                    else
-                    {
-                        CvInterop.GetRawFrame(Camera.PortRx, Camera.IsMulticast ? Camera.MulticastIP : null, out intPtr, RawFrameReady);
-                    }
-                }
-                else
-                {
-                    if (Environment.Is64BitProcess)
-                    {
-                        CvInterop64.GetProcessedFrame(Camera.PortRx, Camera.IsMulticast ? Camera.MulticastIP : null, out intPtr, RawFrameReady);
-                    }
-                    else
-                    {
-                        CvInterop.GetProcessedFrame(Camera.PortRx, Camera.IsMulticast ? Camera.MulticastIP : null, out intPtr, RawFrameReady);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Camera.Updates?.Invoke(null, ex.Message);
-                _ = Camera.StopStream();
-            }
-        }
-
-        private void RawFrameReady(int value)
-        {
-            try
-            {
-                Marshal.Copy(intPtr, Camera.rawBytes, 0, Camera.rawBytes.Length);
-                if (Camera.frameReadyAction != null)
-                {
-                    Camera.frameReadyAction?.Invoke(Camera.rawBytes);
-                }
-                else
-                {
-                    Camera.FrameReady?.Invoke(intPtr, Camera.rawBytes);
-                }
-            }
-            catch (Exception ex)
-            {
-                Camera.Updates?.Invoke(null, ex.Message);
-            }
-        }
-
-        #endregion OldCode
     }
 }

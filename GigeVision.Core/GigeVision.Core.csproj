@@ -17,7 +17,6 @@
     <PackageIconUrl />
     <Platforms>AnyCPU;x64;x86</Platforms>
     <PackageReleaseNotes>Improved GVSP Reception using raw sockets and Span&lt;byte&gt; With RaiseProperty</PackageReleaseNotes>
-    <LangVersion>8.0</LangVersion>
     <Configurations>Debug;Release;PublishLocally</Configurations>
   </PropertyGroup>
 

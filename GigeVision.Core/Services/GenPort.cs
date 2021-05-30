@@ -21,15 +21,15 @@ namespace GigeVision.Core
             var addressBytes = GetAddressBytes(address, length);
             Array.Reverse(addressBytes);
 
-            GvcpReply reply = new GvcpReply();
+            GvcpReply reply = new();
 
             if (length < 4)
                 return reply;
 
             if (length >= 8)
-                return await Gvcp.ReadMemoryAsync(Gvcp.CameraIp, addressBytes, (ushort)length);
+                return await Gvcp.ReadMemoryAsync(Gvcp.CameraIp, addressBytes, (ushort)length).ConfigureAwait(false);
             else
-                return await Gvcp.ReadRegisterAsync(addressBytes);
+                return await Gvcp.ReadRegisterAsync(addressBytes).ConfigureAwait(false);
         }
 
         public async Task<IReplyPacket> Write(byte[] pBuffer, long address, long length)

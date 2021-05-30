@@ -4,7 +4,7 @@ using GigeVision.Core.Interfaces;
 using Stira.WpfCore;
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Threading.Tasks;
@@ -70,12 +70,6 @@ namespace GigeVision.Core.Models
 
         public List<ICategory> CategoryDictionary { get; private set; }
 
-        //public Camera(IGenPort genPort)
-        //{
-        //    Task.Run(async () => await SyncParameters().ConfigureAwait(false));
-        //    Init();
-        //    GenPort = genPort;
-        //}
         /// <summary>
         /// Rx port
         /// </summary>
@@ -218,12 +212,12 @@ namespace GigeVision.Core.Models
         }
 
         /// <summary>
-        /// Multicast IP: it will be applied only when IsMulticast Property is true
+        /// Multi-Cast IP: it will be applied only when IsMulticast Property is true
         /// </summary>
         public string MulticastIP { get; set; } = "239.192.11.12";
 
         /// <summary>
-        /// Multicast Option
+        /// Multi-Cast Option
         /// </summary>
         public bool IsMulticast
         {
@@ -261,16 +255,15 @@ namespace GigeVision.Core.Models
         }
 
         /// <summary>
-        /// This method will get current PC IP and Gets the Camera ip from Gvcp
+        /// This method will get current PC IP and Gets the Camera IP from Gvcp
         /// </summary>
         /// <param name="rxIP">If rxIP is not provided, method will detect system IP and use it</param>
         /// <param name="rxPort">It will set randomly when not provided</param>
         /// <param name="frameReady">If not null this event will be raised</param>
         /// <returns></returns>
-        public async Task<bool> StartStreamAsync(string rxIP = null, int rxPort = 0, Action<byte[]> frameReady = null)
+        public async Task<bool> StartStreamAsync(string rxIP = null, int rxPort = 0)
         {
             string ip2Send;
-            frameReadyAction = frameReady;
             if (string.IsNullOrEmpty(rxIP))
             {
                 if (string.IsNullOrEmpty(RxIP) && !SetRxIP())
@@ -328,13 +321,12 @@ namespace GigeVision.Core.Models
                     SetupRxThread();
                     if ((await Gvcp.WriteRegisterAsync(GvcpRegister.SCPHostPort, (uint)PortRx).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS)
                     {
-                        var ip = Converter.IpToNumber(ip2Send);
-                        var reply = await Gvcp.RegistersDictionaryValues["GevSCDA"].SetValue(ip);
-                        reply = await Gvcp.RegistersDictionaryValues["GevSCPSPacketSize"].SetValue(Payload);
-                        //await Gvcp.WriteRegisterAsync(GvcpRegister.SCDA, Converter.IpToNumber(ip2Send)).ConfigureAwait(false);
-                        //await Gvcp.WriteRegisterAsync(GvcpRegister.SCPSPacketSize, Payload).ConfigureAwait(false);
-                        var result = await Gvcp.RegistersDictionaryValues[nameof(RegisterName.AcquisitionStart)].SetValue(1) as GvcpReply;
-                        if (result.Status == GvcpStatus.GEV_STATUS_SUCCESS)
+                        uint ip = Converter.IpToNumber(ip2Send);
+                        await Gvcp.WriteRegisterAsync(GvcpRegister.SCDA, ip).ConfigureAwait(false);
+                        await Gvcp.WriteRegisterAsync(GvcpRegister.SCPSPacketSize, Payload).ConfigureAwait(false);
+                        string startReg = Gvcp.RegistersDictionary[nameof(RegisterName.AcquisitionStart)];
+
+                        if ((await Gvcp.WriteRegisterAsync(startReg, 1).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS)
                         {
                             IsStreaming = true;
                         }
@@ -355,7 +347,7 @@ namespace GigeVision.Core.Models
             }
             else
             {
-                Updates?.Invoke(this, "Fatal Error: Aquisition Start Register Not Found");
+                Updates?.Invoke(this, "Fatal Error: Acquisition Start Register Not Found");
             }
             return IsStreaming;
         }
@@ -366,18 +358,6 @@ namespace GigeVision.Core.Models
         /// <returns>Is streaming status</returns>
         public async Task<bool> StopStream()
         {
-            if (IsUsingCppForRx)
-            {
-                if (Environment.Is64BitProcess)
-                {
-                    CvInterop64.Stop();
-                }
-                else
-                {
-                    CvInterop.Stop();
-                }
-            }
-
             await Gvcp.WriteRegisterAsync(GvcpRegister.SCDA, 0).ConfigureAwait(false);
             if (await Gvcp.LeaveControl().ConfigureAwait(false))
             {
@@ -397,15 +377,15 @@ namespace GigeVision.Core.Models
             try
             {
                 await Gvcp.TakeControl().ConfigureAwait(false);
-                var widthWriteReply = (await Gvcp.RegistersDictionaryValues[nameof(RegisterName.Width)].SetValue(width).ConfigureAwait(false)) as GvcpReply;
-                var heightWriteReply = (await Gvcp.RegistersDictionaryValues[nameof(RegisterName.Height)].SetValue(width).ConfigureAwait(false)) as GvcpReply;
+                GvcpReply widthWriteReply = (await Gvcp.RegistersDictionaryValues[nameof(RegisterName.Width)].SetValue(width).ConfigureAwait(false)) as GvcpReply;
+                GvcpReply heightWriteReply = (await Gvcp.RegistersDictionaryValues[nameof(RegisterName.Height)].SetValue(width).ConfigureAwait(false)) as GvcpReply;
 
-                await Gvcp.RegistersDictionaryValues[nameof(RegisterName.Height)].SetValue(height);
+                await Gvcp.RegistersDictionaryValues[nameof(RegisterName.Height)].SetValue(height).ConfigureAwait(false);
                 bool status = (widthWriteReply.Status == GvcpStatus.GEV_STATUS_SUCCESS && heightWriteReply.Status == GvcpStatus.GEV_STATUS_SUCCESS);
                 if (status)
                 {
-                    var newWidth = (await Gvcp.RegistersDictionaryValues[nameof(RegisterName.Width)].GetValue().ConfigureAwait(false));
-                    var newHeight = (await Gvcp.RegistersDictionaryValues[nameof(RegisterName.Height)].GetValue().ConfigureAwait(false));
+                    long newWidth = (await Gvcp.RegistersDictionaryValues[nameof(RegisterName.Width)].GetValue().ConfigureAwait(false));
+                    long newHeight = (await Gvcp.RegistersDictionaryValues[nameof(RegisterName.Height)].GetValue().ConfigureAwait(false));
 
                     Width = (uint)newWidth;
                     Height = (uint)newHeight;
@@ -540,41 +520,87 @@ namespace GigeVision.Core.Models
                 {
                     await Gvcp.ReadAllRegisterAddressFromCameraAsync().ConfigureAwait(false);
                     if (Gvcp.RegistersDictionary.Count == 0)
+                    {
                         return false;
+                    }
                 }
 
-                Width = (uint)await Gvcp.RegistersDictionaryValues[nameof(RegisterName.Width)].GetValue();
-                Height = (uint)await Gvcp.RegistersDictionaryValues[nameof(RegisterName.Height)].GetValue();
-                OffsetX = (uint)await Gvcp.RegistersDictionaryValues[nameof(RegisterName.OffsetX)].GetValue();
-                OffsetY = (uint)await Gvcp.RegistersDictionaryValues[nameof(RegisterName.OffsetY)].GetValue();
-                PixelFormat = (PixelFormat)(uint)await Gvcp.RegistersDictionaryValues[nameof(RegisterName.PixelFormat)].GetValue();
-
-                //string[] registersToRead = new string[]
-                //    {
-                //        Gvcp.RegistersDictionary[nameof(RegisterName.Width)],
-                //        Gvcp.RegistersDictionary[nameof(RegisterName.Height)],
-                //        Gvcp.RegistersDictionary[nameof(RegisterName.OffsetX)],
-                //        Gvcp.RegistersDictionary[nameof(RegisterName.OffsetY)],
-                //        Gvcp.RegistersDictionary[nameof(RegisterName.PixelFormat)],
-                //    };
-
-                // GvcpReply reply2 = await Gvcp.ReadRegisterAsync(registersToRead).ConfigureAwait(false);
-
-                // if (reply2.Status == GvcpStatus.GEV_STATUS_SUCCESS) { Width =
-                // reply2.RegisterValues[0]; Height = reply2.RegisterValues[1]; OffsetX =
-                // reply2.RegisterValues[2]; OffsetY = reply2.RegisterValues[3]; PixelFormat = (PixelFormat)reply2.RegisterValues[4];
-                bytesPerPixel = (uint)3;
-                // }
+                Width = (uint)await Gvcp.RegistersDictionaryValues[nameof(RegisterName.Width)].GetValue().ConfigureAwait(false);
+                Height = (uint)await Gvcp.RegistersDictionaryValues[nameof(RegisterName.Height)].GetValue().ConfigureAwait(false);
+                OffsetX = (uint)await Gvcp.RegistersDictionaryValues[nameof(RegisterName.OffsetX)].GetValue().ConfigureAwait(false);
+                OffsetY = (uint)await Gvcp.RegistersDictionaryValues[nameof(RegisterName.OffsetY)].GetValue().ConfigureAwait(false);
+                PixelFormat = (PixelFormat)(uint)await Gvcp.RegistersDictionaryValues[nameof(RegisterName.PixelFormat)].GetValue().ConfigureAwait(false);
+                bytesPerPixel = 3;
             }
             catch (Exception ex)
             {
                 Updates?.Invoke(this, ex.Message);
             }
-            //if (Gvcp.RegistersDictionary.Count > 0)
-            //{
-            //    MotorController.CheckMotorControl(Gvcp.RegistersDictionary);
-            //}
+            if (Gvcp.RegistersDictionary.Count > 0)
+            {
+                MotorController.CheckMotorControl(Gvcp.RegistersDictionary);
+            }
             return true;
+        }
+
+        public string GetMyIp()
+        {
+            UnicastIPAddressInformation mostSuitableIp = null;
+
+            foreach (NetworkInterface network in NetworkInterface.GetAllNetworkInterfaces())
+            {
+                if (network.OperationalStatus != OperationalStatus.Up)
+                {
+                    continue;
+                }
+
+                IPInterfaceProperties properties = network.GetIPProperties();
+
+                if (properties.GatewayAddresses.Count == 0)
+                {
+                    continue;
+                }
+
+                foreach (UnicastIPAddressInformation address in properties.UnicastAddresses)
+                {
+                    if (address.Address.AddressFamily != AddressFamily.InterNetwork)
+                    {
+                        continue;
+                    }
+
+                    if (IPAddress.IsLoopback(address.Address))
+                    {
+                        continue;
+                    }
+
+                    if (!address.IsDnsEligible)
+                    {
+                        if (mostSuitableIp == null)
+                        {
+                            mostSuitableIp = address;
+                        }
+
+                        continue;
+                    }
+
+                    // The best IP is the IP got from DHCP server
+                    if (address.PrefixOrigin != PrefixOrigin.Dhcp)
+                    {
+                        if (mostSuitableIp == null || !mostSuitableIp.IsDnsEligible)
+                        {
+                            mostSuitableIp = address;
+                        }
+
+                        continue;
+                    }
+
+                    return address.Address.ToString();
+                }
+            }
+
+            return mostSuitableIp != null
+                ? mostSuitableIp.Address.ToString()
+                : "";
         }
 
         private bool SetRxIP()
@@ -598,14 +624,7 @@ namespace GigeVision.Core.Models
 
         private void SetupRxThread()
         {
-            if (IsUsingCppForRx)
-            {
-                streamReceiver.StartRxCppThread();
-            }
-            else
-            {
-                streamReceiver.StartRxThread();
-            }
+            streamReceiver.StartRxThread();
         }
 
         private void SetRxBuffer()
@@ -630,7 +649,7 @@ namespace GigeVision.Core.Models
             MotorController = new MotorControl();
             streamReceiver = new StreamReceiver(this);
             SetRxIP();
-            // Gvcp.CameraIpChanged += CameraIpChanged;
+            Gvcp.CameraIpChanged += CameraIpChanged;
         }
 
         private void CalculateSingleRowPayload()
@@ -641,37 +660,6 @@ namespace GigeVision.Core.Models
         private async void CameraIpChanged(object sender, EventArgs e)
         {
             await SyncParameters().ConfigureAwait(false);
-        }
-
-        private string GetMyIp()
-        {
-            string localIP = "";
-            foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
-            {
-                IPInterfaceProperties ipProp = nic.GetIPProperties();
-                GatewayIPAddressInformationCollection gwAddresses = ipProp.GatewayAddresses;
-                if (gwAddresses.Count > 0 &&
-                    gwAddresses.Any(g => g.Address.AddressFamily == AddressFamily.InterNetwork))
-                {
-                    localIP = ipProp.UnicastAddresses.First(d => d.Address.AddressFamily == AddressFamily.InterNetwork).Address.ToString();
-                }
-                else if (ipProp.UnicastAddresses.Count > 0) //If we have any other address then get that one
-                {
-                    localIP = ipProp.UnicastAddresses.First(d => d.Address.AddressFamily == AddressFamily.InterNetwork).Address.ToString();
-                }
-                if (!string.IsNullOrEmpty(localIP))
-                {
-                    return localIP;
-                }
-            }
-
-            //using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, 0))
-            //{
-            //    socket.Connect("8.8.8.8", 65530);
-            //    IPEndPoint endPoint = socket.LocalEndPoint as IPEndPoint;
-            //    localIP = endPoint.Address.ToString();
-            //}
-            throw new Exception("System IP not found");
         }
     }
 }

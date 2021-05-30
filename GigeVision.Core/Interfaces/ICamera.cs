@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace GigeVision.Core.Interfaces
 {
     /// <summary>
-    /// Camera class is responsible to initilize the stream and receive the stream
+    /// Camera class is responsible to initialize the stream and receive the stream
     /// </summary>
     public interface ICamera
     {
@@ -23,7 +23,7 @@ namespace GigeVision.Core.Interfaces
         MotorControl MotorController { get; set; }
 
         /// <summary>
-        /// Multicast IP: it will be applied only when IsMulticast Property is true
+        /// Multi-cast IP: it will be applied only when IsMulticast Property is true
         /// </summary>
         string MulticastIP { get; set; }
 
@@ -34,7 +34,7 @@ namespace GigeVision.Core.Interfaces
         string RxIP { get; set; }
 
         /// <summary>
-        /// Multicast Option
+        /// Multi-cast Option
         /// </summary>
         bool IsMulticast { get; set; }
 
@@ -109,14 +109,17 @@ namespace GigeVision.Core.Interfaces
         /// </summary>
         bool IsUsingExternalBuffer { get; set; }
 
+        Dictionary<string, string> RegistersDictionary { get; }
+
+        List<ICategory> CategoryDictionary { get; }
+
         /// <summary>
-        /// This method will get current PC IP and Gets the Camera ip from Gvcp
+        /// This method will get current PC IP and Gets the Camera IP from Gvcp
         /// </summary>
         /// <param name="rxIP">If rxIP is not provided, method will detect system IP and use it</param>
         /// <param name="rxPort">It will set randomly when not provided</param>
-        /// <param name="frameReady">If not Null this action will be called on frameready</param>
         /// <returns></returns>
-        Task<bool> StartStreamAsync(string rxIP = null, int rxPort = 0, Action<byte[]> frameReady = null);
+        Task<bool> StartStreamAsync(string rxIP = null, int rxPort = 0);
 
         /// <summary>
         /// Stops the camera stream and leave camera control
@@ -193,9 +196,5 @@ namespace GigeVision.Core.Interfaces
         /// </summary>
         /// <returns></returns>
         Task<bool> SyncParameters();
-
-        Dictionary<string, string> RegistersDictionary { get; }
-
-        List<ICategory> CategoryDictionary { get; }
     }
 }
