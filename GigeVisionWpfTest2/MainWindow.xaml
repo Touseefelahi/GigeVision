@@ -3,11 +3,12 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:il="clr-namespace:Stira.ImageLibrary.Wpf;assembly=Stira.ImageLibrary.Wpf"
     xmlns:local="clr-namespace:GigeVisionWpfTest2"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     Title="MainWindow"
     Width="800"
-    Height="450"
+    Height="600"
     mc:Ignorable="d">
     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
         <TextBlock x:Name="IP" />
@@ -16,5 +17,19 @@
             Click="Button_Click"
             Command="{Binding GetCurrentCameras}"
             Content="Get Current Cameras" />
+        <Button
+            Click="Button_Click_1"
+            Command="{Binding Stop}"
+            Content="Stop Stream" />
+        <il:LightImage
+            x:Name="image"
+            Width="640"
+            Height="480"
+            Margin="5,5,5,5"
+            HeightImage="{Binding Camera.Height}"
+            IsColored="False"
+            RawBytes="{Binding RawBytes}"
+            WidthImage="{Binding Camera.Width}" />
+        <TextBlock x:Name="fps" />
     </StackPanel>
 </Window>

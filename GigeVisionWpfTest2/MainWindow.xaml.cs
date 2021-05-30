@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -30,21 +31,30 @@ namespace GigeVisionWpfTest2
             InitializeComponent();
             DataContext = this;
             camera = new();
+            camera.IP = "192.168.10.197";
             gvcp = new();
-            Button_Click(null, null);
+            camera.FrameReady += FrameReady;
+            image.WidthImage = 640;
+            image.HeightImage = 480;
         }
 
-        public int MyProperty { get; set; }
+        public byte[] RawBytes { get; set; }
+
+        public int FrameCounter { get; set; }
+
+        private void FrameReady(object sender, byte[] e)
+        {
+            image.Dispatcher.Invoke(() => image.RawBytes = e);
+        }
 
         private async void Button_Click(object sender, RoutedEventArgs e)
         {
-            var devices = await gvcp.GetAllGigeDevicesInNetworkAsnyc().ConfigureAwait(false);
-            await (_ = gvcp.ReadRegisterAsync("192.168.10.77", GigeVision.Core.Enums.GvcpRegister.CCP)).ConfigureAwait(false);
-            Dispatcher.Invoke(() =>
-            {
-                IP.Text = camera.GetMyIp();
-                Count.Text = devices.Count.ToString();
-            });
+            await camera.StartStreamAsync("192.168.10.172").ConfigureAwait(false);
+        }
+
+        private async void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            await camera.StopStream().ConfigureAwait(false);
         }
     }
 }

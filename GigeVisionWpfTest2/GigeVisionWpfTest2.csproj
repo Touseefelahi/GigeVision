@@ -7,7 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\GigeVision.Core\GigeVision.Core.csproj" />
+    <PackageReference Include="Stira.ImageLibrary.Wpf" Version="2.4.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\GigeVision.Core\GigeVision.Core.csproj" />
+  </ItemGroup>
 </Project>
