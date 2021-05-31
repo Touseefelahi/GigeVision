@@ -282,17 +282,13 @@ namespace GigeVision.Core.Models
             }
             try
             {
-                if (Gvcp.RegistersDictionary.Count < 10)
-                {
-                    await SyncParameters().ConfigureAwait(false);
-                }
+                var status = await SyncParameters().ConfigureAwait(false);
+                if (!status)
+                    return status;
             }
             catch
             {
-                if (Gvcp.RegistersDictionary.Count == 0)
-                {
-                    return false;
-                }
+                return false;
             }
             if (rxPort == 0)
             {
@@ -321,11 +317,9 @@ namespace GigeVision.Core.Models
                     SetupRxThread();
                     if ((await Gvcp.WriteRegisterAsync(GvcpRegister.SCPHostPort, (uint)PortRx).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS)
                     {
-                        uint ip = Converter.IpToNumber(ip2Send);
-                        await Gvcp.WriteRegisterAsync(GvcpRegister.SCDA, ip).ConfigureAwait(false);
+                        await Gvcp.WriteRegisterAsync(GvcpRegister.SCDA, Converter.IpToNumber(ip2Send)).ConfigureAwait(false);
                         await Gvcp.WriteRegisterAsync(GvcpRegister.SCPSPacketSize, Payload).ConfigureAwait(false);
                         string startReg = Gvcp.RegistersDictionary[nameof(RegisterName.AcquisitionStart)];
-
                         if ((await Gvcp.WriteRegisterAsync(startReg, 1).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS)
                         {
                             IsStreaming = true;
