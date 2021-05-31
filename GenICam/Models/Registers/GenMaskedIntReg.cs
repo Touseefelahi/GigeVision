@@ -83,8 +83,9 @@ namespace GenICam
 
             var key = (await GetAddress().ConfigureAwait(false)).ToString();
 
-            if (TempDictionary.Formula.ContainsKey(key))
-                value = ReadMask((long)TempDictionary.Formula[key]);
+            var tempValue = await TempDictionary.Get(key).ConfigureAwait(false);
+            if (tempValue is not null)
+                value = (long)tempValue;
             else
             {
                 var reply = await Get(Length).ConfigureAwait(false);
@@ -117,8 +118,7 @@ namespace GenICam
                         value = ReadMask(reply.RegisterValue);
                     }
                 }).ConfigureAwait(false);
-                if (!TempDictionary.Formula.ContainsKey(key))
-                    TempDictionary.Formula.Add(key, value);
+                await TempDictionary.Add(key, value).ConfigureAwait(false);
                 
             }
             return value;

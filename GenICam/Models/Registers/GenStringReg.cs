@@ -39,8 +39,9 @@ namespace GenICam
         {
             var key = (await GetAddress().ConfigureAwait(false)).ToString();
 
-            if (TempDictionary.Formula.ContainsKey(key))
-                Value = TempDictionary.Formula[key] as string;
+            var tempValue = await TempDictionary.Get(key).ConfigureAwait(false);
+            if (tempValue is not null)
+                Value = tempValue as string;
             else
             {
 
@@ -49,8 +50,7 @@ namespace GenICam
             {
                 if (!(reply.MemoryValue is null))
                     Value = Encoding.ASCII.GetString(reply.MemoryValue);
-                if (!TempDictionary.Formula.ContainsKey(key))
-                    TempDictionary.Formula.Add(key, Value);
+                    await TempDictionary.Add(key, Value).ConfigureAwait(false);
             }
             catch (Exception ex)
             {

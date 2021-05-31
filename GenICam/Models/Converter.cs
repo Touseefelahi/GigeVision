@@ -31,8 +31,8 @@ namespace GenICam
             PValue = pValue;
             Slope = slope;
 
-            new Action((async () => await ExecuteFormulaFrom().ConfigureAwait(false))).Invoke();
-            new Action((async () => await ExecuteFormulaTo().ConfigureAwait(false))).Invoke();
+            ExecuteFormulaFrom().ConfigureAwait(false);
+            ExecuteFormulaTo().ConfigureAwait(false);
         }
 
         public IPValue PValue { get; private set; }
