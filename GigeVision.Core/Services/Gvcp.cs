@@ -322,13 +322,8 @@ namespace GigeVision.Core.Models
         /// <returns>Register dictionary</returns>
         public async Task<Dictionary<string, string>> ReadAllRegisterAddressFromCameraAsync(string cameraIp)
         {
-            RegistersDictionary = new Dictionary<string, string>();
-            RegistersDictionaryValues = new Dictionary<string, IPValue>();
-            RegistersDictionary.Add("XmlVersion", "");
 
             if (!ValidateIp(CameraIp)) throw new InvalidIpException();
-
-            List<string> registresList = new List<string>();
 
             //loading the XML file
             XmlDocument xml = new XmlDocument();
@@ -336,12 +331,19 @@ namespace GigeVision.Core.Models
 
             var xmlHelper = new XmlHelper("Category", xml, new GenPort(this));
             CategoryDictionary = xmlHelper.CategoryDictionary;
-            RegistersDictionary["XmlVersion"] = xmlHelper.Xmlns.InnerText;
 
-            ReadAllRegisters(CategoryDictionary);
-            //handling the name-space of the XML file to cover all the cases
 
-            //finding the nodes and their values
+            if (xmlHelper.CategoryDictionary != null)
+            {
+                if (xmlHelper.CategoryDictionary.Count > 0)
+                {
+                    RegistersDictionary = new Dictionary<string, string>();
+                    RegistersDictionaryValues = new Dictionary<string, IPValue>();
+                    RegistersDictionary.Add("XmlVersion", xmlHelper.Xmlns.InnerText);
+                    ReadAllRegisters(CategoryDictionary);
+                }
+            }
+
             return RegistersDictionary;
         }
 
@@ -356,20 +358,27 @@ namespace GigeVision.Core.Models
 
         public async Task<Dictionary<string, string>> ReadAllRegisterAddressFromCameraAsync(IGvcp gvcp)
         {
-            RegistersDictionary = new Dictionary<string, string>();
-            RegistersDictionary.Add("XmlVersion", "");
 
             if (!ValidateIp(gvcp.CameraIp)) throw new InvalidIpException();
 
             //loading the XML file
             XmlDocument xml = new XmlDocument();
             xml.Load(await GetXmlFileFromCamera(gvcp.CameraIp).ConfigureAwait(false));
-            if (RegistersDictionary.Count > 0)
-                RegistersDictionary.Clear();
 
             //handling the name-space of the XML file to cover all the cases
             var xmlHelper = new XmlHelper("Category", xml, new GenPort(this));
-            ReadAllRegisters(xmlHelper.CategoryDictionary);
+            CategoryDictionary = xmlHelper.CategoryDictionary;
+
+            if (xmlHelper.CategoryDictionary != null)
+            {
+                if (xmlHelper.CategoryDictionary.Count > 0)
+                {
+                    RegistersDictionary = new Dictionary<string, string>();
+                    RegistersDictionaryValues = new Dictionary<string, IPValue>();
+                    RegistersDictionary.Add("XmlVersion", xmlHelper.Xmlns.InnerText);
+                    ReadAllRegisters(CategoryDictionary);
+                }
+            }
             //finding the nodes and their values
             return RegistersDictionary;
         }
