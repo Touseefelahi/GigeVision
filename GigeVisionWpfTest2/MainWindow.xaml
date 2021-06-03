@@ -10,9 +10,8 @@
     Width="800"
     Height="600"
     mc:Ignorable="d">
-    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-        <TextBlock x:Name="IP" />
-        <TextBlock x:Name="Count" />
+    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Top">
+
         <Button
             Click="Button_Click"
             Command="{Binding GetCurrentCameras}"
@@ -30,6 +29,6 @@
             IsColored="False"
             RawBytes="{Binding RawBytes}"
             WidthImage="{Binding Camera.Width}" />
-        <TextBlock x:Name="fps" />
+        <TextBlock x:Name="fps" HorizontalAlignment="Center" />
     </StackPanel>
 </Window>
