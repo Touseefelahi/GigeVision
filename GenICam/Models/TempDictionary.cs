@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Dynamic;
 using System.Threading.Tasks;
 
@@ -12,27 +13,37 @@ namespace GenICam
         }
 
         private static Dictionary<string, object> Formula { get; set; }
+        private static object lockObj = new Object();
 
         public async static Task<bool> Add(string key, object value)
         {
-            if (!Formula.ContainsKey(key))
+            lock (lockObj)
             {
-                Formula.Add(key, value);
-                return true;
+                if (!Formula.ContainsKey(key))
+                {
+                    Formula.Add(key, value);
+                    return true;
+                }
+                return false;
             }
-            return false;
         }
 
         public async static Task<object> Get(string key)
         {
-            if (Formula.ContainsKey(key))
-                return Formula[key];
+            lock (lockObj)
+            {
+                if (Formula.ContainsKey(key))
+                    return Formula[key];
 
-            return null;
+                return null;
+            }
         }
         public static void Clear()
         {
-            Formula.Clear();
+            lock (lockObj)
+            {
+                Formula.Clear();
+            }
         }
     }
 }
