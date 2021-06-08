@@ -26,7 +26,6 @@ namespace GigeVision.Core.WpfTest
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
             camera = new();
-            camera.IP = "192.168.10.244";
             gvcp = new();
             camera.FrameReady += FrameReady;
             image.WidthImage = 640;
@@ -40,7 +39,8 @@ namespace GigeVision.Core.WpfTest
 
         private async void Button_Click(object sender, RoutedEventArgs e)
         {
-            await camera.StartStreamAsync("192.168.10.227").ConfigureAwait(false);
+            camera.IP = "192.168.10.170";
+            await camera.StartStreamAsync("192.168.10.185").ConfigureAwait(false);
         }
 
         private async void Button_Click_1(object sender, RoutedEventArgs e)
