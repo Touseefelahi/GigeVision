@@ -10,14 +10,14 @@ using System.Xml;
 namespace GigeVision.Core.Services
 {
     /// <summary>
-    /// this class helpes Gvcp to read all the registers from xml file
+    /// this class helps Gvcp to read all the registers from xml file
     /// </summary>
     public class XmlHelper
     {
         /// <summary>
         /// the main method to read xml file
         /// </summary>
-        /// <param name="registerDictionary">Regiser Dictionary</param>
+        /// <param name="registerDictionary">Register Dictionary</param>
         /// <param name="regisetrGroupDictionary">Register Group Dictionary</param>
         /// <param name="tagName">First Parent Tag Name</param>
         /// <param name="xmlDocument">Xml File</param>
@@ -45,7 +45,7 @@ namespace GigeVision.Core.Services
                 foreach (XmlNode childNodes in nodeList)
                 {
                     string groupComment = childNodes.Attributes["Comment"].Value;
-                    List<string> categoryFeatures = new List<string>();
+                    List<string> categoryFeatures = new();
 
                     foreach (XmlNode childNode in childNodes.ChildNodes)
                     {

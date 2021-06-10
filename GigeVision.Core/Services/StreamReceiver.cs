@@ -1,8 +1,10 @@
 ﻿using Stira.WpfCore;
 using System;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace GigeVision.Core.Models
 {
@@ -13,7 +15,6 @@ namespace GigeVision.Core.Models
     {
         private readonly Camera Camera;
         private Socket socketRxRaw;
-        private int finalPacketID = 0;
         private bool isDecodingAsVersion2;
 
         /// <summary>
@@ -23,7 +24,10 @@ namespace GigeVision.Core.Models
         public StreamReceiver(Camera camera)
         {
             Camera = camera;
+            GvspInfo = new GvspInfo();
         }
+
+        public GvspInfo GvspInfo { get; }
 
         /// <summary>
         /// If software read the GVSP stream as version 2
@@ -39,14 +43,6 @@ namespace GigeVision.Core.Models
                     OnPropertyChanged(nameof(IsDecodingAsVersion2));
                 }
             }
-        }
-
-        /// <summary>
-        /// Resets the final packet ID
-        /// </summary>
-        public void ResetPacketSize()
-        {
-            finalPacketID = 0;
         }
 
         /// <summary>
@@ -77,7 +73,7 @@ namespace GigeVision.Core.Models
                 socketRxRaw.Bind(new IPEndPoint(IPAddress.Any, Camera.PortRx));
                 if (Camera.IsMulticast)
                 {
-                    MulticastOption mcastOption = new MulticastOption(IPAddress.Parse(Camera.MulticastIP), IPAddress.Any);
+                    MulticastOption mcastOption = new(IPAddress.Parse(Camera.MulticastIP), IPAddress.Any);
                     socketRxRaw.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership, mcastOption);
                 }
                 socketRxRaw.ReceiveTimeout = 1000;
@@ -91,55 +87,51 @@ namespace GigeVision.Core.Models
 
         private void DecodePacketsRawSocket()
         {
-            int packetID = 0, bufferLength = 0, bufferStart = 0;
-            Span<byte> singlePacket = new byte[10000];
-            Span<byte> cameraRawPacket = new(Camera.rawBytes);
-            int packetRxCount = 0; //This is for full packet check
-            finalPacketID = 0;
+            int packetID = 0, bufferIndex = 0, bufferLength = 0, bufferStart = 0, length = 0, packetRxCount = 0;
+            byte[][] buffer = new byte[2][];
+            buffer[0] = new byte[Camera.rawBytes.Length];
+            buffer[1] = new byte[Camera.rawBytes.Length];
             try
             {
-                int length = socketRxRaw.Receive(singlePacket);
-                Camera.IsStreaming = length > 10;
-                int payloadOffset = 8;
-                int packetIDIndex = 6;
-                int dataIdentifier = 0x03;
-                int dataEndIdentifier = 0x02;
-                IsDecodingAsVersion2 = ((singlePacket[4] & 0xF0) >> 4) == 8;
-                if (IsDecodingAsVersion2)
-                {
-                    payloadOffset = 20;
-                    packetIDIndex = 18;
-                    dataIdentifier = 0x83;
-                    dataEndIdentifier = 0x82;
-                }
+                Span<byte> singlePacket = DetectGvspType(buffer[0]);
                 while (Camera.IsStreaming)
                 {
                     length = socketRxRaw.Receive(singlePacket);
-                    if (singlePacket[4] == dataIdentifier) //Packet
+                    if (singlePacket[4] == GvspInfo.DataIdentifier) //Packet
                     {
                         packetRxCount++;
-                        packetID = (singlePacket[packetIDIndex] << 8) | singlePacket[packetIDIndex + 1];
-                        if (packetID < finalPacketID) //Check for final packet because final packet length maybe lesser than the regular packets
-                        {
-                            bufferLength = length - payloadOffset;
-                        }
-                        bufferStart = (packetID - 1) * bufferLength; //This use buffer length of regular packet
-                        bufferLength = length - payloadOffset;  //This will only change for final packet
-                        Span<byte> slicedRowInImage = cameraRawPacket.Slice(bufferStart, bufferLength);
-                        singlePacket.Slice(payloadOffset, bufferLength).CopyTo(slicedRowInImage);
+                        packetID = (singlePacket[GvspInfo.PacketIDIndex] << 8) | singlePacket[GvspInfo.PacketIDIndex + 1];
+                        bufferStart = (packetID - 1) * GvspInfo.PayloadSize; //This use buffer length of regular packet
+                        bufferLength = length - GvspInfo.PayloadOffset;  //This will only change for final packet
+
+                        Span<byte> slicedRowInImage = buffer[bufferIndex].AsSpan().Slice(bufferStart, bufferLength);
+                        singlePacket.Slice(GvspInfo.PayloadOffset, bufferLength).CopyTo(slicedRowInImage);
                         continue;
                     }
-                    if (singlePacket[4] == dataEndIdentifier)
+                    if (singlePacket[4] == GvspInfo.DataEndIdentifier)
                     {
-                        if (finalPacketID == 0)
+                        if (GvspInfo.FinalPacketID == 0)
                         {
-                            finalPacketID = packetID - 1;
+                            packetID = (singlePacket[GvspInfo.PacketIDIndex] << 8) | singlePacket[GvspInfo.PacketIDIndex + 1];
+                            GvspInfo.FinalPacketID = packetID - 1;
                         }
                         //Checking if we receive all packets. Here 2 means we are allowing 1 packet miss
-                        if (Math.Abs(packetRxCount - finalPacketID) < 2)
+                        if (Math.Abs(packetRxCount - GvspInfo.FinalPacketID) < 2)
                         {
-                            // Camera.frameReadyAction?.Invoke(Camera.rawBytes);
-                            Camera.FrameReady?.Invoke(null, Camera.rawBytes);
+                            Camera.FrameReady?.Invoke(null, buffer[bufferIndex]);
+
+                            if (bufferIndex == 0)
+                            {
+                                bufferIndex = 1;
+                            }
+                            else if (bufferIndex == 1)
+                            {
+                                bufferIndex = 0;
+                            }
+                        }
+                        else
+                        {
+                            Trace.WriteLine(Math.Abs(packetRxCount - GvspInfo.FinalPacketID));
                         }
                         packetRxCount = 0;
                     }
@@ -150,6 +142,39 @@ namespace GigeVision.Core.Models
                 Camera.Updates?.Invoke(null, ex.Message);
                 _ = Camera.StopStream();
             }
+        }
+
+        private Span<byte> DetectGvspType(Span<byte> cameraRawPacket)
+        {
+            Span<byte> singlePacket = new byte[10000];
+            socketRxRaw.Receive(singlePacket);
+            GvspInfo.PayloadOffset = 8;
+            GvspInfo.PacketIDIndex = 6;
+            GvspInfo.DataIdentifier = 0x03;
+            GvspInfo.DataEndIdentifier = 0x02;
+            IsDecodingAsVersion2 = ((singlePacket[4] & 0xF0) >> 4) == 8;
+            if (IsDecodingAsVersion2)
+            {
+                GvspInfo.PayloadOffset = 20;
+                GvspInfo.PacketIDIndex = 18;
+                GvspInfo.DataIdentifier = 0x83;
+                GvspInfo.DataEndIdentifier = 0x82;
+            }
+            //Optimizing the array length for receive buffer
+            int length = socketRxRaw.Receive(singlePacket);
+            int packetID = (singlePacket[GvspInfo.PacketIDIndex] << 8) | singlePacket[GvspInfo.PacketIDIndex + 1];
+            if (packetID > 0)
+            {
+                GvspInfo.PacketLength = length;
+            }
+            if (packetID == 1)
+            {
+                singlePacket.CopyTo(cameraRawPacket);
+            }
+            Camera.IsStreaming = length > 10;
+            GvspInfo.PayloadSize = GvspInfo.PacketLength - GvspInfo.PayloadOffset;
+            GvspInfo.FinalPacketID = 0;
+            return singlePacket[..length];
         }
 
         /// <summary>
@@ -175,7 +200,7 @@ namespace GigeVision.Core.Models
                         packetRxCount++;
                         packetID = (singlePacket[6] << 8) | singlePacket[7];
 
-                        if (packetID < finalPacketID) //Check for final packet because final packet length maybe lesser than the regular packets
+                        if (packetID < GvspInfo.FinalPacketID) //Check for final packet because final packet length maybe lesser than the regular packets
                         {
                             bufferLength = length - 8;
                             Span<byte> slicedRowInImage = cameraRawPacket.Slice((packetID - 1) * bufferLength, bufferLength);
@@ -189,12 +214,12 @@ namespace GigeVision.Core.Models
                     }
                     else if (singlePacket[4] == 0x02)
                     {
-                        if (finalPacketID == 0)
+                        if (GvspInfo.FinalPacketID == 0)
                         {
-                            finalPacketID = packetID - 1;
+                            GvspInfo.FinalPacketID = packetID - 1;
                         }
                         //Checking if we receive all packets. Here 2 means we are allowing 1 packet miss
-                        if (Math.Abs(packetRxCount - finalPacketID) < 2)
+                        if (Math.Abs(packetRxCount - GvspInfo.FinalPacketID) < 2)
                         {
                             Camera.FrameReady?.Invoke(null, Camera.rawBytes);
                         }

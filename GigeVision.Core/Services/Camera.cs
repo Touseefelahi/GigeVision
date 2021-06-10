@@ -119,7 +119,6 @@ namespace GigeVision.Core.Models
                 if (value != width)
                 {
                     width = value;
-                    streamReceiver?.ResetPacketSize();
                     OnPropertyChanged(nameof(Width));
                 }
             }
@@ -136,7 +135,6 @@ namespace GigeVision.Core.Models
                 if (value != height)
                 {
                     height = value;
-                    streamReceiver?.ResetPacketSize();
                     OnPropertyChanged(nameof(Height));
                 }
             }

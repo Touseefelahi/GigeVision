@@ -282,24 +282,23 @@ namespace GigeVision.Core.Models
 
         private bool AddLensRegister(string[] lookFor, string[] skipThese, LensCommand lensCommand, Dictionary<string, CameraRegisterContainer> registersDictionary)
         {
-            List<string> totalKeys = new List<string>();
+            List<string> totalKeys = new();
             foreach (string item in lookFor)
             {
-                IEnumerable<string> keys = registersDictionary.Keys.Where(x => x.Contains(item));
-                foreach (string keyItem in keys)
+                foreach (string keyItem in registersDictionary.Keys.Where(x => x.Contains(item)))
                 {
                     totalKeys.Add(keyItem);
                 }
             }
-            if (totalKeys?.Count() > 0)
+            if (totalKeys?.Count > 0)
             {
                 foreach (string skipKey in skipThese)
                 {
                     List<string> toBeRemoved = totalKeys.Where(x => x.Contains(skipKey)).ToList();
 
-                    foreach (string item in toBeRemoved)
+                    for (int i = 0; i < toBeRemoved.Count; i++)
                     {
-                        totalKeys.Remove(item);
+                        totalKeys.Remove(toBeRemoved[i]);
                     }
                 }
                 if (totalKeys.Count > 0)

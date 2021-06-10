@@ -33,11 +33,11 @@ namespace GigeVisionWpfTest2
             InitializeComponent();
             DataContext = this;
             camera = new();
-            camera.IP = "192.168.10.170";
+            camera.IP = "192.168.10.244";
             gvcp = new();
             camera.FrameReady += FrameReady;
-            image.WidthImage = 640;
-            image.HeightImage = 480;
+            image.WidthImage = 1032;
+            image.HeightImage = 1032;
             timer = new();
             timer.Elapsed += Timer_Elapsed;
             timer.Interval = 1000;
