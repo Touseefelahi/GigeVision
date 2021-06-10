@@ -115,14 +115,7 @@ namespace GigeVision.Core.Models
                         if (Math.Abs(packetRxCount - GvspInfo.FinalPacketID) < 2)
                         {
                             Camera.FrameReady?.Invoke(null, buffer[bufferIndex]);
-                            if (bufferIndex == 0)
-                            {
-                                bufferIndex = 1;
-                            }
-                            else if (bufferIndex == 1)
-                            {
-                                bufferIndex = 0;
-                            }
+                            bufferIndex = bufferIndex == 0 ? 1 : 0;
                         }
                         packetRxCount = 0;
                     }
