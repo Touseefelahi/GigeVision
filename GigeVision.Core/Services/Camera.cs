@@ -560,8 +560,8 @@ namespace GigeVision.Core.Models
                         continue;
                     }
 
-                    // The best IP is the IP got from DHCP server
-                    if (address.PrefixOrigin != PrefixOrigin.Dhcp)
+                    // The best IP is the IP that is set as static IP
+                    if (address.PrefixOrigin != PrefixOrigin.Manual)
                     {
                         if (mostSuitableIp == null || !mostSuitableIp.IsDnsEligible)
                             mostSuitableIp = address;

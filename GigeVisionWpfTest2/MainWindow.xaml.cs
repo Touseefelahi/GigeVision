@@ -1,20 +1,6 @@
 ﻿using GigeVision.Core.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Timers;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace GigeVisionWpfTest2
 {
@@ -23,10 +9,8 @@ namespace GigeVisionWpfTest2
     /// </summary>
     public partial class MainWindow : Window
     {
-        private Camera camera;
-
-        private Gvcp gvcp;
-        private System.Timers.Timer timer;
+        private readonly Camera camera;
+        private readonly Timer timer;
 
         public MainWindow()
         {
@@ -34,7 +18,6 @@ namespace GigeVisionWpfTest2
             DataContext = this;
             camera = new();
             camera.IP = "192.168.10.244";
-            gvcp = new();
             camera.FrameReady += FrameReady;
             image.WidthImage = 1032;
             image.HeightImage = 1032;
@@ -75,10 +58,7 @@ namespace GigeVisionWpfTest2
             await camera.StopStream().ConfigureAwait(false);
             timer.Stop();
             FrameCounter = 0;
-            fps.Dispatcher.Invoke(() =>
-            {
-                fps.Text = $"FPS: {FrameCounter}";
-            });
+            fps.Dispatcher.Invoke(() => fps.Text = $"FPS: {FrameCounter}");
         }
     }
 }
