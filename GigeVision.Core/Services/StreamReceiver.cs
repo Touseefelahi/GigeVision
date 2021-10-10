@@ -236,7 +236,7 @@ namespace GigeVision.Core.Models
                         //This <10000 is just to skip the overflow value when the counter (2 or 8 bytes) will complete it should not show false missing images
                         if (deltaImageID != 1 && deltaImageID < 10000)
                         {
-                            Camera.Updates?.Invoke("FrameLost", $"{imageID - lastImageID - 1} Image missed between {lastImageID}-{imageID}");
+                            Camera.Updates?.Invoke(UpdateType.FrameLoss, $"{imageID - lastImageID - 1} Image missed between {lastImageID}-{imageID}");
                         }
                         packetRxCount = 0;
                         lastImageID = imageID;
