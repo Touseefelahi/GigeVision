@@ -57,6 +57,11 @@ namespace GigeVision.Core.Interfaces
         uint Payload { get; set; }
 
         /// <summary>
+        /// Tolerance for missing packet
+        /// </summary>
+        public int MissingPacketTolerance { get; set; } 
+
+        /// <summary>
         /// Camera width
         /// </summary>
         uint Width { get; set; }

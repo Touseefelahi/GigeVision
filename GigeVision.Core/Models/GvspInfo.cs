@@ -39,5 +39,20 @@
         /// Final Packet ID
         /// </summary>
         public int FinalPacketID { get; set; }
+
+        /// <summary>
+        /// Frame counter index start
+        /// </summary>
+        public int BlockIDIndex { get; set; }
+
+        /// <summary>
+        /// 2 or 8
+        /// </summary>
+        public int BlockIDLength { get; set; }
+
+        /// <summary>
+        /// Timestamp index start
+        /// </summary>
+        public int TimeStampIndex { get; set; }
     }
 }

@@ -92,6 +92,8 @@ namespace GigeVision.Core.Models
         /// </summary>
         public EventHandler<string> Updates { get; set; }
 
+       
+
         /// <summary>
         /// Payload size, if not provided it will be automatically set to one row, depending on resolution
         /// </summary>
@@ -232,6 +234,11 @@ namespace GigeVision.Core.Models
                 }
             }
         }
+
+        /// <summary>
+        /// Tolernace for missing packet
+        /// </summary>
+        public int MissingPacketTolerance { get; set; } = 0;
 
         /// <summary>
         /// This method will get current PC IP and Gets the Camera ip from Gvcp
