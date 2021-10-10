@@ -12,6 +12,7 @@ namespace GenICam
     /// </summary>
     public class IntSwissKnife : IMathematical
     {
+        private static List<char> opreations;
         /// <summary>
         /// Main Method that calculate the given formula
         /// </summary>
@@ -27,7 +28,7 @@ namespace GenICam
             Expressions = expressions;
             //Prepare Expression
             Formula = Formula.Replace(" ", "");
-            List<char> opreations = new List<char> { '(', '+', '-', '/', '*', '=', '?', ':', ')', '>', '<', '&', '|', '^', '~', '%' };
+            opreations = new List<char> { '(', '+', '-', '/', '*', '=', '?', ':', ')', '>', '<', '&', '|', '^', '~', '%' };
 
             foreach (var character in opreations)
             {
@@ -80,7 +81,6 @@ namespace GenICam
         public static double Evaluate(string expression)
         {
             expression = "( " + expression + " )";
-            List<char> opreations = new List<char> { '(', '+', '-', '/', '*', '=', '?', ':', ')', '>', '<', '&', '|', '^', '~', '%' };
             foreach (var character in opreations)
                 if (opreations.Where(x => x == character).Count() > 0)
                     expression = expression.Replace($"{character}", $" {character} ");
@@ -610,7 +610,7 @@ namespace GenICam
             {
                 string formula = Formula;
                 string equation = "";
-                while (formula.Contains('+') || formula.Contains('-') || formula.Contains('/') || formula.Contains('*'))
+                while (opreations.Any(c=>formula.Contains(c)))
                 {
                     foreach (var item in formula.Split('(', StringSplitOptions.None))
                     {
