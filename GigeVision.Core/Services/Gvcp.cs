@@ -330,7 +330,6 @@ namespace GigeVision.Core.Models
             xml.Load(await GetXmlFileFromCamera(cameraIp).ConfigureAwait(false));
 
             var xmlHelper = new XmlHelper("Category", xml, new GenPort(this));
-            await xmlHelper.LoadUp();
             CategoryDictionary = xmlHelper.CategoryDictionary;
 
 
@@ -341,7 +340,7 @@ namespace GigeVision.Core.Models
                     RegistersDictionary = new Dictionary<string, string>();
                     RegistersDictionaryValues = new Dictionary<string, IPValue>();
                     RegistersDictionary.Add("XmlVersion", xmlHelper.Xmlns.InnerText);
-                    await ReadAllRegisters(CategoryDictionary);
+                    ReadAllRegisters(CategoryDictionary);
                 }
             }
 
@@ -354,7 +353,7 @@ namespace GigeVision.Core.Models
         /// <returns>Register dictionary</returns>
         public async Task<Dictionary<string, string>> ReadAllRegisterAddressFromCameraAsync()
         {
-            return await ReadAllRegisterAddressFromCameraAsync(CameraIp);
+            return await ReadAllRegisterAddressFromCameraAsync(CameraIp).ConfigureAwait(false);
         }
 
         public async Task<Dictionary<string, string>> ReadAllRegisterAddressFromCameraAsync(IGvcp gvcp)
@@ -364,7 +363,7 @@ namespace GigeVision.Core.Models
 
             //loading the XML file
             XmlDocument xml = new XmlDocument();
-            xml.Load(await GetXmlFileFromCamera(gvcp.CameraIp));
+            xml.Load(await GetXmlFileFromCamera(gvcp.CameraIp).ConfigureAwait(false));
 
             //handling the name-space of the XML file to cover all the cases
             var xmlHelper = new XmlHelper("Category", xml, new GenPort(this));
@@ -377,14 +376,14 @@ namespace GigeVision.Core.Models
                     RegistersDictionary = new Dictionary<string, string>();
                     RegistersDictionaryValues = new Dictionary<string, IPValue>();
                     RegistersDictionary.Add("XmlVersion", xmlHelper.Xmlns.InnerText);
-                    await ReadAllRegisters(CategoryDictionary);
+                    ReadAllRegisters(CategoryDictionary);
                 }
             }
             //finding the nodes and their values
             return RegistersDictionary;
         }
 
-        private async Task ReadAllRegisters(List<ICategory> categories)
+        private async void ReadAllRegisters(List<ICategory> categories)
         {
             if (categories == null)
                 return;
@@ -394,7 +393,8 @@ namespace GigeVision.Core.Models
                     continue;
 
                 if (category.PFeatures != null)
-                    await ReadAllRegisters(category.PFeatures);
+                    ReadAllRegisters(category.PFeatures);
+
                 if (!RegistersDictionaryValues.ContainsKey(category.CategoryProperties.Name))
                     RegistersDictionaryValues.Add(category.CategoryProperties.Name, category.PValue);
 
@@ -405,15 +405,17 @@ namespace GigeVision.Core.Models
                     if (RegistersDictionary.ContainsKey(category.CategoryProperties.Name))
                         continue;
 
-                    RegistersDictionary.Add(category.CategoryProperties.Name, $"0x{ await genRegister.GetAddress():X4}");
+                    RegistersDictionary.Add(category.CategoryProperties.Name, $"0x{ await genRegister.GetAddress().ConfigureAwait(false):X4}");
                 }
-                else if (category.PValue is IRegister register)
+                else if (category.PValue is IPValue pValue)
                 {
-                    if (RegistersDictionary.ContainsKey(category.CategoryProperties.Name))
-                        continue;
+                    if (pValue is IRegister register)
+                    {
+                        if (RegistersDictionary.ContainsKey(category.CategoryProperties.Name))
+                            continue;
 
-                    RegistersDictionary.Add(category.CategoryProperties.Name, $"0x{await register.GetAddress():X4}");
-
+                        RegistersDictionary.Add(category.CategoryProperties.Name, $"0x{await register.GetAddress().ConfigureAwait(false):X4}");
+                    }
                 }
             }
         }
