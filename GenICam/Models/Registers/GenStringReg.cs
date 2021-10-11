@@ -39,12 +39,6 @@ namespace GenICam
         {
             var key = (await GetAddress()).ToString();
 
-            var tempValue = await TempDictionary.Get(key);
-            if (tempValue is not null)
-                Value = tempValue as string;
-            else
-            {
-
             var reply = await Get(Length);
             try
             {
@@ -56,7 +50,7 @@ namespace GenICam
             {
                 throw ex;
             }
-            }
+            
             return Value;
         }
 

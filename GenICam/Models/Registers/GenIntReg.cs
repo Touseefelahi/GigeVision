@@ -77,11 +77,6 @@ namespace GenICam
             Int64 value = 0;
 
             var key = (await GetAddress()).ToString();
-            var tempValue = await TempDictionary.Get(key);
-            if (tempValue is not null)
-                value = (long)tempValue;
-            else
-            {
                 var reply = await Get(Length);
                 if (reply.MemoryValue != null)
                 {
@@ -108,8 +103,6 @@ namespace GenICam
                 {
                     value = (Int64)reply.RegisterValue;
                 }
-                    await TempDictionary.Add(key, value);
-            }
             return value;
         }
 
