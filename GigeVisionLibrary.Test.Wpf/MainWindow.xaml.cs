@@ -85,7 +85,7 @@ namespace GigeVisionLibrary.Test.Wpf
                     lightControl.HeightImage = height;
                     lightControl.IsColored = !camera.IsRawFrame;
                 });
-                await camera.StartStreamAsync().ConfigureAwait(false);
+                await camera.StartStreamAsync("192.168.10.50").ConfigureAwait(false);
             }
         }
     }

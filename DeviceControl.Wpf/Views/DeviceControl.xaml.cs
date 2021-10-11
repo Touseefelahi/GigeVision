@@ -1,4 +1,5 @@
-﻿using System.Windows.Controls;
+﻿using Prism.Ioc;
+using System.Windows.Controls;
 
 namespace DeviceControl.Wpf.Views
 {

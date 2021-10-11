@@ -8,20 +8,39 @@ namespace DeviceControl.Wpf.Style
 {
     public class NumericUpDown : TextBox, INotifyPropertyChanged
     {
-        // Using a DependencyProperty as the backing store for Value. This enables animation,
-        // styling, binding, etc...
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        public long Value
+        {
+            get { return (long)GetValue(ValueProperty); }
+            set { SetValue(ValueProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for Value.  This enables animation, styling, binding, etc...
+
         public static readonly DependencyProperty ValueProperty =
-            DependencyProperty.Register("Value", typeof(int), typeof(NumericUpDown), new PropertyMetadata(0));
+            DependencyProperty.Register("Value", typeof(long), typeof(NumericUpDown), new PropertyMetadata(long.MinValue));
 
-        // Using a DependencyProperty as the backing store for Maximum. This enables animation,
-        // styling, binding, etc...
+        public long Maximum
+        {
+            get { return (long)GetValue(MaximumProperty); }
+            set { SetValue(MaximumProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for Maximum.  This enables animation, styling, binding, etc...
+
         public static readonly DependencyProperty MaximumProperty =
-            DependencyProperty.Register("Maximum", typeof(int), typeof(NumericUpDown), new PropertyMetadata(int.MaxValue));
+            DependencyProperty.Register("Maximum", typeof(long), typeof(NumericUpDown), new PropertyMetadata(long.MaxValue));
 
-        // Using a DependencyProperty as the backing store for Minimum. This enables animation,
-        // styling, binding, etc...
+        public long Minimum
+        {
+            get { return (long)GetValue(MinimumProperty); }
+            set { SetValue(MinimumProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for Minimum.  This enables animation, styling, binding, etc...
         public static readonly DependencyProperty MinimumProperty =
-            DependencyProperty.Register("Minimum", typeof(int), typeof(NumericUpDown), new PropertyMetadata(1));
+            DependencyProperty.Register("Minimum", typeof(long), typeof(NumericUpDown), new PropertyMetadata(long.MinValue));
 
         // Using a DependencyProperty as the backing store for Increment. This enables animation,
         // styling, binding, etc...
@@ -33,26 +52,6 @@ namespace DeviceControl.Wpf.Style
             IncrementCommand = new DelegateCommand(GoUp);
             DecrementCommand = new DelegateCommand(GoDown);
             WriteValueCommand = new DelegateCommand(WriteValue);
-        }
-
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        public int Value
-        {
-            get => (int)GetValue(ValueProperty);
-            set => SetValue(ValueProperty, value);
-        }
-
-        public int Maximum
-        {
-            get => (int)GetValue(MaximumProperty);
-            set => SetValue(MaximumProperty, value);
-        }
-
-        public int Minimum
-        {
-            get => (int)GetValue(MinimumProperty);
-            set => SetValue(MinimumProperty, value);
         }
 
         public int Increment

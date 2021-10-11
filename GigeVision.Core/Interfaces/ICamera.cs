@@ -1,6 +1,8 @@
-﻿using GigeVision.Core.Enums;
+﻿using GenICam;
+using GigeVision.Core.Enums;
 using GigeVision.Core.Models;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace GigeVision.Core.Interfaces
@@ -11,12 +13,17 @@ namespace GigeVision.Core.Interfaces
     public interface ICamera
     {
         /// <summary>
+        /// If enabled library will use C++ native library for Stream Reception
+        /// </summary>
+        bool IsUsingCppForRx { get; set; }
+
+        /// <summary>
         /// Motor Controller for camera, zoom/focus/iris control if any
         /// </summary>
         MotorControl MotorController { get; set; }
 
         /// <summary>
-        /// Multicast IP: it will be applied only when IsMulticast Property is true
+        /// Multi-cast IP: it will be applied only when IsMulticast Property is true
         /// </summary>
         string MulticastIP { get; set; }
 
@@ -27,7 +34,7 @@ namespace GigeVision.Core.Interfaces
         string RxIP { get; set; }
 
         /// <summary>
-        /// Multicast Option
+        /// Multi-cast Option
         /// </summary>
         bool IsMulticast { get; set; }
 
@@ -107,8 +114,12 @@ namespace GigeVision.Core.Interfaces
         /// </summary>
         bool IsUsingExternalBuffer { get; set; }
 
+        Dictionary<string, string> RegistersDictionary { get; }
+
+        List<ICategory> CategoryDictionary { get; }
+
         /// <summary>
-        /// This method will get current PC IP and Gets the Camera ip from Gvcp
+        /// This method will get current PC IP and Gets the Camera IP from Gvcp
         /// </summary>
         /// <param name="rxIP">If rxIP is not provided, method will detect system IP and use it</param>
         /// <param name="rxPort">It will set randomly when not provided</param>

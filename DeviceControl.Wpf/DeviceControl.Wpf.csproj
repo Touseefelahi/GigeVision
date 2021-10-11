@@ -3,7 +3,7 @@
   <PropertyGroup>
     <OutputType>library</OutputType>
     <AssemblyName>DeviceControl.Wpf</AssemblyName>
-    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <TargetFramework>net5.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -15,13 +15,18 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Prism.Wpf" Version="7.2.0.1422" />
+    <PackageReference Include="Prism.Wpf" Version="8.0.0.1909" />
     <PackageReference Include="PropertyChanged.Fody" Version="3.2.10" />
     <PackageReference Include="Stira.Converters.Wpf" Version="1.0.3" />
     <PackageReference Include="Stira.WpfFlatStyle" Version="1.8.6.2" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\GenICam\GenICam.csproj" />
     <ProjectReference Include="..\GigeVision.Core\GigeVision.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Services\" />
   </ItemGroup>
 </Project>

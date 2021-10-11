@@ -199,7 +199,15 @@ namespace GigeVision.Core.Models
                 Span<byte> singlePacket = new byte[GvspInfo.PacketLength];
                 while (Camera.IsStreaming)
                 {
+                    try
+                    {
+
                     length = socketRxRaw.Receive(singlePacket);
+                    }
+                    catch (SocketException ex)
+                    {
+                        continue;
+                    }
                     if (singlePacket[4] == GvspInfo.DataIdentifier) //Packet
                     {
                         packetRxCount++;
