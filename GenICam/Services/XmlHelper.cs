@@ -54,7 +54,7 @@ namespace GenICam
 
             CategoryDictionary = await GetCategoryFeatures(categoryList);
 
-            //TempDictionary.Clear();
+            TempDictionary.Clear();
         }
 
         private async Task<List<ICategory>> GetCategoryFeatures(XmlNode categoryList)

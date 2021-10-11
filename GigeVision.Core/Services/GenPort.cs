@@ -38,7 +38,7 @@ namespace GigeVision.Core
 
             var addressBytes = GetAddressBytes(address, length);
             Array.Reverse(addressBytes);
-            //TempDictionary.Clear();
+            TempDictionary.Clear();
             return await Gvcp.WriteRegisterAsync(addressBytes, BitConverter.ToUInt32(pBuffer)).ConfigureAwait(false);
         }
 
