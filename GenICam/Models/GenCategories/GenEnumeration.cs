@@ -36,11 +36,11 @@ namespace GenICam
             if (PValue is IRegister register)
             {
                 if (register.AccessMode != GenAccessMode.WO)
-                    return await PValue.GetValue().ConfigureAwait(false);
+                    return await PValue.GetValue();
             }
             else if (PValue is IntSwissKnife intSwissKnife)
             {
-                return await intSwissKnife.GetValue().ConfigureAwait(false);
+                return await intSwissKnife.GetValue();
             }
 
             return Value;
@@ -75,7 +75,7 @@ namespace GenICam
                             break;
                     }
 
-                    var reply = await Register.Set(pBuffer, length).ConfigureAwait(false);
+                    var reply = await Register.Set(pBuffer, length);
 
                     if (reply.IsSentAndReplyReceived && reply.Reply[0] == 0)
                         Value = value;

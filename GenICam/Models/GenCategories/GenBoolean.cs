@@ -27,10 +27,10 @@ namespace GenICam
             if (PValue is IRegister Register)
             {
                 if (Register.AccessMode != GenAccessMode.WO)
-                    value = await Register.GetValue().ConfigureAwait(false);
+                    value = await Register.GetValue();
             }
             else if (PValue is IntSwissKnife intSwissKnife)
-                value = await intSwissKnife.GetValue().ConfigureAwait(false);
+                value = await intSwissKnife.GetValue();
 
             if (value == 1)
                 Value = true;
@@ -48,7 +48,7 @@ namespace GenICam
                 byte[] pBuffer = new byte[length];
                 pBuffer[0] = Convert.ToByte(value);
 
-                var reply = await Register.Set(pBuffer, length).ConfigureAwait(false);
+                var reply = await Register.Set(pBuffer, length);
                 if (reply.IsSentAndReplyReceived && reply.Reply[0] == 0)
                     Value = value;
             }

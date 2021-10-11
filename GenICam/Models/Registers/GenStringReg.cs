@@ -37,20 +37,20 @@ namespace GenICam
 
         public async Task<string> GetValue()
         {
-            var key = (await GetAddress().ConfigureAwait(false)).ToString();
+            var key = (await GetAddress()).ToString();
 
-            var tempValue = await TempDictionary.Get(key).ConfigureAwait(false);
+            var tempValue = await TempDictionary.Get(key);
             if (tempValue is not null)
                 Value = tempValue as string;
             else
             {
 
-            var reply = await Get(Length).ConfigureAwait(false);
+            var reply = await Get(Length);
             try
             {
                 if (!(reply.MemoryValue is null))
                     Value = Encoding.ASCII.GetString(reply.MemoryValue);
-                    await TempDictionary.Add(key, Value).ConfigureAwait(false);
+                    await TempDictionary.Add(key, Value);
             }
             catch (Exception ex)
             {
@@ -70,7 +70,7 @@ namespace GenICam
                     byte[] pBuffer = new byte[length];
                     pBuffer = ASCIIEncoding.ASCII.GetBytes(value);
 
-                    var reply = await Register.Set(pBuffer, length).ConfigureAwait(false);
+                    var reply = await Register.Set(pBuffer, length);
                     if (reply.IsSentAndReplyReceived && reply.Reply[0] == 0)
                     {
                         if (reply.MemoryValue != null)
@@ -87,12 +87,12 @@ namespace GenICam
 
         public async Task<IReplyPacket> Get(long length)
         {
-            return await GenPort.Read(Address, Length).ConfigureAwait(false);
+            return await GenPort.Read(Address, Length);
         }
 
         public async Task<IReplyPacket> Set(byte[] pBuffer, long length)
         {
-            return await GenPort.Write(pBuffer, Address, length).ConfigureAwait(false);
+            return await GenPort.Write(pBuffer, Address, length);
         }
 
         public async Task<long?> GetAddress()
@@ -109,7 +109,7 @@ namespace GenICam
 
         public async void SetupFeatures()
         {
-            Value = await GetValue().ConfigureAwait(false);
+            Value = await GetValue();
         }
     }
 }

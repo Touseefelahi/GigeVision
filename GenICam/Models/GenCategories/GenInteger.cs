@@ -73,11 +73,11 @@ namespace GenICam
             if (PValue is IRegister register)
             {
                 if (register.AccessMode != GenAccessMode.WO)
-                    return await PValue.GetValue().ConfigureAwait(false);
+                    return await PValue.GetValue();
             }
             else if (PValue is IntSwissKnife intSwissKnife)
             {
-                return await intSwissKnife.GetValue().ConfigureAwait(false);
+                return await intSwissKnife.GetValue();
             }
 
             return Value;
@@ -110,7 +110,7 @@ namespace GenICam
                                 break;
                         }
 
-                        reply = await Register.Set(pBuffer, length).ConfigureAwait(false);
+                        reply = await Register.Set(pBuffer, length);
                         if (reply.IsSentAndReplyReceived && reply.Reply[0] == 0)
                             Value = value;
                     }
@@ -123,7 +123,7 @@ namespace GenICam
 
         public async Task<Int64> GetMin()
         {
-            var pMin = await ReadIntSwissKnife("pMin").ConfigureAwait(false);
+            var pMin = await ReadIntSwissKnife("pMin");
             if (pMin != null)
                 return (Int64)pMin;
 
@@ -132,7 +132,7 @@ namespace GenICam
 
         public async Task<Int64> GetMax()
         {
-            var pMax = await ReadIntSwissKnife("pMax").ConfigureAwait(false);
+            var pMax = await ReadIntSwissKnife("pMax");
             if (pMax != null)
                 return (Int64)pMax;
 
@@ -204,7 +204,7 @@ namespace GenICam
             var pValueNode = Expressions[pNode];
             if (pValueNode is IntSwissKnife intSwissKnife)
             {
-                return await intSwissKnife.GetValue().ConfigureAwait(false);
+                return await intSwissKnife.GetValue();
             }
 
             return null;
@@ -213,7 +213,7 @@ namespace GenICam
         private async void ExecuteSetValueCommand()
         {
             if (Value != ValueToWrite)
-                await SetValue(ValueToWrite).ConfigureAwait(false);
+                await SetValue(ValueToWrite);
         }
     }
 }

@@ -288,7 +288,7 @@ namespace GenICam
         /// <returns></returns>
         public async Task<Int64> GetValue()
         {
-            return (Int64)await ExecuteFormula().ConfigureAwait(false);
+            return (Int64)await ExecuteFormula();
         }
 
         /// <summary>
@@ -561,7 +561,7 @@ namespace GenICam
                 {
                     foreach (var word in expression.Value.Split())
                     {
-                        await ReadExpressionPValues(word).ConfigureAwait(false);
+                        await ReadExpressionPValues(word);
 
                         foreach (var constant in Constants)
                         {
@@ -577,7 +577,7 @@ namespace GenICam
 
             foreach (var word in Formula.Split())
             {
-                await ReadExpressionPValues(word).ConfigureAwait(false);
+                await ReadExpressionPValues(word);
 
                 if (Constants != null)
                 {
@@ -656,7 +656,7 @@ namespace GenICam
                     if (pVariable.Key.Equals(word))
                     {
                         double? value = null;
-                        value = await pVariable.Value.GetValue().ConfigureAwait(false);
+                        value = await pVariable.Value.GetValue();
 
                         if (value is null)
                             throw new Exception("Failed to read register value", new InvalidDataException());

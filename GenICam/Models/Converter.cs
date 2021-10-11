@@ -30,9 +30,11 @@ namespace GenICam
             PVariables = pVariables;
             PValue = pValue;
             Slope = slope;
-
-            ExecuteFormulaFrom().ConfigureAwait(false);
-            ExecuteFormulaTo().ConfigureAwait(false);
+            Task.Run(async () =>
+            {
+                await ExecuteFormulaFrom();
+                await ExecuteFormulaTo();
+            });
         }
 
         public IPValue PValue { get; private set; }
@@ -267,12 +269,12 @@ namespace GenICam
 
         public async Task<long> GetValue()
         {
-            return await PValue.GetValue().ConfigureAwait(false);
+            return await PValue.GetValue();
         }
 
         public async Task<IReplyPacket> SetValue(long value)
         {
-            return await PValue.SetValue(value).ConfigureAwait(false);
+            return await PValue.SetValue(value);
         }
 
         private static bool DoMathOpreation(string opreator, Stack<string> opreators, Stack<double> values)
@@ -518,7 +520,7 @@ namespace GenICam
                 {
                     double? value = null;
 
-                    value = await PValue.GetValue().ConfigureAwait(false);
+                    value = await PValue.GetValue();
 
                     if (value is null)
                         throw new Exception("Failed to read register value", new InvalidDataException());
@@ -532,7 +534,7 @@ namespace GenICam
                     {
                         double? value = null;
 
-                        value = await pVariable.Value.GetValue().ConfigureAwait(false);
+                        value = await pVariable.Value.GetValue();
 
                         if (value is null)
                             throw new Exception("Failed to read register value", new InvalidDataException());
@@ -587,7 +589,7 @@ namespace GenICam
                 {
                     double? value = null;
 
-                    value = await PValue.GetValue().ConfigureAwait(false);
+                    value = await PValue.GetValue();
 
                     if (value is null)
                         throw new Exception("Failed to read register value", new InvalidDataException());
@@ -601,7 +603,7 @@ namespace GenICam
                     {
                         double? value = null;
 
-                        value = await pVariable.Value.GetValue().ConfigureAwait(false);
+                        value = await pVariable.Value.GetValue();
 
                         if (value is null)
                             throw new Exception("Failed to read register value", new InvalidDataException());

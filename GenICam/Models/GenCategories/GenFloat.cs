@@ -84,7 +84,7 @@ namespace GenICam
 
         public async Task<double> GetMax()
         {
-            var pMax = await ReadIntSwissKnife("pMax").ConfigureAwait(false);
+            var pMax = await ReadIntSwissKnife("pMax");
             if (pMax != null) Max = (double)pMax;
 
             return Max;
@@ -92,7 +92,7 @@ namespace GenICam
 
         public async Task<double> GetMin()
         {
-            var pMin = await ReadIntSwissKnife("pMin").ConfigureAwait(false);
+            var pMin = await ReadIntSwissKnife("pMin");
             if (pMin != null) Min = (double)pMin;
 
             return Min;
@@ -116,7 +116,7 @@ namespace GenICam
             {
                 if (Register.AccessMode != GenAccessMode.WO)
                 {
-                    value = await Register.GetValue().ConfigureAwait(false);
+                    value = await Register.GetValue();
 
                     byte[] pBuffer = BitConverter.GetBytes(value);
 
@@ -141,7 +141,7 @@ namespace GenICam
             }
             else if (PValue is IntSwissKnife intSwissKnife)
             {
-                value = await intSwissKnife.GetValue().ConfigureAwait(false);
+                value = await intSwissKnife.GetValue();
             }
 
             return (long)value;
@@ -176,7 +176,7 @@ namespace GenICam
                             break;
                     }
 
-                    reply = await Register.Set(pBuffer, length).ConfigureAwait(false);
+                    reply = await Register.Set(pBuffer, length);
                     if (reply.IsSentAndReplyReceived && reply.Reply[0] == 0)
                         Value = value;
                 }
@@ -206,7 +206,7 @@ namespace GenICam
 
         public async void SetValue(double value)
         {
-            await SetValue((long)value).ConfigureAwait(false);
+            await SetValue((long)value);
         }
 
         private async Task<Int64?> ReadIntSwissKnife(string pNode)
@@ -220,7 +220,7 @@ namespace GenICam
             var pValueNode = Expressions[pNode];
             if (pValueNode is IntSwissKnife intSwissKnife)
             {
-                return await intSwissKnife.GetValue().ConfigureAwait(false);
+                return await intSwissKnife.GetValue();
             }
 
             return null;
@@ -230,7 +230,7 @@ namespace GenICam
         {
             if (Value != ValueToWrite)
             {
-                await SetValue((long)ValueToWrite).ConfigureAwait(false);
+                await SetValue((long)ValueToWrite);
             }
         }
     }

@@ -40,9 +40,9 @@ namespace GenICam
         public async Task<IReplyPacket> Get(long length)
         {
             if (Address is long adress)
-                return await GenPort.Read(adress, Length).ConfigureAwait(false);
+                return await GenPort.Read(adress, Length);
             else if (PAddress is IntSwissKnife pAddress)
-                return await GenPort.Read(await pAddress.GetValue().ConfigureAwait(false), Length).ConfigureAwait(false);
+                return await GenPort.Read(await pAddress.GetValue(), Length);
 
             return null;
         }
@@ -50,9 +50,9 @@ namespace GenICam
         public async Task<IReplyPacket> Set(byte[] pBuffer, long length)
         {
             if (Address is long adress)
-                return await GenPort.Write(pBuffer, adress, length).ConfigureAwait(false);
+                return await GenPort.Write(pBuffer, adress, length);
             else if (PAddress is IntSwissKnife pAddress)
-                return await GenPort.Write(pBuffer, await pAddress.GetValue().ConfigureAwait(false), length).ConfigureAwait(false);
+                return await GenPort.Write(pBuffer, await pAddress.GetValue(), length);
 
             return null;
         }
@@ -62,7 +62,7 @@ namespace GenICam
             if (Address is long address)
                 return address;
             else if (PAddress is IntSwissKnife swissKnife)
-                return (long)(await swissKnife.GetValue().ConfigureAwait(false));
+                return (long)(await swissKnife.GetValue());
 
             return null;
         }
@@ -76,13 +76,13 @@ namespace GenICam
         {
             Int64 value = 0;
 
-            var key = (await GetAddress().ConfigureAwait(false)).ToString();
-            var tempValue = await TempDictionary.Get(key).ConfigureAwait(false);
+            var key = (await GetAddress()).ToString();
+            var tempValue = await TempDictionary.Get(key);
             if (tempValue is not null)
                 value = (long)tempValue;
             else
             {
-                var reply = await Get(Length).ConfigureAwait(false);
+                var reply = await Get(Length);
                 if (reply.MemoryValue != null)
                 {
                     switch (Length)
@@ -108,7 +108,7 @@ namespace GenICam
                 {
                     value = (Int64)reply.RegisterValue;
                 }
-                    await TempDictionary.Add(key, value).ConfigureAwait(false);
+                    await TempDictionary.Add(key, value);
             }
             return value;
         }
@@ -136,7 +136,7 @@ namespace GenICam
                         break;
                 }
 
-                reply = await Set(pBuffer, length).ConfigureAwait(false);
+                reply = await Set(pBuffer, length);
             }
 
             return reply;
