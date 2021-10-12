@@ -1,4 +1,5 @@
-﻿using GigeVision.Core.Enums;
+﻿using GenICam;
+using GigeVision.Core.Enums;
 using GigeVision.Core.Models;
 using System;
 using System.Collections.Generic;
@@ -8,7 +9,7 @@ using System.Threading.Tasks;
 namespace GigeVision.Core.Interfaces
 {
     /// <summary>
-    /// General interface for GVCP procotol
+    /// General interface for GVCP Protocol
     /// </summary>
     public interface IGvcp
     {
@@ -18,7 +19,7 @@ namespace GigeVision.Core.Interfaces
         EventHandler ElapsedOneSecond { get; set; }
 
         /// <summary>
-        /// This event will be fired when camera ip is changed
+        /// This event will be fired when camera IP is changed
         /// </summary>
         EventHandler CameraIpChanged { get; set; }
 
@@ -33,20 +34,18 @@ namespace GigeVision.Core.Interfaces
         int PortControl { get; }
 
         /// <summary>
-        /// Bool to keep the heartbeat of Gige Camera alive
+        /// Flag to keep the heartbeat of Gige Camera alive
         /// </summary>
         bool IsKeepingAlive { get; }
 
         /// <summary>
         /// Dictionary for registers
         /// </summary>
-        Dictionary<string, CameraRegisterContainer> RegistersDictionary { get; set; }
+        Dictionary<string, string> RegistersDictionary { get; set; }
 
-        /// <summary>
-        /// Dictionary for registers groups
-        /// </summary>
+        public Dictionary<string, IPValue> RegistersDictionaryValues { get; set; }
 
-        Dictionary<string, CameraRegisterGroup> RegistersGroupDictionary { get; set; }
+        List<ICategory> CategoryDictionary { get; }
 
         /// <summary>
         /// Write Register: it will send the GVCP command to the specified socket
@@ -205,26 +204,19 @@ namespace GigeVision.Core.Interfaces
         Task<GvcpReply> ReadRegisterAsync(string[] registerAddresses);
 
         /// <summary>
-        /// Read Register Container
-        /// </summary>
-        /// <param name="cameraRegisterContainer"></param>
-        /// <returns></returns>
-        Task<GvcpReply> ReadRegisterAsync(CameraRegisterContainer cameraRegisterContainer);
-
-        /// <summary>
         /// Read Memory Address
         /// </summary>
         /// <param name="ip"></param>
         /// <param name="memoryAddress"></param>
         /// <returns></returns>
-        Task<GvcpReply> ReadMemoryAsync(string ip, byte[] memoryAddress);
+        Task<GvcpReply> ReadMemoryAsync(string ip, byte[] memoryAddress, ushort count);
 
         /// <summary>
         /// Read Memory Address
         /// </summary>
         /// <param name="memoryAddressOrKey"></param>
         /// <returns></returns>
-        Task<GvcpReply> ReadMemoryAsync(string memoryAddressOrKey);
+        Task<GvcpReply> ReadMemoryAsync(string memoryAddressOrKey, ushort count);
 
         /// <summary>
         /// Write Memory
@@ -238,20 +230,20 @@ namespace GigeVision.Core.Interfaces
         /// Read all Register
         /// </summary>
         /// <returns>Dictionary of registers</returns>
-        Task<Dictionary<string, CameraRegisterContainer>> ReadAllRegisterAddressFromCameraAsync(string cameraIp);
+        Task<Dictionary<string, string>> ReadAllRegisterAddressFromCameraAsync(string cameraIp);
 
         /// <summary>
         /// Read all Register
         /// </summary>
         /// <returns>Dictionary of registers</returns>
-        Task<Dictionary<string, CameraRegisterContainer>> ReadAllRegisterAddressFromCameraAsync();
+        Task<Dictionary<string, string>> ReadAllRegisterAddressFromCameraAsync();
 
         /// <summary>
         /// Read all Register
         /// </summary>
         /// <param name="gvcp"></param>
         /// <returns></returns>
-        Task<Dictionary<string, CameraRegisterContainer>> ReadAllRegisterAddressFromCameraAsync(IGvcp gvcp);
+        Task<Dictionary<string, string>> ReadAllRegisterAddressFromCameraAsync(IGvcp gvcp);
 
         /// <summary>
         /// Forces the IP of camera to be changed to the given IP
@@ -273,17 +265,13 @@ namespace GigeVision.Core.Interfaces
         /// It will get all the devices from the network and then fires the event for updated list
         /// </summary>
         /// <param name="listUpdated">Event that will be fired once list is ready</param>
-        /// <param name="networkIP">
-        /// Specify for multi network system if not there, it will select the default network
-        /// </param>
+        /// <param name="networkIP">Network IP to listen to</param>
         void GetAllGigeDevicesInNetworkAsnyc(Action<List<CameraInformation>> listUpdated, string networkIP = "");
 
         /// <summary>
         /// It will broadcast discovery command and get all the available devices in the network
         /// </summary>
-        /// <param name="networkIP">
-        /// Specify for multi network system if not there, it will select the default network
-        /// </param>
+        /// <param name="networkIP">Network IP to listen to</param>
         /// <returns>List of Camera Information</returns>
         Task<List<CameraInformation>> GetAllGigeDevicesInNetworkAsnyc(string networkIP = "");
 
@@ -291,13 +279,13 @@ namespace GigeVision.Core.Interfaces
         /// Check camera status
         /// </summary>
         /// <param name="ip">IP Camera</param>
-        /// <returns>Camera Status: Available/Incontrol or Unavailable</returns>
+        /// <returns>Camera Status: Available/InControl or Unavailable</returns>
         Task<CameraStatus> CheckCameraStatusAsync(string ip);
 
         /// <summary>
         /// Check camera status
         /// </summary>
-        /// <returns>Camera Status: Available/Incontrol or Unavailable</returns>
+        /// <returns>Camera Status: Available/InControl or Unavailable</returns>
         Task<CameraStatus> CheckCameraStatusAsync();
 
         /// <summary>

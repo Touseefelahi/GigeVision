@@ -1,6 +1,6 @@
 ﻿using DeviceControl.Wpf.ViewModels;
+using GenICam;
 using GigeVision.Core.Interfaces;
-using GigeVision.Core.Models;
 using Prism.Mvvm;
 
 namespace DeviceControl.Test.Wpf.ViewModels
@@ -16,11 +16,11 @@ namespace DeviceControl.Test.Wpf.ViewModels
         }
 
         public DeviceControlViewModel DeviceControl { get; set; }
+        public ICamera Camera { get; }
 
         public MainWindowViewModel()
         {
-            IGvcp gvcp = new Gvcp("192.168.10.244");
-            DeviceControl = new DeviceControlViewModel(gvcp);
+            DeviceControl = new DeviceControlViewModel("192.168.10.53");
         }
     }
 }

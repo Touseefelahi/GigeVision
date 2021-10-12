@@ -47,7 +47,7 @@ namespace GigeVision.Core.Models
         /// <summary>
         /// Converts IP to int
         /// </summary>
-        /// <param name="dottedIpAddress">String ip that needs to be converted</param>
+        /// <param name="dottedIpAddress">String IP that needs to be converted</param>
         /// <returns>IP in int</returns>
         public static uint IpToNumber(string dottedIpAddress)
         {

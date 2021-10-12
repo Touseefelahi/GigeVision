@@ -1,10 +1,9 @@
-﻿using GigeVision.Core.Enums;
+﻿using GenICam;
+using GigeVision.Core.Enums;
 using GigeVision.Core.Exceptions;
 using GigeVision.Core.Interfaces;
-using GigeVision.Core.Services;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -21,13 +20,14 @@ namespace GigeVision.Core.Models
     /// </summary>
     public class Gvcp : IGvcp
     {
+        private string cameraIP = "";
+
+        private ushort gvcpRequestID = 1;
+
         /// <summary>
         /// GVCP Port
         /// </summary>
-        public readonly int PortGvcp = 3956;
-
-        private string cameraIP = "";
-        private ushort gvcpRequestID = 1;
+        public int PortGvcp { get => 3956; }
 
         #region Constructor
 
@@ -38,7 +38,6 @@ namespace GigeVision.Core.Models
         public Gvcp(string ip)
         {
             CameraIp = ip;
-            RegistersDictionary = new Dictionary<string, CameraRegisterContainer>();
         }
 
         /// <summary>
@@ -46,7 +45,6 @@ namespace GigeVision.Core.Models
         /// </summary>
         public Gvcp()
         {
-            RegistersDictionary = new Dictionary<string, CameraRegisterContainer>();
         }
 
         #endregion Constructor
@@ -64,7 +62,7 @@ namespace GigeVision.Core.Models
                     if (value != cameraIP)
                     {
                         cameraIP = value;
-                        ReconnectSocket();
+                        Reconnect();
                         CameraIpChanged?.Invoke(null, null);
                     }
                 }
@@ -81,17 +79,11 @@ namespace GigeVision.Core.Models
         /// </summary>
         public UdpClient ControlSocket { get; private set; }
 
-        public bool IsKeepingAlive { get; set; }
-
         /// <summary>
         /// If true, heartbeat command will be sent to the devices after regular interval
         /// </summary>
-        /// <summary>
-        /// Register dictionary of camera
-        /// </summary>
-        public Dictionary<string, CameraRegisterContainer> RegistersDictionary { get; set; }
 
-        public Dictionary<string, CameraRegisterGroup> RegistersGroupDictionary { get; set; }
+        public bool IsKeepingAlive { get; set; }
 
         /// <summary>
         /// It can be for any thing, to update fps to check devices
@@ -103,35 +95,13 @@ namespace GigeVision.Core.Models
         /// </summary>
         public EventHandler CameraIpChanged { get; set; }
 
-        private void ReconnectSocket()
-        {
-            try
-            {
-                try
-                {
-                    ControlSocket?.Client.Close();
-                    ControlSocket?.Close();
-                }
-                catch (Exception)
-                {
-                }
-                try
-                {
-                    ControlSocket = new UdpClient(cameraIP, PortGvcp);
-                    ControlSocket.Client.ReceiveTimeout = 1000;
-                    ControlSocket.Client.SendTimeout = 500;
-                }
-                catch (Exception)
-                {
-                }
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-        }
+        public List<ICategory> CategoryDictionary { get; private set; }
 
         #region Status Commands
+
+        public Dictionary<string, string> RegistersDictionary { get; set; }
+
+        public Dictionary<string, IPValue> RegistersDictionaryValues { get; set; }
 
         /// <summary>
         /// Check camera status
@@ -196,8 +166,6 @@ namespace GigeVision.Core.Models
             Array.Reverse(maskBytes, 0, 4);
             Array.Copy(maskBytes, 0, forceIpCommand, 44, 4);//4bytes, TotalLength= 48 + (12 reserved bytes) = 60
 
-            //var gateWayBytes = BitConverter.GetBytes(Utility.ConvertIpToNumber("192.168.10.1"));
-            //Array.Reverse(gateWayBytes, 0, 4);
             var gateWayBytes = new byte[4];
             Array.Copy(ipBytes, 0, gateWayBytes, 0, 4);
             gateWayBytes[3] = 0x01;
@@ -210,12 +178,9 @@ namespace GigeVision.Core.Models
             var reply = await SendUdp(client, forceIpCommand, true).ConfigureAwait(false);
             if (reply?.Length > 5)
             {
-                if (reply[3] == 0x05) //ForceIp acknowledgment
+                if (reply[3] == 0x05 && reply[0] == 0 && reply[1] == 0) //ForceIp acknowledgment
                 {
-                    if (reply[0] == 0 && reply[1] == 0)
-                    {
-                        return true;
-                    }
+                    return true;
                 }
             }
             return false;
@@ -348,8 +313,6 @@ namespace GigeVision.Core.Models
             return cameraInfo;
         }
 
-        #endregion Status Commands
-
         #region Read All Registers Address XML
 
         /// <summary>
@@ -357,27 +320,32 @@ namespace GigeVision.Core.Models
         /// </summary>
         /// <param name="cameraIp">Camera IP</param>
         /// <returns>Register dictionary</returns>
-        public async Task<Dictionary<string, CameraRegisterContainer>> ReadAllRegisterAddressFromCameraAsync(string cameraIp)
+        public async Task<Dictionary<string, string>> ReadAllRegisterAddressFromCameraAsync(string cameraIp)
         {
-            if (!ValidateIp(cameraIP)) throw new InvalidIpException();
+            GenPort.IsReadingXml = true;
 
-            List<string> registresList = new List<string>();
+            if (!ValidateIp(CameraIp)) throw new InvalidIpException();
 
             //loading the XML file
             XmlDocument xml = new XmlDocument();
             xml.Load(await GetXmlFileFromCamera(cameraIp).ConfigureAwait(false));
 
-            if (RegistersDictionary.Count > 0)
+            var xmlHelper = new XmlHelper("Category", xml, new GenPort(this));
+            await xmlHelper.LoadUp();
+            CategoryDictionary = xmlHelper.CategoryDictionary;
+            GenPort.IsReadingXml = false;
+
+            if (xmlHelper.CategoryDictionary != null)
             {
-                RegistersDictionary.Clear();
+                if (xmlHelper.CategoryDictionary.Count > 0)
+                {
+                    RegistersDictionary = new Dictionary<string, string>();
+                    RegistersDictionaryValues = new Dictionary<string, IPValue>();
+                    RegistersDictionary.Add("XmlVersion", xmlHelper.Xmlns.InnerText);
+                    await ReadAllRegisters(CategoryDictionary);
+                }
             }
-            //handling the name-space of the XML file to cover all the cases
-            Dictionary<string, CameraRegisterContainer> registersDictionary = null;
-            Dictionary<string, CameraRegisterGroup> registerGroupDictionary = null;
-            new XmlHelper(this, out registersDictionary, out registerGroupDictionary, "Group", xml);
-            //finding the nodes and their values
-            RegistersDictionary = registersDictionary;
-            RegistersGroupDictionary = registerGroupDictionary;
+
             return RegistersDictionary;
         }
 
@@ -385,32 +353,48 @@ namespace GigeVision.Core.Models
         /// Reads all register of camera
         /// </summary>
         /// <returns>Register dictionary</returns>
-        public async Task<Dictionary<string, CameraRegisterContainer>> ReadAllRegisterAddressFromCameraAsync()
+        public async Task<Dictionary<string, string>> ReadAllRegisterAddressFromCameraAsync()
         {
-            return await ReadAllRegisterAddressFromCameraAsync(CameraIp).ConfigureAwait(false);
+            return await ReadAllRegisterAddressFromCameraAsync(CameraIp);
         }
 
-        public async Task<Dictionary<string, CameraRegisterContainer>> ReadAllRegisterAddressFromCameraAsync(IGvcp gvcp)
+        public async Task<Dictionary<string, string>> ReadAllRegisterAddressFromCameraAsync(IGvcp gvcp)
         {
-            if (!ValidateIp(gvcp.CameraIp)) throw new InvalidIpException();
+            return await ReadAllRegisterAddressFromCameraAsync(gvcp.CameraIp);
+        }
 
-            List<string> registresList = new List<string>();
-
-            //loading the XML file
-            XmlDocument xml = new XmlDocument();
-            xml.Load(await GetXmlFileFromCamera(gvcp.CameraIp).ConfigureAwait(false));
-            if (RegistersDictionary.Count > 0)
+        private async Task ReadAllRegisters(List<ICategory> categories)
+        {
+            if (categories == null)
+                return;
+            foreach (var category in categories)
             {
-                RegistersDictionary.Clear();
+                if (category == null)
+                    continue;
+
+                if (category.PFeatures != null)
+                    await ReadAllRegisters(category.PFeatures);
+                if (!RegistersDictionaryValues.ContainsKey(category.CategoryProperties.Name))
+                    RegistersDictionaryValues.Add(category.CategoryProperties.Name, category.PValue);
+
+                if (RegistersDictionary.ContainsKey(category.CategoryProperties.Name))
+                    continue;
+                else if (category is IGenRegister genRegister)
+                {
+                    if (RegistersDictionary.ContainsKey(category.CategoryProperties.Name))
+                        continue;
+
+                    RegistersDictionary.Add(category.CategoryProperties.Name, $"0x{ await genRegister.GetAddress():X4}");
+                }
+                else if (category.PValue is IRegister register)
+                {
+                    if (RegistersDictionary.ContainsKey(category.CategoryProperties.Name))
+                        continue;
+
+                    RegistersDictionary.Add(category.CategoryProperties.Name, $"0x{await register.GetAddress():X4}");
+
+                }
             }
-            //handling the name-space of the XML file to cover all the cases
-            Dictionary<string, CameraRegisterContainer> registersDictionary = null;
-            Dictionary<string, CameraRegisterGroup> registerGroupDictionary = null;
-            new XmlHelper(gvcp, out registersDictionary, out registerGroupDictionary, "Group", xml);
-            //finding the nodes and their values
-            RegistersDictionary = registersDictionary;
-            RegistersGroupDictionary = registerGroupDictionary;
-            return RegistersDictionary;
         }
 
         private (string, int, int) GetFileDetails(string Message)
@@ -445,87 +429,80 @@ namespace GigeVision.Core.Models
         {
             return await Task.Run(() =>
             {
-                try
+                UdpClient client = new UdpClient();
+                client.Client.ReceiveTimeout = 1000;
+                //connecting to the server
+                client.Connect(IP, PortGvcp);
+
+                byte[] commandCCP = new byte[] { 0x42, 0x00, 0x00, 0x82, 0x00, 0x08, 0x10, 0x01, 0x00, 0x00, 0x0a, 0x00, 0x00, 0x00, 0x00, 0x02 };
+
+                //sending the packet
+                //  client.Send(commandCCP, commandCCP.Length);
+                Task.Delay(100);
+                //preparing the header for sending
+
+                byte[] gvcpHeader = GetReadMessageHeader(0x0200); //GevFirstURL = 0x0200
+
+                //sending the packet
+                client.Send(gvcpHeader, gvcpHeader.Length);
+                gvcpRequestID++;
+
+                int packetSize = 512 + 24; //512 for the original payload size and 24  for  the header
+                byte[] count = { 0x02, 0x18 }; //Number of bytes to read from device memory it must be multiple of 4 bytes
+
+                IPEndPoint server = new IPEndPoint(IPAddress.Parse(IP), PortGvcp);
+                byte[] recivedData = client.Receive(ref server);
+                if (recivedData.Length < 12) throw new Exception("Access denied");
+                string localFile = Encoding.ASCII.GetString(recivedData, 12, recivedData.Length - 12);
+
+                var (fileName, fileAddress, fileLength) = GetFileDetails(localFile);
+
+                //finding the last packet length
+                var lastPacket = (fileLength % packetSize);
+
+                if (lastPacket % 4 != 0)
                 {
-                    UdpClient client = new UdpClient();
-                    client.Client.ReceiveTimeout = 1000;
-                    //connecting to the server
-                    client.Connect(IP, PortGvcp);
+                    fileLength -= lastPacket;
+                    double tempLastPcaket = ((double)lastPacket / 4);
+                    lastPacket = (int)(Math.Ceiling(tempLastPcaket) * 4);
+                    fileLength += lastPacket;
+                }
+                byte[] encodedZipFile = new byte[fileLength];
 
-                    byte[] commandCCP = new byte[] { 0x42, 0x00, 0x00, 0x82, 0x00, 0x08, 0x10, 0x01, 0x00, 0x00, 0x0a, 0x00, 0x00, 0x00, 0x00, 0x02 };
-
-                    //sending the packet
-                    //  client.Send(commandCCP, commandCCP.Length);
-                    Task.Delay(100);
-                    //preparing the header for sending
-
-                    byte[] gvcpHeader = GetReadMessageHeader(0x0200); //GevFirstURL = 0x0200
-
-                    //sending the packet
-                    client.Send(gvcpHeader, gvcpHeader.Length);
-                    gvcpRequestID++;
-
-                    int packetSize = 512 + 24; //512 for the original payload size and 24  for  the header
-                    byte[] count = { 0x02, 0x18 }; //Number of bytes to read from device memory it must be multiple of 4 bytes
-
-                    IPEndPoint server = new IPEndPoint(IPAddress.Parse(IP), PortGvcp);
-                    byte[] recivedData = client.Receive(ref server);
-                    if (recivedData.Length < 12) throw new Exception("Access denied");
-                    string localFile = Encoding.ASCII.GetString(recivedData, 12, recivedData.Length - 12);
-
-                    var (fileName, fileAddress, fileLength) = GetFileDetails(localFile);
-
-                    //finding the last packet length
-                    var lastPacket = (fileLength % packetSize);
-
-                    if (lastPacket % 4 != 0)
+                if (recivedData[0] == (byte)0x00)
+                {
+                    for (int i = 0; i < fileLength; i += packetSize)
                     {
-                        fileLength -= lastPacket;
-                        double tempLastPcaket = ((double)lastPacket / 4);
-                        lastPacket = (int)(Math.Ceiling(tempLastPcaket) * 4);
-                        fileLength += lastPacket;
-                    }
-                    byte[] encodedZipFile = new byte[fileLength];
+                        count = i == (fileLength - lastPacket) ? BitConverter.GetBytes(lastPacket) : BitConverter.GetBytes(packetSize);
 
-                    if (recivedData[0] == (byte)0x00)
-                    {
-                        for (int i = 0; i < fileLength; i += packetSize)
+                        byte[] requestID = BitConverter.GetBytes(gvcpRequestID);
+                        byte[] tempFileAddress = BitConverter.GetBytes(fileAddress + i);
+
+                        if (BitConverter.IsLittleEndian)
                         {
-                            count = i == (fileLength - lastPacket) ? BitConverter.GetBytes(lastPacket) : BitConverter.GetBytes(packetSize);
+                            Array.Reverse(tempFileAddress);
+                            Array.Reverse(requestID);
+                            Array.Reverse(count);
+                        }
 
-                            byte[] requestID = BitConverter.GetBytes(gvcpRequestID);
-                            byte[] tempFileAddress = BitConverter.GetBytes(fileAddress + i);
-
-                            if (BitConverter.IsLittleEndian)
-                            {
-                                Array.Reverse(tempFileAddress);
-                                Array.Reverse(requestID);
-                                Array.Reverse(count);
-                            }
-
-                            byte[] readFileHeader = { 0x42, 0x01, 0x00, 0x84, 0x00, 0x08,
+                        byte[] readFileHeader = { 0x42, 0x01, 0x00, 0x84, 0x00, 0x08,
                                 requestID[0], requestID[1],
                                 tempFileAddress[0], tempFileAddress[1], tempFileAddress[2], tempFileAddress[3],
                                 count[0], count[1], count[2], count[3] };
-                            client.Send(readFileHeader, readFileHeader.Length);
+                        client.Send(readFileHeader, readFileHeader.Length);
 
-                            recivedData = client.Receive(ref server);
+                        recivedData = client.Receive(ref server);
 
-                            if (recivedData[0] == (byte)0x00)
-                            {
-                                Array.Copy(recivedData, 12, encodedZipFile, i, recivedData.Length - 12);
-                                gvcpRequestID++;
-                            }
-                            else
-                                break;
+                        if (recivedData[0] == (byte)0x00)
+                        {
+                            Array.Copy(recivedData, 12, encodedZipFile, i, recivedData.Length - 12);
+                            gvcpRequestID++;
                         }
+                        else
+                            break;
                     }
-                    return encodedZipFile;
                 }
-                catch
-                {
-                    throw;
-                }
+                return encodedZipFile;
             }).ConfigureAwait(false);
         }
 
@@ -565,6 +542,8 @@ namespace GigeVision.Core.Models
         }
 
         #endregion Read All Registers Address XML
+
+        #endregion Status Commands
 
         #region ReadRegister
 
@@ -651,57 +630,6 @@ namespace GigeVision.Core.Models
         public async Task<GvcpReply> ReadRegisterAsync(string Ip, GvcpRegister register)
         {
             return await ReadRegisterAsync(Ip, register.ToString("X")).ConfigureAwait(false);
-        }
-
-        public async Task<GvcpReply> ReadRegisterAsync(CameraRegisterContainer cameraRegisterContainer)
-        {
-            if (cameraRegisterContainer.TypeValue is IntegerRegister integerRegister)
-            {
-                if (integerRegister.MinParameter != null)
-                    await integerRegister.MinParameter.ExecuteFormula(integerRegister.MaxParameter).ConfigureAwait(false);
-
-                if (integerRegister.MaxParameter != null)
-                    await integerRegister.MaxParameter.ExecuteFormula(integerRegister.MaxParameter).ConfigureAwait(false);
-
-                if (integerRegister.ValueParameter is IntSwissKnife intSwissKnife)
-                {
-                    await intSwissKnife.ExecuteFormula(intSwissKnife).ConfigureAwait(false);
-                    integerRegister.ValueParameter = intSwissKnife;
-                }
-                if (integerRegister.ValueParameter is MaskedIntReg maskedIntReg)
-                    integerRegister.ValueParameter = maskedIntReg; ;
-            }
-
-            GvcpReply gvcpReply = null;
-            if (cameraRegisterContainer.Register is CameraRegister cameraRegister)
-            {
-                if (cameraRegister.Address != null)
-                    gvcpReply = await ReadRegisterAsync(CameraIp, Converter.RegisterStringToByteArray(cameraRegister.Address)).ConfigureAwait(false);
-            }
-
-            return gvcpReply;
-        }
-
-        private async Task ReadIntSwissKnifeVariables(IntSwissKnife intSwissKnife)
-        {
-            if (intSwissKnife.VariableParameter is Dictionary<string, string> pVariablesCameraRegister)
-            {
-                foreach (var pVariable in pVariablesCameraRegister)
-                {
-                    RegistersDictionary.First(x => x.Value.Register != null && x.Value.Register.Address == pVariable.Value).Value.Register.Value = (await ReadRegisterAsync(pVariable.Value).ConfigureAwait(false)).RegisterValue;
-                }
-            }
-            else if (intSwissKnife.VariableParameter is Dictionary<string, IntSwissKnife> pVariableIntSwissKnifeDictionary)
-            {
-                foreach (var item in pVariableIntSwissKnifeDictionary.Values)
-                {
-                    await ReadIntSwissKnifeVariables(item).ConfigureAwait(false);
-                }
-            }
-            else if (intSwissKnife.VariableParameter is IntSwissKnife pVariableIntSwissKnife)
-            {
-                await ReadIntSwissKnifeVariables(pVariableIntSwissKnife).ConfigureAwait(false);
-            }
         }
 
         #endregion ReadRegister
@@ -881,7 +809,7 @@ namespace GigeVision.Core.Models
             {
                 if (currentStatus.RegisterValue == 0)//Its free and can be controlled
                 {
-                    GvcpCommand controlCommand = new GvcpCommand(Converter.RegisterStringToByteArray(GvcpRegister.CCP.ToString("X")),
+                    GvcpCommand controlCommand = new(Converter.RegisterStringToByteArray(GvcpRegister.CCP.ToString("X")),
                         GvcpCommandType.WriteReg, 2, gvcpRequestID++);
                     var reply = await SendGvcpCommand(socket, controlCommand).ConfigureAwait(false);
                     return reply.Status == GvcpStatus.GEV_STATUS_SUCCESS;
@@ -894,12 +822,12 @@ namespace GigeVision.Core.Models
 
         #region ReadMemory
 
-        public async Task<GvcpReply> ReadMemoryAsync(string ip, byte[] memoryAddress)
+        public async Task<GvcpReply> ReadMemoryAsync(string ip, byte[] memoryAddress, ushort count)
         {
             if (ValidateIp(ip))
             {
-                GvcpCommand command = new GvcpCommand(memoryAddress, GvcpCommandType.ReadMem, requestID: gvcpRequestID++);
-                using UdpClient socket = new UdpClient();
+                GvcpCommand command = new(memoryAddress, GvcpCommandType.ReadMem, requestID: gvcpRequestID++, count: count);
+                using UdpClient socket = new();
                 socket.Client.ReceiveTimeout = 1000;
                 socket.Connect(ip, 3956);
                 return await SendGvcpCommand(socket, command).ConfigureAwait(false);
@@ -910,9 +838,9 @@ namespace GigeVision.Core.Models
             }
         }
 
-        public async Task<GvcpReply> ReadMemoryAsync(string memoryAddressOrKey)
+        public async Task<GvcpReply> ReadMemoryAsync(string memoryAddressOrKey, ushort count)
         {
-            return await ReadMemoryAsync(CameraIp, Converter.RegisterStringToByteArray(memoryAddressOrKey)).ConfigureAwait(false);
+            return await ReadMemoryAsync(CameraIp, Converter.RegisterStringToByteArray(memoryAddressOrKey), count).ConfigureAwait(false);
         }
 
         #endregion ReadMemory
@@ -965,7 +893,7 @@ namespace GigeVision.Core.Models
         public async Task<bool> TakeControl(bool KeepAlive = true)
         {
             bool controlStatus = false;
-            ReconnectSocket();
+            Reconnect();
             if (await GetControlAsync(ControlSocket).ConfigureAwait(false))
             {
                 controlStatus = true;
@@ -974,7 +902,6 @@ namespace GigeVision.Core.Models
             {
                 return controlStatus;
             }
-
             if (KeepAlive)
             {
                 GvcpReply reply;
@@ -1053,10 +980,9 @@ namespace GigeVision.Core.Models
 
         private static async Task<GvcpReply> SendGvcpCommand(UdpClient socketTx, GvcpCommand command)
         {
-            GvcpReply gvcpReply = new GvcpReply();
+            GvcpReply gvcpReply = new();
             await socketTx.SendAsync(command.CommandBytes, command.Length).ConfigureAwait(false);
             gvcpReply.IsSent = true;
-
             Task<UdpReceiveResult> reply = socketTx.ReceiveAsync();
             if (await Task.WhenAny(reply, Task.Delay(socketTx.Client.ReceiveTimeout)).ConfigureAwait(false) == reply)
             {
@@ -1067,18 +993,32 @@ namespace GigeVision.Core.Models
             return gvcpReply;
         }
 
-        private static bool ValidateIp(string ipString)
+        private void Reconnect()
         {
-            if (string.IsNullOrWhiteSpace(ipString))
+            try
             {
-                return false;
+                try
+                {
+                    ControlSocket?.Client.Close();
+                    ControlSocket?.Close();
+                }
+                catch (Exception)
+                {
+                }
+                try
+                {
+                    ControlSocket = new UdpClient(cameraIP, PortGvcp);
+                    ControlSocket.Client.ReceiveTimeout = 1000;
+                    ControlSocket.Client.SendTimeout = 500;
+                }
+                catch (Exception)
+                {
+                }
             }
-            string[] splitValues = ipString.Split('.');
-            if (splitValues.Length != 4)
+            catch (Exception)
             {
-                return false;
+                throw;
             }
-            return splitValues.All(r => byte.TryParse(r, out byte tempForParsing));
         }
 
         private void RunHeartbeatThread()
@@ -1086,7 +1026,7 @@ namespace GigeVision.Core.Models
             Task.Run(async () =>
             {
                 isHeartBeatThreadRunning = true;
-                GvcpCommand command = new GvcpCommand(Converter.RegisterStringToByteArray(GvcpRegister.CCP.ToString("X")), GvcpCommandType.ReadReg);
+                GvcpCommand command = new(Converter.RegisterStringToByteArray(GvcpRegister.CCP.ToString("X")), GvcpCommandType.ReadReg);
                 while (IsKeepingAlive)
                 {
                     try
@@ -1110,6 +1050,20 @@ namespace GigeVision.Core.Models
                 }
                 isHeartBeatThreadRunning = false;
             });
+        }
+
+        private bool ValidateIp(string ipString)
+        {
+            if (string.IsNullOrWhiteSpace(ipString))
+            {
+                return false;
+            }
+            string[] splitValues = ipString.Split('.');
+            if (splitValues.Length != 4)
+            {
+                return false;
+            }
+            return splitValues.All(r => byte.TryParse(r, out byte tempForParsing));
         }
 
         #endregion Common Methods
