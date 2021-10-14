@@ -200,6 +200,6 @@ namespace GigeVision.Core.Interfaces
         /// It reads all the parameters from the camera
         /// </summary>
         /// <returns></returns>
-        Task<bool> SyncParameters();
+        Task<bool> SyncParameters(int syncAttempts = 1);
     }
 }

@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace GigeVision.Core.Models
@@ -322,7 +321,7 @@ namespace GigeVision.Core.Models
                     if ((await Gvcp.WriteRegisterAsync(GvcpRegister.SCPHostPort, (uint)PortRx).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS)
                     {
                         await Gvcp.WriteRegisterAsync(GvcpRegister.SCDA, Converter.IpToNumber(ip2Send)).ConfigureAwait(false);
-                        await Gvcp.WriteRegisterAsync(GvcpRegister.SCPSPacketSize, 1500).ConfigureAwait(false);
+                        await Gvcp.WriteRegisterAsync(GvcpRegister.SCPSPacketSize, Payload).ConfigureAwait(false);
                         string startReg = Gvcp.RegistersDictionary[nameof(RegisterName.AcquisitionStart)];
                         if ((await Gvcp.WriteRegisterAsync(startReg, 1).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS)
                         {
@@ -510,37 +509,43 @@ namespace GigeVision.Core.Models
         /// It reads all the parameters from the camera
         /// </summary>
         /// <returns></returns>
-        public async Task<bool> SyncParameters()
+        public async Task<bool> SyncParameters(int syncAttempts = 1)
         {
             try
             {
-                if (GenPort.IsReadingXml)
+                if (Gvcp.IsLoadingXml)
                     return false;
 
-                if (Gvcp.RegistersDictionary is null)
+                if (Gvcp.RegistersDictionary?.Count > 0)
                 {
-                    await Gvcp.ReadAllRegisterAddressFromCameraAsync().ConfigureAwait(false);
-                    if (Gvcp.RegistersDictionary.Count == 0)
-                    {
-                        return false;
-                    }
+                    Width = (uint)await Gvcp.RegistersDictionaryValues[nameof(RegisterName.Width)].GetValue().ConfigureAwait(false);
+                    Height = (uint)await Gvcp.RegistersDictionaryValues[nameof(RegisterName.Height)].GetValue().ConfigureAwait(false);
+                    OffsetX = (uint)await Gvcp.RegistersDictionaryValues[nameof(RegisterName.OffsetX)].GetValue().ConfigureAwait(false);
+                    OffsetY = (uint)await Gvcp.RegistersDictionaryValues[nameof(RegisterName.OffsetY)].GetValue().ConfigureAwait(false);
+                    PixelFormat = (PixelFormat)(uint)await Gvcp.RegistersDictionaryValues[nameof(RegisterName.PixelFormat)].GetValue().ConfigureAwait(false);
+                    bytesPerPixel = 3;
                 }
+                else
+                {
+                    for (int i = 0; i < syncAttempts; i++)
+                    {
+                        if (Gvcp.RegistersDictionary?.Count > 0)
+                        {
+                            await SyncParameters(0);
+                            return true;
+                        }
+                        await Gvcp.ReadAllRegisterAddressFromCameraAsync().ConfigureAwait(false);
+                        await SyncParameters(0);
 
-                Width = (uint)await Gvcp.RegistersDictionaryValues[nameof(RegisterName.Width)].GetValue().ConfigureAwait(false);
-                Height = (uint)await Gvcp.RegistersDictionaryValues[nameof(RegisterName.Height)].GetValue().ConfigureAwait(false);
-                OffsetX = (uint)await Gvcp.RegistersDictionaryValues[nameof(RegisterName.OffsetX)].GetValue().ConfigureAwait(false);
-                OffsetY = (uint)await Gvcp.RegistersDictionaryValues[nameof(RegisterName.OffsetY)].GetValue().ConfigureAwait(false);
-                PixelFormat = (PixelFormat)(uint)await Gvcp.RegistersDictionaryValues[nameof(RegisterName.PixelFormat)].GetValue().ConfigureAwait(false);
-                bytesPerPixel = 3;
+                    }
+
+                    return false;
+                }
             }
             catch (Exception ex)
             {
                 Updates?.Invoke(this, ex.Message);
             }
-            //if (Gvcp.RegistersDictionary.Count > 0)
-            //{
-            //    MotorController.CheckMotorControl(Gvcp.RegistersDictionary);
-            //}
             return true;
         }
 
@@ -660,6 +665,7 @@ namespace GigeVision.Core.Models
 
         private async void CameraIpChanged(object sender, EventArgs e)
         {
+            Gvcp.RegistersDictionary?.Clear();
             await SyncParameters().ConfigureAwait(false);
         }
     }
