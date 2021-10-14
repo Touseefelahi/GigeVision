@@ -322,6 +322,9 @@ namespace GigeVision.Core.Models
         /// <returns>Register dictionary</returns>
         public async Task<Dictionary<string, string>> ReadAllRegisterAddressFromCameraAsync(string cameraIp)
         {
+            try
+            {
+
             GenPort.IsReadingXml = true;
 
             if (!ValidateIp(CameraIp)) throw new InvalidIpException();
@@ -347,6 +350,12 @@ namespace GigeVision.Core.Models
             }
 
             return RegistersDictionary;
+            }
+            catch
+            {
+                GenPort.IsReadingXml = false;
+                return null;
+            }
         }
 
         /// <summary>
