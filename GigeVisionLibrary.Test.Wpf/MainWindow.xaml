@@ -8,7 +8,7 @@
         xmlns:flatStyle="clr-namespace:FlatStyle;assembly=FlatStyle"
         Title="MainWindow" Height="800" Width="1024">
 
-        <Grid>
+    <Grid VerticalAlignment="Stretch">
         <Grid.RowDefinitions>
             <RowDefinition Height="50" />
             <RowDefinition Height="*" />
@@ -21,9 +21,7 @@
             <CheckBox IsChecked="{Binding Camera.IsRawFrame}" ToolTip="Is Raw Frame"  Height="20"/>
         </StackPanel>
 
-        <StackPanel Grid.Row="1" VerticalAlignment="Stretch" HorizontalAlignment="Left">
-            <local:LightImage2 x:Name="lightControl" />
-            <TextBlock x:Name="Fps" HorizontalAlignment="Right" VerticalAlignment="Bottom" Style="{StaticResource PrimaryBackgroundText}" />
-            </StackPanel>
+            <local:LightImage2 x:Name="lightControl" Grid.Row="1"/>
+            <TextBlock Panel.ZIndex="2" VerticalAlignment="Bottom" x:Name="Fps" Grid.Row="1" Style="{StaticResource PrimaryBackgroundText}" />
         </Grid>
 </Window>
