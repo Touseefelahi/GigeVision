@@ -28,7 +28,7 @@ namespace GenICam
             Expressions = expressions;
             SetValueCommand = new DelegateCommand(ExecuteSetValueCommand);
 
-            SetupFeatures();
+            //SetupFeatures();
         }
 
         public GenInteger(long value, IPValue pValue = null)
