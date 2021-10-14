@@ -37,26 +37,16 @@ namespace GenICam
 
         public async Task<string> GetValue()
         {
-            var key = (await GetAddress()).ToString();
-
-            var tempValue = await TempDictionary.Get(key);
-            if (tempValue is not null)
-                Value = tempValue as string;
-            else
-            {
-
             var reply = await Get(Length);
             try
             {
                 if (!(reply.MemoryValue is null))
                     Value = Encoding.ASCII.GetString(reply.MemoryValue);
-                    await TempDictionary.Add(key, Value);
             }
             catch (Exception ex)
             {
                 throw ex;
-            }
-            }
+            }  
             return Value;
         }
 
