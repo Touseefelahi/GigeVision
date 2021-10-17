@@ -83,29 +83,19 @@ namespace GenICam
 
             var key = (await GetAddress()).ToString();
 
-            var tempValue = await TempDictionary.Get(key);
-            if (tempValue is byte[] tempValueBytes)
-                value = ConvertBytesToLong(tempValueBytes);
-            else if (tempValue is not null)
-                value = Convert.ToInt64(tempValue);
-            else
+            var reply = await Get(Length);
+
+            await Task.Run(() =>
             {
-                var reply = await Get(Length);
-
-                await Task.Run(() =>
+                if (reply.MemoryValue != null)
                 {
-                    if (reply.MemoryValue != null)
-                    {
-                        value = ConvertBytesToLong(reply.MemoryValue);
-                    }
-                    else
-                    {
-                        value = ReadMask(reply.RegisterValue);
-                    }
-                });
-                await TempDictionary.Add(key, value);
-
-            }
+                    value = ConvertBytesToLong(reply.MemoryValue);
+                }
+                else
+                {
+                    value = ReadMask(reply.RegisterValue);
+                }
+            });
             return value;
         }
 

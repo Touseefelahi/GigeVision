@@ -102,6 +102,7 @@ namespace GigeVision.Core.Models
         public Dictionary<string, string> RegistersDictionary { get; set; }
 
         public Dictionary<string, IPValue> RegistersDictionaryValues { get; set; }
+        public bool IsLoadingXml { get; private set; }
 
         /// <summary>
         /// Check camera status
@@ -324,37 +325,38 @@ namespace GigeVision.Core.Models
         {
             try
             {
+                IsLoadingXml = true;
 
-            GenPort.IsReadingXml = true;
+                if (!ValidateIp(CameraIp)) throw new InvalidIpException();
 
-            if (!ValidateIp(CameraIp)) throw new InvalidIpException();
+                //loading the XML file
+                XmlDocument xml = new XmlDocument();
+                xml.Load(await GetXmlFileFromCamera(cameraIp).ConfigureAwait(false));
+                var xmlHelper = new XmlHelper("Category", xml, new GenPort(this));
+                await xmlHelper.LoadUp();
+                CategoryDictionary = xmlHelper.CategoryDictionary;
 
-            //loading the XML file
-            XmlDocument xml = new XmlDocument();
-            xml.Load(await GetXmlFileFromCamera(cameraIp).ConfigureAwait(false));
 
-            var xmlHelper = new XmlHelper("Category", xml, new GenPort(this));
-            await xmlHelper.LoadUp();
-            CategoryDictionary = xmlHelper.CategoryDictionary;
-            GenPort.IsReadingXml = false;
-
-            if (xmlHelper.CategoryDictionary != null)
-            {
-                if (xmlHelper.CategoryDictionary.Count > 0)
+                if (xmlHelper.CategoryDictionary != null)
                 {
-                    RegistersDictionary = new Dictionary<string, string>();
-                    RegistersDictionaryValues = new Dictionary<string, IPValue>();
-                    RegistersDictionary.Add("XmlVersion", xmlHelper.Xmlns.InnerText);
-                    await ReadAllRegisters(CategoryDictionary);
+                    if (xmlHelper.CategoryDictionary.Count > 0)
+                    {
+                        RegistersDictionary = new Dictionary<string, string>();
+                        RegistersDictionaryValues = new Dictionary<string, IPValue>();
+                        RegistersDictionary.Add("XmlVersion", xmlHelper.Xmlns.InnerText);
+                        await ReadAllRegisters(CategoryDictionary);
+                    }
                 }
-            }
 
-            return RegistersDictionary;
+                return RegistersDictionary;
             }
             catch
             {
-                GenPort.IsReadingXml = false;
                 return null;
+            }
+            finally
+            {
+                IsLoadingXml = false;
             }
         }
 
