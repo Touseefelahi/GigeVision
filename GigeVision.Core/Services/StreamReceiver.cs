@@ -73,7 +73,7 @@ namespace GigeVision.Core.Models
                 socketRxRaw.Bind(new IPEndPoint(IPAddress.Any, Camera.PortRx));
                 if (Camera.IsMulticast)
                 {
-                    MulticastOption mcastOption = new(IPAddress.Parse(Camera.MulticastIP), IPAddress.Any);
+                    MulticastOption mcastOption = new(IPAddress.Parse(Camera.MulticastIP), IPAddress.Parse(Camera.RxIP));
                     socketRxRaw.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership, mcastOption);
                 }
                 socketRxRaw.ReceiveTimeout = 1000;
@@ -201,8 +201,7 @@ namespace GigeVision.Core.Models
                 {
                     try
                     {
-
-                    length = socketRxRaw.Receive(singlePacket);
+                        length = socketRxRaw.Receive(singlePacket);
                     }
                     catch (SocketException ex)
                     {

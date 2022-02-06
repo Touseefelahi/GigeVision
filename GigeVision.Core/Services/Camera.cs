@@ -548,72 +548,12 @@ namespace GigeVision.Core.Models
             }
             return true;
         }
-
-        public string GetMyIp()
-        {
-            UnicastIPAddressInformation mostSuitableIp = null;
-
-            foreach (NetworkInterface network in NetworkInterface.GetAllNetworkInterfaces())
-            {
-                if (network.OperationalStatus != OperationalStatus.Up)
-                {
-                    continue;
-                }
-
-                IPInterfaceProperties properties = network.GetIPProperties();
-
-                if (properties.GatewayAddresses.Count == 0)
-                {
-                    continue;
-                }
-
-                foreach (UnicastIPAddressInformation address in properties.UnicastAddresses)
-                {
-                    if (address.Address.AddressFamily != AddressFamily.InterNetwork)
-                    {
-                        continue;
-                    }
-
-                    if (IPAddress.IsLoopback(address.Address))
-                    {
-                        continue;
-                    }
-
-                    if (!address.IsDnsEligible)
-                    {
-                        if (mostSuitableIp == null)
-                        {
-                            mostSuitableIp = address;
-                        }
-
-                        continue;
-                    }
-
-                    // The best IP is the IP got from DHCP server
-                    if (address.PrefixOrigin != PrefixOrigin.Dhcp)
-                    {
-                        if (mostSuitableIp == null || !mostSuitableIp.IsDnsEligible)
-                        {
-                            mostSuitableIp = address;
-                        }
-
-                        continue;
-                    }
-
-                    return address.Address.ToString();
-                }
-            }
-
-            return mostSuitableIp != null
-                ? mostSuitableIp.Address.ToString()
-                : "";
-        }
-
+       
         private bool SetRxIP()
         {
             try
             {
-                string ip = GetMyIp();
+                string ip = NetworkService.GetMyIp();
                 if (string.IsNullOrEmpty(ip))
                 {
                     return false;
