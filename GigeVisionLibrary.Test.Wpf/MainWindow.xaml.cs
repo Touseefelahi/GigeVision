@@ -35,6 +35,8 @@ namespace GigeVisionLibrary.Test.Wpf
             camera = new Camera
             {
                 IsRawFrame = false,
+                IsMulticast = true,
+                MulticastIP = "239.168.10.15"
             };
             var listOfDevices = await camera.Gvcp.GetAllGigeDevicesInNetworkAsnyc().ConfigureAwait(false);
             if (listOfDevices.Count > 0) { Camera.IP = listOfDevices.FirstOrDefault()?.IP; }
@@ -71,7 +73,7 @@ namespace GigeVisionLibrary.Test.Wpf
                     lightControl.HeightImage = height;
                     lightControl.IsColored = !camera.IsRawFrame;
                 });
-                await camera.StartStreamAsync("192.168.10.50").ConfigureAwait(false);
+                await camera.StartStreamAsync().ConfigureAwait(false);
             }
         }
     }

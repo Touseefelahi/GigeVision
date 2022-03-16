@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <Authors>Touseef Elahi</Authors>
     <Company>Stira.sa</Company>
     <Product>GigeVision</Product>
@@ -11,12 +11,15 @@
     <PackageTags>GigeVision, GeniCam, GVSP, GVCP</PackageTags>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>2.1.0</Version>
+
+    <Version>2.1.2</Version>
+
     <PackageLicenseFile>License.txt</PackageLicenseFile>
     <PackageIcon>gige.png</PackageIcon>
     <PackageIconUrl />
     <Platforms>AnyCPU;x64;x86</Platforms>
     <PackageReleaseNotes>
+      2.1.1: Upgraded to Netcore 6.0 with Multicast reception fix
       1.8.0: Pushes the block id (frame number) in the frame event and Gives notification on frameloss
       Fix Receiver IP Detection
       Fix Discovery for all cameras in network
@@ -38,8 +41,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="GenICam" Version="1.3.0" />
+    <PackageReference Include="GenICam" Version="2.0.0" />
     <PackageReference Include="Stira.WpfCore" Version="1.1.0" />
     <PackageReference Include="System.IO.Pipelines" Version="5.0.1" />
   </ItemGroup>
+
 </Project>

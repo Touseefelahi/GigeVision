@@ -6,6 +6,8 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using GigeVision.Core.Enums;
+using System.Threading.Tasks;
+
 namespace GigeVision.Core.Models
 {
     /// <summary>
@@ -73,7 +75,7 @@ namespace GigeVision.Core.Models
                 socketRxRaw.Bind(new IPEndPoint(IPAddress.Any, Camera.PortRx));
                 if (Camera.IsMulticast)
                 {
-                    MulticastOption mcastOption = new(IPAddress.Parse(Camera.MulticastIP), IPAddress.Any);
+                    MulticastOption mcastOption = new(IPAddress.Parse(Camera.MulticastIP), IPAddress.Parse(Camera.RxIP));
                     socketRxRaw.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership, mcastOption);
                 }
                 socketRxRaw.ReceiveTimeout = 1000;
@@ -186,28 +188,23 @@ namespace GigeVision.Core.Models
             throw new NotImplementedException();
         }
 
+
         private void DecodePacketsRawSocket()
         {
-            int packetID = 0, bufferIndex = 0, bufferLength = 0, bufferStart = 0, length = 0, packetRxCount = 1;
-            ulong lastImageID = 0;
+            int packetID = 0, bufferIndex = 0, bufferLength = 0, bufferStart = 0, length = 0, packetRxCount = 1, packetRxCountClone, bufferIndexClone;
+            ulong imageID, lastImageID = 0, lastImageIDClone, deltaImageID;
+            byte[] blockID;
             byte[][] buffer = new byte[2][];
             buffer[0] = new byte[Camera.rawBytes.Length];
             buffer[1] = new byte[Camera.rawBytes.Length];
             try
             {
                 DetectGvspType();
-                Span<byte> singlePacket = new byte[GvspInfo.PacketLength];
+                Span<byte> singlePacket = stackalloc byte[GvspInfo.PacketLength];
+
                 while (Camera.IsStreaming)
                 {
-                    try
-                    {
-
                     length = socketRxRaw.Receive(singlePacket);
-                    }
-                    catch (SocketException ex)
-                    {
-                        continue;
-                    }
                     if (singlePacket[4] == GvspInfo.DataIdentifier) //Packet
                     {
                         packetRxCount++;
@@ -225,29 +222,32 @@ namespace GigeVision.Core.Models
                             GvspInfo.FinalPacketID = packetID - 1;
                         }
 
-                        var blockID = singlePacket.Slice(GvspInfo.BlockIDIndex, GvspInfo.BlockIDLength).ToArray();
+                        blockID = singlePacket.Slice(GvspInfo.BlockIDIndex, GvspInfo.BlockIDLength).ToArray();
                         Array.Resize(ref blockID, 8);
                         Array.Reverse(blockID);
-                        var imageID = BitConverter.ToUInt64(blockID);
-                        //Checking if we receive all packets
-                        if (Math.Abs(packetRxCount - GvspInfo.FinalPacketID) <= Camera.MissingPacketTolerance)
-                        {
-                            //var timeStamp = singlePacket.Slice(GvspInfo.TimeStampIndex, 8).ToArray();
-                            //Array.Reverse(timeStamp);
-                            //var timeStampMicroS = BitConverter.ToUInt64(timeStamp);
-
-                            Camera.FrameReady?.Invoke(imageID, buffer[bufferIndex]);
-                            bufferIndex = bufferIndex == 0 ? 1 : 0; //Swaping buffer
-                        }
-
-                        var deltaImageID = imageID - lastImageID;
-                        //This <10000 is just to skip the overflow value when the counter (2 or 8 bytes) will complete it should not show false missing images
-                        if (deltaImageID != 1 && deltaImageID < 10000)
-                        {
-                            Camera.Updates?.Invoke(UpdateType.FrameLoss, $"{imageID - lastImageID - 1} Image missed between {lastImageID}-{imageID}");
-                        }
+                        imageID = BitConverter.ToUInt64(blockID);
+                        packetRxCountClone = packetRxCount;
+                        lastImageIDClone = lastImageID;
+                        bufferIndexClone = bufferIndex;
+                        bufferIndex = bufferIndex == 0 ? 1 : 0; //Swaping buffer
                         packetRxCount = 0;
                         lastImageID = imageID;
+
+                        Task.Run(() => //Send the image ready signal parallel, without breaking the reception
+                        {
+                            //Checking if we receive all packets
+                            if (Math.Abs(packetRxCountClone - GvspInfo.FinalPacketID) <= Camera.MissingPacketTolerance)
+                            {
+                                Camera.FrameReady?.Invoke(imageID, buffer[bufferIndexClone]);
+                            }
+
+                            deltaImageID = imageID - lastImageIDClone;
+                            //This <10000 is just to skip the overflow value when the counter (2 or 8 bytes) will complete it should not show false missing images
+                            if (deltaImageID != 1 && deltaImageID < 10000)
+                            {
+                                Camera.Updates?.Invoke(UpdateType.FrameLoss, $"{imageID - lastImageIDClone - 1} Image missed between {lastImageIDClone}-{imageID}");
+                            }
+                        });
                     }
                 }
             }
@@ -259,7 +259,10 @@ namespace GigeVision.Core.Models
                 }
                 _ = Camera.StopStream();
             }
+
         }
+
+
 
         private void DetectGvspType()
         {
