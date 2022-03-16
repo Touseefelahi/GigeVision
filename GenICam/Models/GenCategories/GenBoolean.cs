@@ -14,8 +14,8 @@ namespace GenICam
             CategoryProperties = categoryProperties;
             PValue = pValue;
             Expressions = expressions;
-            if (CategoryProperties.Visibility != GenVisibility.Invisible)
-                SetupFeatures();
+           // if (CategoryProperties.Visibility != GenVisibility.Invisible)
+               // SetupFeatures();
         }
 
         public bool Value { get; set; }

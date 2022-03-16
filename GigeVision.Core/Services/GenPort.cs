@@ -2,7 +2,6 @@
 using GigeVision.Core.Interfaces;
 using GigeVision.Core.Models;
 using System;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 namespace GigeVision.Core
@@ -14,20 +13,11 @@ namespace GigeVision.Core
             Gvcp = gvcp;
         }
 
-        public static bool IsReadingXml { get; set; }
-
         public IGvcp Gvcp { get; }
 
         public async Task<IReplyPacket> Read(long address, long length)
         {
-            GvcpReply reply = new();
-            string key = address.ToString();
-            if (IsReadingXml)
-            {
-                if (!(await TempDictionary.Add(key, null)))
-                    return reply;
-            }
-
+            GvcpReply reply = new();            
             var addressBytes = GetAddressBytes(address, length);
             Array.Reverse(addressBytes);
 
@@ -37,12 +27,10 @@ namespace GigeVision.Core
             if (length >= 8)
             {
                 reply = await Gvcp.ReadMemoryAsync(Gvcp.CameraIp, addressBytes, (ushort)length).ConfigureAwait(false);
-                await TempDictionary.SetValue(key, reply.MemoryValue);
             }
             else
             {
                 reply = await Gvcp.ReadRegisterAsync(addressBytes).ConfigureAwait(false);
-                await TempDictionary.SetValue(key, reply.RegisterValue);
             }
 
             return reply;

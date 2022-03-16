@@ -102,6 +102,7 @@ namespace GigeVision.Core.Models
         public Dictionary<string, string> RegistersDictionary { get; set; }
 
         public Dictionary<string, IPValue> RegistersDictionaryValues { get; set; }
+        public bool IsLoadingXml { get; private set; }
 
         /// <summary>
         /// Check camera status
@@ -324,37 +325,38 @@ namespace GigeVision.Core.Models
         {
             try
             {
+                IsLoadingXml = true;
 
-            GenPort.IsReadingXml = true;
+                if (!ValidateIp(CameraIp)) throw new InvalidIpException();
 
-            if (!ValidateIp(CameraIp)) throw new InvalidIpException();
+                //loading the XML file
+                XmlDocument xml = new XmlDocument();
+                xml.Load(await GetXmlFileFromCamera(cameraIp).ConfigureAwait(false));
+                var xmlHelper = new XmlHelper("Category", xml, new GenPort(this));
+                await xmlHelper.LoadUp();
+                CategoryDictionary = xmlHelper.CategoryDictionary;
 
-            //loading the XML file
-            XmlDocument xml = new XmlDocument();
-            xml.Load(await GetXmlFileFromCamera(cameraIp).ConfigureAwait(false));
 
-            var xmlHelper = new XmlHelper("Category", xml, new GenPort(this));
-            await xmlHelper.LoadUp();
-            CategoryDictionary = xmlHelper.CategoryDictionary;
-            GenPort.IsReadingXml = false;
-
-            if (xmlHelper.CategoryDictionary != null)
-            {
-                if (xmlHelper.CategoryDictionary.Count > 0)
+                if (xmlHelper.CategoryDictionary != null)
                 {
-                    RegistersDictionary = new Dictionary<string, string>();
-                    RegistersDictionaryValues = new Dictionary<string, IPValue>();
-                    RegistersDictionary.Add("XmlVersion", xmlHelper.Xmlns.InnerText);
-                    await ReadAllRegisters(CategoryDictionary);
+                    if (xmlHelper.CategoryDictionary.Count > 0)
+                    {
+                        RegistersDictionary = new Dictionary<string, string>();
+                        RegistersDictionaryValues = new Dictionary<string, IPValue>();
+                        RegistersDictionary.Add("XmlVersion", xmlHelper.Xmlns.InnerText);
+                        await ReadAllRegisters(CategoryDictionary);
+                    }
                 }
-            }
 
-            return RegistersDictionary;
+                return RegistersDictionary;
             }
             catch
             {
-                GenPort.IsReadingXml = false;
                 return null;
+            }
+            finally
+            {
+                IsLoadingXml = false;
             }
         }
 
@@ -434,7 +436,7 @@ namespace GigeVision.Core.Models
             return gvcpHeader;
         }
 
-        private async Task<byte[]> GetRawXmlFileFromCamera(string IP)
+        private async Task<(byte[] data, string fileName)> GetRawXmlFileFromCamera(string IP)
         {
             return await Task.Run(() =>
             {
@@ -511,43 +513,60 @@ namespace GigeVision.Core.Models
                             break;
                     }
                 }
-                return encodedZipFile;
+                return (encodedZipFile, fileName);
             }).ConfigureAwait(false);
         }
 
         private async Task<Stream> GetXmlFileFromCamera(string ip)
         {
             // initializing the variables
-            Stream unZipFile = new MemoryStream();
 
             //loop to get the zip file data in bytes
-
-            var encodedZipFile = await GetRawXmlFileFromCamera(ip).ConfigureAwait(false);
-            //converting the zip file from bytes to stream
-            if (encodedZipFile.Length != 0)
+            Stream xmlFile = new MemoryStream();
+            (var fileData, var fileName) = await GetRawXmlFileFromCamera(ip).ConfigureAwait(false);
+            var fileNameParts = fileName.Split('.');
+            if (fileData.Length != 0)
             {
-                var xmlZipStream = new MemoryStream(encodedZipFile);
-                try
+                switch (fileNameParts[fileNameParts.Length - 1])
                 {
-                    ZipArchive zipFile = new ZipArchive(xmlZipStream, ZipArchiveMode.Read, false);
-
-                    foreach (var entry in zipFile.Entries)
-                    {
-                        if (entry.FullName.EndsWith(".xml", StringComparison.OrdinalIgnoreCase))
-                        {
-                            unZipFile = entry.Open();
-                        }
-                    }
-                }
-                catch
-                {
-                    throw;
+                    case "xml":
+                        xmlFile = new MemoryStream(fileData);
+                        break;
+                    case "zip":
+                        //converting the zip file from bytes to stream
+                        xmlFile = UnZipEncodedZipFile(fileData);
+                        break;
+                    default:
+                        break;
                 }
             }
 
             gvcpRequestID++;
+            return xmlFile;
+        }
 
-            return unZipFile;
+        private static Stream UnZipEncodedZipFile(byte[] encodedZipFile)
+        {
+            var xmlZipStream = new MemoryStream(encodedZipFile);
+            try
+            {
+                ZipArchive zipFile = new ZipArchive(xmlZipStream, ZipArchiveMode.Read, false);
+                Stream unZipFile = new MemoryStream();
+
+                foreach (var entry in zipFile.Entries)
+                {
+                    if (entry.FullName.EndsWith(".xml", StringComparison.OrdinalIgnoreCase))
+                    {
+                        unZipFile = entry.Open();
+                    }
+                }
+                return unZipFile;
+            }
+            catch
+            {
+                throw;
+            }
+
         }
 
         #endregion Read All Registers Address XML

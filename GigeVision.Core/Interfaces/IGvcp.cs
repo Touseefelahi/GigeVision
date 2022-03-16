@@ -300,5 +300,7 @@ namespace GigeVision.Core.Interfaces
         /// </summary>
         /// <returns>Leave Status</returns>
         Task<bool> LeaveControl();
+
+        bool IsLoadingXml { get;}
     }
 }

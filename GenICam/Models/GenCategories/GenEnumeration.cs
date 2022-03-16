@@ -15,8 +15,8 @@ namespace GenICam
             PValue = pValue;
             Expressions = expressions;
             SetValueCommand = new DelegateCommand(ExecuteSetValueCommand);
-            if (CategoryProperties.Visibility != GenVisibility.Invisible)
-                SetupFeatures();
+           // if (CategoryProperties.Visibility != GenVisibility.Invisible)
+               // SetupFeatures();
         }
 
         /// <summary>
