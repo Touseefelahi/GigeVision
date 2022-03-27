@@ -373,6 +373,7 @@ namespace GigeVision.Core.Models
         {
             try
             {
+                await Gvcp.TakeControl().ConfigureAwait(false);
                 GvcpReply widthWriteReply = (await Gvcp.RegistersDictionaryValues[nameof(RegisterName.Width)].SetValue(width).ConfigureAwait(false)) as GvcpReply;
                 GvcpReply heightWriteReply = (await Gvcp.RegistersDictionaryValues[nameof(RegisterName.Height)].SetValue(width).ConfigureAwait(false)) as GvcpReply;
 
