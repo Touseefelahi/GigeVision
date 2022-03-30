@@ -179,8 +179,11 @@
                 </Grid.ColumnDefinitions>
                 <TextBlock  Grid.Column="0" Text="{Binding CategoryProperties.Name}"  FontWeight="Regular" />
 
-                <TextBox Grid.Column="1" HorizontalAlignment="Stretch" Text="{Binding Value}" IsEnabled="{Binding AccessMode, Converter={StaticResource AccessModeConverter }}">
+                <TextBox Grid.Column="1" HorizontalAlignment="Stretch" Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding AccessMode, Converter={StaticResource AccessModeConverter }}">
                     <i:Interaction.Triggers>
+                        <i:EventTrigger EventName="Loaded">
+                            <i:InvokeCommandAction Command="{Binding GetValueCommand}" />
+                        </i:EventTrigger>
                         <i:EventTrigger EventName="LostFocus">
                             <i:InvokeCommandAction Command="{Binding SetValueCommand}" />
                         </i:EventTrigger>
@@ -204,6 +207,9 @@
                             <DataTemplate>
                                 <TextBox  HorizontalAlignment="Stretch" Text="{Binding ValueToWrite, Converter={StaticResource RepresentaionConverter}}"   IsEnabled="{Binding PValue, Converter={StaticResource AccessModeConverter}}">
                                     <i:Interaction.Triggers>
+                                        <i:EventTrigger EventName="Loaded">
+                                            <i:InvokeCommandAction Command="{Binding GetValueCommand}" />
+                                        </i:EventTrigger>
                                         <i:EventTrigger EventName="LostFocus">
                                             <i:InvokeCommandAction Command="{Binding SetValueCommand}" />
                                         </i:EventTrigger>
@@ -230,6 +236,9 @@
                                     Increment="{Binding Inc}">
 
                                     <i:Interaction.Triggers>
+                                        <i:EventTrigger EventName="Loaded">
+                                            <i:InvokeCommandAction Command="{Binding GetValueCommand}" />
+                                        </i:EventTrigger>
                                         <i:EventTrigger EventName="LostFocus" SourceName="IntegerUpDown">
                                             <i:InvokeCommandAction Command="{Binding SetValueCommand }" />
                                         </i:EventTrigger>
@@ -256,6 +265,9 @@
                                     Increment="{Binding Inc}">
 
                                     <i:Interaction.Triggers>
+                                        <i:EventTrigger EventName="Loaded">
+                                            <i:InvokeCommandAction Command="{Binding GetValueCommand}" />
+                                        </i:EventTrigger>
                                         <i:EventTrigger EventName="LostFocus" SourceName="IntegerUpDown">
                                             <i:InvokeCommandAction Command="{Binding SetValueCommand }" />
                                         </i:EventTrigger>
@@ -345,6 +357,9 @@
                            SelectedIndex="{Binding ValueToWrite, Mode=TwoWay}"
                            IsEnabled="{Binding PValue, Converter={StaticResource AccessModeConverter}}">
                     <i:Interaction.Triggers>
+                        <i:EventTrigger EventName="Loaded">
+                            <i:InvokeCommandAction Command="{Binding GetValueCommand}" />
+                        </i:EventTrigger>
                         <i:EventTrigger EventName="SelectionChanged">
                             <i:InvokeCommandAction Command="{Binding SetValueCommand}" />
                         </i:EventTrigger>
@@ -403,7 +418,13 @@
                 <CheckBox Grid.Column="1" Content="{Binding CategoryProperties.Name}"
                           IsChecked="{Binding ValueToWrite}"
                           IsEnabled="{Binding PValue, Converter={StaticResource AccessModeConverter}}"
-                          Command="{Binding SetValueCommand}" />
+                          Command="{Binding SetValueCommand}" >
+                    <i:Interaction.Triggers>
+                        <i:EventTrigger EventName="Loaded">
+                            <i:InvokeCommandAction Command="{Binding GetValueCommand}" />
+                        </i:EventTrigger>
+                    </i:Interaction.Triggers>
+                </CheckBox>
             </Grid>
         </HierarchicalDataTemplate>
     </UserControl.Resources>
