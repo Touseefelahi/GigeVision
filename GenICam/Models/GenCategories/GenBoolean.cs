@@ -1,7 +1,6 @@
 ﻿using Prism.Commands;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace GenICam
@@ -10,12 +9,11 @@ namespace GenICam
     {
         public GenBoolean(CategoryProperties categoryProperties, IPValue pValue, Dictionary<string, IMathematical> expressions)
         {
+            GetValueCommand = new DelegateCommand(ExecuteGetValueCommand);
             SetValueCommand = new DelegateCommand(ExecuteSetValueCommand);
             CategoryProperties = categoryProperties;
             PValue = pValue;
             Expressions = expressions;
-           // if (CategoryProperties.Visibility != GenVisibility.Invisible)
-               // SetupFeatures();
         }
 
         public bool Value { get; set; }
@@ -32,12 +30,7 @@ namespace GenICam
             else if (PValue is IntSwissKnife intSwissKnife)
                 value = await intSwissKnife.GetValue();
 
-            if (value == 1)
-                Value = true;
-            else if (value == 0)
-                Value = false;
-
-            return Value;
+            return value == 1;
         }
 
         public async void SetValue(bool value)
@@ -57,15 +50,18 @@ namespace GenICam
             RaisePropertyChanged(nameof(ValueToWrite));
         }
 
-        public async void SetupFeatures()
-        {
-            Value = await GetValue();
-            ValueToWrite = Value;
-        }
 
         private void ExecuteSetValueCommand()
         {
             SetValue(ValueToWrite);
+
+        }
+        private async void ExecuteGetValueCommand()
+        {
+            Value = await GetValue();
+            ValueToWrite = Value;
+            RaisePropertyChanged(nameof(Value));
+            RaisePropertyChanged(nameof(ValueToWrite));
         }
     }
 }
