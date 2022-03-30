@@ -114,9 +114,6 @@ namespace GigeVision.Core.Interfaces
         /// </summary>
         bool IsUsingExternalBuffer { get; set; }
 
-        Dictionary<string, string> RegistersDictionary { get; }
-
-        List<ICategory> CategoryDictionary { get; }
 
         /// <summary>
         /// This method will get current PC IP and Gets the Camera IP from Gvcp
