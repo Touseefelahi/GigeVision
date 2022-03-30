@@ -26,9 +26,17 @@ namespace GenICam
             Unit = unit;
             PValue = pValue;
             Expressions = expressions;
+            GetValueCommand = new DelegateCommand(ExecuteGetValueCommand);
             SetValueCommand = new DelegateCommand(ExecuteSetValueCommand);
+        }
 
-            //SetupFeatures();
+        private async void ExecuteGetValueCommand()
+        {
+            Value = await GetValue();
+            ValueToWrite = Value;
+            RaisePropertyChanged(nameof(Value));
+            RaisePropertyChanged(nameof(ValueToWrite));
+
         }
 
         public GenInteger(long value, IPValue pValue = null)
@@ -80,7 +88,7 @@ namespace GenICam
                 return await intSwissKnife.GetValue();
             }
 
-            return Value;
+            throw new Exception("Failed To GetValue");
         }
 
         public async Task<IReplyPacket> SetValue(Int64 value)
@@ -183,14 +191,6 @@ namespace GenICam
         public IGenFloat GetFloatAlias()
         {
             throw new NotImplementedException();
-        }
-
-        public async void SetupFeatures()
-        {
-            Value = await GetValue();
-            Max = await GetMax();
-            Min = await GetMin();
-            ValueToWrite = Value;
         }
 
         private async Task<Int64?> ReadIntSwissKnife(string pNode)

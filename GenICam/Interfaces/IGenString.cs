@@ -7,7 +7,7 @@ namespace GenICam
     {
         Task<string> GetValue();
 
-        void SetValue(string value);
+        Task SetValue(string value);
 
         Int64 GetMaxLength();
     }
