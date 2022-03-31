@@ -267,14 +267,14 @@ namespace GenICam
             throw new InvalidDataException("Failed to read the formula");
         }
 
-        public async Task<long> GetValue()
+        public async Task<long> GetValueAsync()
         {
-            return await PValue.GetValue();
+            return await PValue.GetValueAsync();
         }
 
-        public async Task<IReplyPacket> SetValue(long value)
+        public async Task<IReplyPacket> SetValueAsync(long value)
         {
-            return await PValue.SetValue(value);
+            return await PValue.SetValueAsync(value);
         }
 
         private static bool DoMathOpreation(string opreator, Stack<string> opreators, Stack<double> values)
@@ -520,7 +520,7 @@ namespace GenICam
                 {
                     double? value = null;
 
-                    value = await PValue.GetValue();
+                    value = await PValue.GetValueAsync();
 
                     if (value is null)
                         throw new Exception("Failed to read register value", new InvalidDataException());
@@ -534,7 +534,7 @@ namespace GenICam
                     {
                         double? value = null;
 
-                        value = await pVariable.Value.GetValue();
+                        value = await pVariable.Value.GetValueAsync();
 
                         if (value is null)
                             throw new Exception("Failed to read register value", new InvalidDataException());
@@ -589,7 +589,7 @@ namespace GenICam
                 {
                     double? value = null;
 
-                    value = await PValue.GetValue();
+                    value = await PValue.GetValueAsync();
 
                     if (value is null)
                         throw new Exception("Failed to read register value", new InvalidDataException());
@@ -603,7 +603,7 @@ namespace GenICam
                     {
                         double? value = null;
 
-                        value = await pVariable.Value.GetValue();
+                        value = await pVariable.Value.GetValueAsync();
 
                         if (value is null)
                             throw new Exception("Failed to read register value", new InvalidDataException());

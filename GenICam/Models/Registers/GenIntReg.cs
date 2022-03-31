@@ -17,6 +17,18 @@ namespace GenICam
             GenPort = genPort;
         }
 
+        public async Task<byte[]> GetAddressBytesAsync()
+        {
+            byte[] addressBytes = Array.Empty<byte>();
+            if (await GetAddressAsync() is long address)
+            {
+                addressBytes = BitConverter.GetBytes(address);
+                Array.Reverse(addressBytes);
+            }
+
+            return addressBytes;
+        }
+
         /// <summary>
         /// Register Address in hex format
         /// </summary>
@@ -36,33 +48,32 @@ namespace GenICam
 
         public Dictionary<string, IMathematical> Expressions { get; set; }
         public IGenPort GenPort { get; }
-
-        public async Task<IReplyPacket> Get(long length)
+        public async Task<IReplyPacket> GetAsync(long length)
         {
             if (Address is long adress)
-                return await GenPort.Read(adress, Length);
+                return await GenPort.ReadAsync(adress, Length);
             else if (PAddress is IntSwissKnife pAddress)
-                return await GenPort.Read(await pAddress.GetValue(), Length);
+                return await GenPort.ReadAsync(await pAddress.GetValueAsync(), Length);
 
             return null;
         }
 
-        public async Task<IReplyPacket> Set(byte[] pBuffer, long length)
+        public async Task<IReplyPacket> SetAsync(byte[] pBuffer, long length)
         {
             if (Address is long adress)
-                return await GenPort.Write(pBuffer, adress, length);
+                return await GenPort.WriteAsync(pBuffer, adress, length);
             else if (PAddress is IntSwissKnife pAddress)
-                return await GenPort.Write(pBuffer, await pAddress.GetValue(), length);
+                return await GenPort.WriteAsync(pBuffer, await pAddress.GetValueAsync(), length);
 
             return null;
         }
 
-        public async Task<long?> GetAddress()
+        public async Task<long?> GetAddressAsync()
         {
             if (Address is long address)
                 return address;
             else if (PAddress is IntSwissKnife swissKnife)
-                return (long)(await swissKnife.GetValue());
+                return (long)(await swissKnife.GetValueAsync());
 
             return null;
         }
@@ -72,40 +83,40 @@ namespace GenICam
             return Length;
         }
 
-        public async Task<long> GetValue()
+        public async Task<long> GetValueAsync()
         {
             Int64 value;
 
-                var reply = await Get(Length);
-                if (reply.MemoryValue != null)
+            var reply = await GetAsync(Length);
+            if (reply.MemoryValue != null)
+            {
+                switch (Length)
                 {
-                    switch (Length)
-                    {
-                        case 2:
-                            value = BitConverter.ToUInt16(reply.MemoryValue);
-                            break;
+                    case 2:
+                        value = BitConverter.ToUInt16(reply.MemoryValue);
+                        break;
 
-                        case 4:
-                            value = BitConverter.ToUInt32(reply.MemoryValue);
-                            break;
+                    case 4:
+                        value = BitConverter.ToUInt32(reply.MemoryValue);
+                        break;
 
-                        case 8:
-                            value = BitConverter.ToInt64(reply.MemoryValue);
-                            break;
+                    case 8:
+                        value = BitConverter.ToInt64(reply.MemoryValue);
+                        break;
 
-                        default:
-                            value = BitConverter.ToInt64(reply.MemoryValue);
-                            break;
-                    }
+                    default:
+                        value = BitConverter.ToInt64(reply.MemoryValue);
+                        break;
                 }
-                else
-                {
-                    value = Convert.ToInt64(reply.RegisterValue);
-                }
+            }
+            else
+            {
+                value = Convert.ToInt64(reply.RegisterValue);
+            }
             return value;
         }
 
-        public async Task<IReplyPacket> SetValue(long value)
+        public async Task<IReplyPacket> SetValueAsync(long value)
         {
             IReplyPacket reply = null;
             if (AccessMode != GenAccessMode.RO)
@@ -128,10 +139,11 @@ namespace GenICam
                         break;
                 }
 
-                reply = await Set(pBuffer, length);
+                reply = await SetAsync(pBuffer, length);
             }
 
             return reply;
         }
+
     }
 }

@@ -41,7 +41,7 @@ namespace GenICam
                         break;
                 }
 
-                await Register.Set(pBuffer, length);
+                await Register.SetAsync(pBuffer, length);
             };
         }
 

@@ -25,7 +25,7 @@ namespace GenICam
 
         private async void ExecuteGetValueCommand()
         {
-            Value = await GetValue();
+            Value = await GetValueAsync();
             ValueToWrite = Value;
             RaisePropertyChanged(nameof(Value));
             RaisePropertyChanged(nameof(ValueToWrite));
@@ -89,7 +89,7 @@ namespace GenICam
                 return null;
         }
 
-        public async Task<double> GetMax()
+        public async Task<double> GetMaxAsync()
         {
             var pMax = await ReadIntSwissKnife("pMax");
             if (pMax != null) Max = (double)pMax;
@@ -97,7 +97,7 @@ namespace GenICam
             return Max;
         }
 
-        public async Task<double> GetMin()
+        public async Task<double> GetMinAsync()
         {
             var pMin = await ReadIntSwissKnife("pMin");
             if (pMin != null) Min = (double)pMin;
@@ -115,13 +115,13 @@ namespace GenICam
             throw new NotImplementedException();
         }
 
-        public async Task<long> GetValue()
+        public async Task<long> GetValueAsync()
         {
             if (PValue is IRegister Register)
             {
                 if (Register.AccessMode != GenAccessMode.WO)
                 {
-                    byte[] pBuffer = BitConverter.GetBytes(await Register.GetValue());
+                    byte[] pBuffer = BitConverter.GetBytes(await Register.GetValueAsync());
 
                     if (Representation == Representation.HexNumber)
                         Array.Reverse(pBuffer);
@@ -142,13 +142,13 @@ namespace GenICam
             }
             else if (PValue is IntSwissKnife intSwissKnife)
             {
-                return await intSwissKnife.GetValue();
+                return await intSwissKnife.GetValueAsync();
             }
 
             throw new Exception("Failed To GetValue");
         }
 
-        public async Task<IReplyPacket> SetValue(long value)
+        public async Task<IReplyPacket> SetValueAsync(long value)
         {
             IReplyPacket reply = null;
 
@@ -177,7 +177,7 @@ namespace GenICam
                             break;
                     }
 
-                    reply = await Register.Set(pBuffer, length);
+                    reply = await Register.SetAsync(pBuffer, length);
                     if (reply.IsSentAndReplyReceived && reply.Reply[0] == 0)
                         Value = value;
                 }
@@ -200,7 +200,7 @@ namespace GenICam
 
         public async void SetValue(double value)
         {
-            await SetValue((long)value);
+            await SetValueAsync((long)value);
         }
 
         private async Task<Int64?> ReadIntSwissKnife(string pNode)
@@ -214,7 +214,7 @@ namespace GenICam
             var pValueNode = Expressions[pNode];
             if (pValueNode is IntSwissKnife intSwissKnife)
             {
-                return await intSwissKnife.GetValue();
+                return await intSwissKnife.GetValueAsync();
             }
 
             return null;
@@ -224,7 +224,7 @@ namespace GenICam
         {
             if (Value != ValueToWrite)
             {
-                await SetValue((long)ValueToWrite);
+                await SetValueAsync((long)ValueToWrite);
             }
         }
     }

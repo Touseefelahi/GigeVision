@@ -40,7 +40,7 @@ namespace GenICam
 
         private async void ExecuteGetValueCommand()
         {
-            Value = await GetValue();
+            Value = await GetValueAsync();
             ValueToWrite = Value;
             RaisePropertyChanged(nameof(Value));
             RaisePropertyChanged(nameof(ValueToWrite));
@@ -49,10 +49,10 @@ namespace GenICam
         private async void ExecuteSetValueCommand()
         {
             if (Value != ValueToWrite)
-                await SetValue(ValueToWrite);
+                await SetValueAsync(ValueToWrite);
         }
 
-        public async Task<string> GetValue()
+        public async Task<string> GetValueAsync()
         {
             var reply = await Get(Length);
             try
@@ -67,7 +67,7 @@ namespace GenICam
             return Value;
         }
 
-        public async Task SetValue(string value)
+        public async Task SetValueAsync(string value)
         {
             if (PValue is IRegister Register)
             {
@@ -77,7 +77,7 @@ namespace GenICam
                     byte[] pBuffer = new byte[length];
                     pBuffer = ASCIIEncoding.ASCII.GetBytes(value);
 
-                    var reply = await Register.Set(pBuffer, length);
+                    var reply = await Register.SetAsync(pBuffer, length);
                     if (reply.IsSentAndReplyReceived && reply.Reply[0] == 0)
                     {
                         if (reply.MemoryValue != null)
@@ -94,15 +94,15 @@ namespace GenICam
 
         public async Task<IReplyPacket> Get(long length)
         {
-            return await GenPort.Read(Address, Length);
+            return await GenPort.ReadAsync(Address, Length);
         }
 
-        public async Task<IReplyPacket> Set(byte[] pBuffer, long length)
+        public async Task<IReplyPacket> SetAsync(byte[] pBuffer, long length)
         {
-            return await GenPort.Write(pBuffer, Address, length);
+            return await GenPort.WriteAsync(pBuffer, Address, length);
         }
 
-        public async Task<long?> GetAddress()
+        public async Task<long?> GetAddressAsync()
         {
             if (Address is long address)
                 return address;
@@ -114,5 +114,16 @@ namespace GenICam
             return Length;
         }
 
+        public async Task<byte[]> GetAddressBytesAsync()
+        {
+            byte[] addressBytes = Array.Empty<byte>();
+            if (await GetAddressAsync() is long address)
+            {
+                addressBytes = BitConverter.GetBytes(address);
+                Array.Reverse(addressBytes);
+            }
+
+            return addressBytes;
+        }
     }
 }

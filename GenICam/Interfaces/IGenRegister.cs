@@ -6,9 +6,10 @@ namespace GenICam
     public interface IGenRegister
     {
 
-        Task<IReplyPacket> Set(byte[] pBuffer, Int64 length);
+        Task<IReplyPacket> SetAsync(byte[] pBuffer, Int64 length);
 
-        Task<long?> GetAddress();
+        Task<long?> GetAddressAsync();
+        Task<byte[]> GetAddressBytesAsync();
         Int64 GetLength();
     }
 }

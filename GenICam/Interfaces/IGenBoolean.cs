@@ -6,7 +6,7 @@ namespace GenICam
 {
     public interface IGenBoolean
     {
-        Task<bool> GetValue();
+        Task<bool> GetValueAsync();
 
         void SetValue(bool value);
     }

@@ -19,16 +19,16 @@ namespace GenICam
         public bool Value { get; set; }
         public bool ValueToWrite { get; set; }
 
-        public async Task<bool> GetValue()
+        public async Task<bool> GetValueAsync()
         {
             Int64? value = null;
             if (PValue is IRegister Register)
             {
                 if (Register.AccessMode != GenAccessMode.WO)
-                    value = await Register.GetValue();
+                    value = await Register.GetValueAsync();
             }
             else if (PValue is IntSwissKnife intSwissKnife)
-                value = await intSwissKnife.GetValue();
+                value = await intSwissKnife.GetValueAsync();
 
             return value == 1;
         }
@@ -41,7 +41,7 @@ namespace GenICam
                 byte[] pBuffer = new byte[length];
                 pBuffer[0] = Convert.ToByte(value);
 
-                var reply = await Register.Set(pBuffer, length);
+                var reply = await Register.SetAsync(pBuffer, length);
                 if (reply.IsSentAndReplyReceived && reply.Reply[0] == 0)
                     Value = value;
             }
@@ -58,7 +58,7 @@ namespace GenICam
         }
         private async void ExecuteGetValueCommand()
         {
-            Value = await GetValue();
+            Value = await GetValueAsync();
             ValueToWrite = Value;
             RaisePropertyChanged(nameof(Value));
             RaisePropertyChanged(nameof(ValueToWrite));

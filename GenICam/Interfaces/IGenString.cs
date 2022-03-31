@@ -5,9 +5,9 @@ namespace GenICam
 {
     public interface IGenString
     {
-        Task<string> GetValue();
+        Task<string> GetValueAsync();
 
-        Task SetValue(string value);
+        Task SetValueAsync(string value);
 
         Int64 GetMaxLength();
     }

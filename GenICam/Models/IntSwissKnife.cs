@@ -403,7 +403,7 @@ namespace GenICam
         /// Get SwissKinfe Value
         /// </summary>
         /// <returns></returns>
-        public async Task<Int64> GetValue()
+        public async Task<Int64> GetValueAsync()
         {
             return (Int64)await ExecuteFormula();
         }
@@ -413,7 +413,7 @@ namespace GenICam
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        public Task<IReplyPacket> SetValue(long value)
+        public Task<IReplyPacket> SetValueAsync(long value)
         {
             throw new NotImplementedException();
         }
@@ -679,7 +679,7 @@ namespace GenICam
                     if (pVariable.Key.Equals(word))
                     {
                         double? value = null;
-                        value = await pVariable.Value.GetValue();
+                        value = await pVariable.Value.GetValueAsync();
 
                         if (value is null)
                             throw new Exception("Failed to read register value", new InvalidDataException());

@@ -19,7 +19,7 @@ namespace GenICam
         }
         private async void ExecuteGetValueCommand()
         {
-            Value = await GetIntValue();
+            Value = await GetIntValueAsync();
             ValueToWrite = Value;
             RaisePropertyChanged(nameof(Value));
             RaisePropertyChanged(nameof(ValueToWrite));
@@ -37,16 +37,16 @@ namespace GenICam
 
         public long ValueToWrite { get; set; }
 
-        public async Task<long> GetIntValue()
+        public async Task<long> GetIntValueAsync()
         {
             if (PValue is IRegister register)
             {
                 if (register.AccessMode != GenAccessMode.WO)
-                    return await PValue.GetValue();
+                    return await PValue.GetValueAsync();
             }
             else if (PValue is IntSwissKnife intSwissKnife)
             {
-                return await intSwissKnife.GetValue();
+                return await intSwissKnife.GetValueAsync();
             }
 
             throw new Exception("Failed to GetIntValue");
@@ -81,7 +81,7 @@ namespace GenICam
                             break;
                     }
 
-                    var reply = await Register.Set(pBuffer, length);
+                    var reply = await Register.SetAsync(pBuffer, length);
 
                     if (reply.IsSentAndReplyReceived && reply.Reply[0] == 0)
                         Value = value;

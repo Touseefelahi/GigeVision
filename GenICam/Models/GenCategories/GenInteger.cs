@@ -32,7 +32,7 @@ namespace GenICam
 
         private async void ExecuteGetValueCommand()
         {
-            Value = await GetValue();
+            Value = await GetValueAsync();
             ValueToWrite = Value;
             RaisePropertyChanged(nameof(Value));
             RaisePropertyChanged(nameof(ValueToWrite));
@@ -76,22 +76,22 @@ namespace GenICam
         public string Unit { get; private set; }
         public long ValueToWrite { get; set; }
 
-        public async Task<Int64> GetValue()
+        public async Task<Int64> GetValueAsync()
         {
             if (PValue is IRegister register)
             {
                 if (register.AccessMode != GenAccessMode.WO)
-                    return await PValue.GetValue();
+                    return await PValue.GetValueAsync();
             }
             else if (PValue is IntSwissKnife intSwissKnife)
             {
-                return await intSwissKnife.GetValue();
+                return await intSwissKnife.GetValueAsync();
             }
 
             throw new Exception("Failed To GetValue");
         }
 
-        public async Task<IReplyPacket> SetValue(Int64 value)
+        public async Task<IReplyPacket> SetValueAsync(Int64 value)
         {
             IReplyPacket reply = null;
             if (PValue is IRegister Register)
@@ -118,7 +118,7 @@ namespace GenICam
                                 break;
                         }
 
-                        reply = await Register.Set(pBuffer, length);
+                        reply = await Register.SetAsync(pBuffer, length);
                         if (reply.IsSentAndReplyReceived && reply.Reply[0] == 0)
                             Value = value;
                     }
@@ -129,7 +129,7 @@ namespace GenICam
             return reply;
         }
 
-        public async Task<Int64> GetMin()
+        public async Task<Int64> GetMinAsync()
         {
             var pMin = await ReadIntSwissKnife("pMin");
             if (pMin != null)
@@ -138,7 +138,7 @@ namespace GenICam
             return Min;
         }
 
-        public async Task<Int64> GetMax()
+        public async Task<Int64> GetMaxAsync()
         {
             var pMax = await ReadIntSwissKnife("pMax");
             if (pMax != null)
@@ -204,7 +204,7 @@ namespace GenICam
             var pValueNode = Expressions[pNode];
             if (pValueNode is IntSwissKnife intSwissKnife)
             {
-                return await intSwissKnife.GetValue();
+                return await intSwissKnife.GetValueAsync();
             }
 
             return null;
@@ -213,7 +213,7 @@ namespace GenICam
         private async void ExecuteSetValueCommand()
         {
             if (Value != ValueToWrite)
-                await SetValue(ValueToWrite);
+                await SetValueAsync(ValueToWrite);
         }
     }
 }

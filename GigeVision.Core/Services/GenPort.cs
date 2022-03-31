@@ -15,7 +15,7 @@ namespace GigeVision.Core
 
         public IGvcp Gvcp { get; }
 
-        public async Task<IReplyPacket> Read(long address, long length)
+        public async Task<IReplyPacket> ReadAsync(long address, long length)
         {
             GvcpReply reply = new();            
             var addressBytes = GetAddressBytes(address, length);
@@ -36,7 +36,7 @@ namespace GigeVision.Core
             return reply;
         }
 
-        public async Task<IReplyPacket> Write(byte[] pBuffer, long address, long length)
+        public async Task<IReplyPacket> WriteAsync(byte[] pBuffer, long address, long length)
         {
             var addressBytes = GetAddressBytes(address, length);
             Array.Reverse(addressBytes);

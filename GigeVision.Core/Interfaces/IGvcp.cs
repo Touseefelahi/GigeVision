@@ -41,7 +41,7 @@ namespace GigeVision.Core.Interfaces
         /// <summary>
         /// Dictionary for registers
         /// </summary>
-        public Dictionary<string, IPValue> RegistersDictionary { get; set; }
+        public Dictionary<string, IRegister> RegistersDictionary { get; set; }
 
         List<ICategory> CategoryDictionary { get; }
 

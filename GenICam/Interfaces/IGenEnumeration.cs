@@ -6,7 +6,7 @@ namespace GenICam
 {
     public interface IGenEnumeration
     {
-        Task<Int64> GetIntValue();
+        Task<Int64> GetIntValueAsync();
 
         void SetIntValue(Int64 value);
 

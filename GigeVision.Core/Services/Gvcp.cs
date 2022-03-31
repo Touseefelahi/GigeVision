@@ -98,7 +98,7 @@ namespace GigeVision.Core.Models
         public List<ICategory> CategoryDictionary { get; private set; }
 
         #region Status Commands
-        public Dictionary<string, IPValue> RegistersDictionary { get; set; }
+        public Dictionary<string, IRegister> RegistersDictionary { get; set; }
         public bool IsLoadingXml { get; private set; }
 
         /// <summary>
@@ -338,7 +338,7 @@ namespace GigeVision.Core.Models
                 {
                     if (xmlHelper.CategoryDictionary.Count > 0)
                     {
-                        RegistersDictionary = new Dictionary<string, IPValue>();
+                        RegistersDictionary = new Dictionary<string, IRegister>();
                         await ReadAllRegisters(CategoryDictionary);
                     }
                 };
@@ -379,7 +379,13 @@ namespace GigeVision.Core.Models
                 if (category.PFeatures != null)
                     await ReadAllRegisters(category.PFeatures);
                 if (!RegistersDictionary.ContainsKey(category.CategoryProperties.Name))
-                    RegistersDictionary.Add(category.CategoryProperties.Name, category.PValue);
+                {
+                    if (category.PValue is IRegister register)
+                    {
+                    RegistersDictionary.Add(category.CategoryProperties.Name, register);
+                    }
+
+                }
             }
         }
 

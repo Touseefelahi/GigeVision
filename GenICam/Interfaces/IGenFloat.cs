@@ -13,15 +13,15 @@ namespace GenICam
 
         List<double> GetListOfValidValue();
 
-        Task<double> GetMax();
+        Task<double> GetMaxAsync();
 
-        Task<double> GetMin();
+        Task<double> GetMinAsync();
 
         Representation GetRepresentation();
 
         string GetUnit();
 
-        Task<long> GetValue();
+        Task<long> GetValueAsync();
 
         void ImposeMax(double max);
 
