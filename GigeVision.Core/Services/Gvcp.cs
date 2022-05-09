@@ -324,7 +324,7 @@ namespace GigeVision.Core.Models
             {
                 IsLoadingXml = true;
 
-                if (!ValidateIp(CameraIp)) throw new InvalidIpException();
+                if (!ValidateIp(cameraIp)) throw new InvalidIpException();
 
                 //loading the XML file
                 XmlDocument xml = new XmlDocument();
