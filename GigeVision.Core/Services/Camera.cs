@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 
 namespace GigeVision.Core.Models
 {
+    [Obsolete]
     /// <summary>
     /// Camera class is responsible to initialize the stream and receive the stream
     /// </summary>
