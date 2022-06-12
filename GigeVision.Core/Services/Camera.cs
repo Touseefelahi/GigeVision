@@ -4,9 +4,6 @@ using GigeVision.Core.Interfaces;
 using Stira.WpfCore;
 using System;
 using System.Collections.Generic;
-using System.Net;
-using System.Net.NetworkInformation;
-using System.Net.Sockets;
 using System.Threading.Tasks;
 
 namespace GigeVision.Core.Models
@@ -548,7 +545,7 @@ namespace GigeVision.Core.Models
             }
             return true;
         }
-       
+
         private bool SetRxIP()
         {
             try
