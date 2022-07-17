@@ -18,6 +18,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="MathParser.org-mXparser" Version="5.0.3" />
     <PackageReference Include="Prism.Core" Version="8.1.97" />
   </ItemGroup>
 </Project>

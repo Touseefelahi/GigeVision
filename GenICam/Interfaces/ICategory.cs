@@ -4,13 +4,11 @@ using System.Text;
 
 namespace GenICam
 {
-    public interface ICategory : IGenCategory, IIsImplemented
+    /// <summary>
+    /// Maps to an entry in a tree structuring the camera's features
+    /// </summary>
+    public interface ICategory:INode
     {
-        string GroupName { get; }
         List<ICategory> PFeatures { get; set; }
-        IPValue PValue { get; }
-        Dictionary<string, IMathematical> Expressions { get; }
-
-        CategoryProperties CategoryProperties { get; }
     }
 }

@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace GenICam
 {
+    /// <summary>
+    /// Extracts an integer packed into a register, e.g., from bit 8 to bit 12
+    /// </summary>
     public class GenMaskedIntReg : IRegister
     {
         /// <summary>
@@ -21,6 +24,7 @@ namespace GenICam
         public short? MSB { get; private set; }
         public short? LSB { get; private set; }
         public byte? Bit { get; private set; }
+        public Sign? Sign { get; private set; }
 
         /// <summary>
         /// Register Access Mode
@@ -28,9 +32,9 @@ namespace GenICam
         public GenAccessMode AccessMode { get; private set; }
 
         public Dictionary<string, IMathematical> Expressions { get; set; }
-        public IGenPort GenPort { get; }
+        public IPort GenPort { get; }
 
-        public GenMaskedIntReg(long? address, long length, short? msb, short? lsb, byte? bit, GenAccessMode accessMode, object pAddress, IGenPort genPort)
+        public GenMaskedIntReg(long? address, long length, short? msb, short? lsb, byte? bit, Sign? sign, GenAccessMode accessMode, object pAddress, IPort genPort)
         {
             GenPort = genPort;
             Address = address;
@@ -38,27 +42,27 @@ namespace GenICam
             MSB = msb;
             LSB = lsb;
             Bit = bit;
+            Sign = sign;
             AccessMode = accessMode;
             PAddress = pAddress;
         }
 
         private async Task<IReplyPacket> GetAsync(long length)
         {
-            if (Address is long adress)
+            if (PAddress is IPValue pValue)
+                return await GenPort.ReadAsync((long)await pValue.GetValueAsync(), Length);
+            else if (Address is long adress)
                 return await GenPort.ReadAsync(adress, Length);
-            else if (PAddress is IntSwissKnife pAddress)
-                return await GenPort.ReadAsync(await pAddress.GetValueAsync(), Length);
 
             return null;
         }
 
         public async Task<long?> GetAddressAsync()
         {
-            if (Address is long address)
+            if (PAddress is IPValue pValue)
+                return (long)(await pValue.GetValueAsync());
+            else if (Address is long address)
                 return address;
-            else if (PAddress is IntSwissKnife swissKnife)
-                return (long)(await swissKnife.GetValueAsync());
-
             return null;
         }
 
@@ -69,17 +73,17 @@ namespace GenICam
 
         public async Task<IReplyPacket> SetAsync(byte[] pBuffer, long length)
         {
-            if (Address is long adress)
+            if (PAddress is IPValue pValue)
+                return await GenPort.WriteAsync(pBuffer, (long)await pValue.GetValueAsync(), length);
+            else if (Address is long adress)
                 return await GenPort.WriteAsync(pBuffer, adress, length);
-            else if (PAddress is IntSwissKnife pAddress)
-                return await GenPort.WriteAsync(pBuffer, await pAddress.GetValueAsync(), length);
 
             return null;
         }
 
-        public async Task<long> GetValueAsync()
+        public async Task<long?> GetValueAsync()
         {
-            Int64 value = 0;
+            Int64? value = null;
 
             var key = (await GetAddressAsync()).ToString();
 
@@ -179,7 +183,7 @@ namespace GenICam
             return reply;
         }
 
-        public async Task<byte[]> GetAddressBytesAsync()
+        public async Task<byte[]> GetAsync()
         {
             byte[] addressBytes = Array.Empty<byte>();
             if (await GetAddressAsync() is long address)

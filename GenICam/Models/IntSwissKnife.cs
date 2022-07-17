@@ -1,4 +1,5 @@
-﻿using System;
+﻿using org.mariuszgromada.math.mxparser;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -22,7 +23,7 @@ namespace GenICam
         /// <param name="value"></param>
         public IntSwissKnife(string formula, Dictionary<string, IPValue> pVaribles, Dictionary<string, double> constants = null, Dictionary<string, string> expressions = null)
         {
-            PVariables = pVaribles;
+          PVariables = pVaribles;
             Formula = formula;
             Constants = constants;
             Expressions = expressions;
@@ -32,7 +33,7 @@ namespace GenICam
 
             foreach (var character in opreations)
             {
-                if (opreations.Where(x => x == character).Count() > 0)
+                if (opreations.Where(x => x == character).Any())
                 {
                     Formula = Formula.Replace($"{character}", $" {character} ");
                     if (Expressions != null)
@@ -110,11 +111,14 @@ namespace GenICam
                 if (Formula != string.Empty)
                 {
                     string formula = Formula;
-                    while (opreations.Any(c => formula.Contains(c)))
-                    {
-                        formula = EvaluateFormula(formula);
-                    return Evaluate(formula);
-                    }
+
+                    return new Expression(formula.Replace("0x", "h.")).calculate();
+                    
+                    //while (opreations.Any(c => formula.Contains(c)))
+                    //{
+                    //    formula = EvaluateFormula(formula);
+                    //    return Evaluate(formula);
+                    //}
                 }
 
             }
@@ -168,7 +172,7 @@ namespace GenICam
         /// <summary>
         /// Formula Result
         /// </summary>
-        public Task<double> Value { get; private set; }
+        public double Value { get; private set; }
 
         /// <summary>
         /// SwisKinfe Variable Parameters
@@ -199,7 +203,7 @@ namespace GenICam
         {
             expression = "( " + expression + " )";
             foreach (var character in opreations)
-                if (opreations.Where(x => x == character).Count() > 0)
+                if (opreations.Where(x => x == character).Any())
                     expression = expression.Replace($"{character}", $" {character} ");
 
             Stack<string> opreators = new Stack<string>();
@@ -403,7 +407,7 @@ namespace GenICam
         /// Get SwissKinfe Value
         /// </summary>
         /// <returns></returns>
-        public async Task<Int64> GetValueAsync()
+        public async Task<Int64?> GetValueAsync()
         {
             return (Int64)await ExecuteFormula();
         }

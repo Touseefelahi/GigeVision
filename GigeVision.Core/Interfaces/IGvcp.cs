@@ -41,7 +41,7 @@ namespace GigeVision.Core.Interfaces
         /// <summary>
         /// Dictionary for registers
         /// </summary>
-        public Dictionary<string, IRegister> RegistersDictionary { get; set; }
+        public Dictionary<string, (IPValue pValue, IRegister register)> RegistersDictionary { get; set; }
 
         List<ICategory> CategoryDictionary { get; }
 
@@ -299,6 +299,6 @@ namespace GigeVision.Core.Interfaces
         /// <returns>Leave Status</returns>
         Task<bool> LeaveControl();
 
-        bool IsLoadingXml { get;}
+        bool IsLoadingXml { get; }
     }
 }

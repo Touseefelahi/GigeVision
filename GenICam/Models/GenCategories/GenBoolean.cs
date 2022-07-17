@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace GenICam
 {
-    public class GenBoolean : GenCategory, IGenBoolean
+    public class GenBoolean : GenCategory, IBoolean
     {
         public GenBoolean(CategoryProperties categoryProperties, IPValue pValue, Dictionary<string, IMathematical> expressions)
         {
@@ -13,7 +13,6 @@ namespace GenICam
             SetValueCommand = new DelegateCommand(ExecuteSetValueCommand);
             CategoryProperties = categoryProperties;
             PValue = pValue;
-            Expressions = expressions;
         }
 
         public bool Value { get; set; }
@@ -24,16 +23,16 @@ namespace GenICam
             Int64? value = null;
             if (PValue is IRegister Register)
             {
-                if (Register.AccessMode != GenAccessMode.WO)
-                    value = await Register.GetValueAsync();
+                //if (Register.AccessMode != GenAccessMode.WO)
+                    //value = await Register.GetValueAsync();
             }
-            else if (PValue is IntSwissKnife intSwissKnife)
-                value = await intSwissKnife.GetValueAsync();
+            else if (PValue is IPValue pValue)
+                value = await pValue.GetValueAsync();
 
             return value == 1;
         }
 
-        public async void SetValue(bool value)
+        public async Task SetValueAsync(bool value)
         {
             if (PValue is IRegister Register)
             {
@@ -53,7 +52,7 @@ namespace GenICam
 
         private void ExecuteSetValueCommand()
         {
-            SetValue(ValueToWrite);
+            SetValueAsync(ValueToWrite);
 
         }
         private async void ExecuteGetValueCommand()
@@ -63,5 +62,6 @@ namespace GenICam
             RaisePropertyChanged(nameof(Value));
             RaisePropertyChanged(nameof(ValueToWrite));
         }
+
     }
 }

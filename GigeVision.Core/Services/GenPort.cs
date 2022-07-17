@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace GigeVision.Core
 {
-    public class GenPort : IGenPort
+    public class GenPort : IPort
     {
         public GenPort(IGvcp gvcp)
         {

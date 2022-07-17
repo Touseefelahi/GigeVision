@@ -34,8 +34,8 @@ namespace Camera.Wpf.Models
         {
             Resoluation = new Axis2D();
             await Gvcp.ReadAllRegisterAddressFromCameraAsync(IpTx);
-            Resoluation.SetX((int)await Gvcp.RegistersDictionary["Width"].GetValueAsync());
-            Resoluation.SetY((int)await Gvcp.RegistersDictionary["Height"].GetValueAsync());
+            Resoluation.SetX((int)await Gvcp.RegistersDictionary["Width"].pValue.GetValueAsync());
+            Resoluation.SetY((int)await Gvcp.RegistersDictionary["Height"].pValue.GetValueAsync());
             Gvsp.SetPayloadSize((uint)Resoluation.X, (uint)Resoluation.Y);
 
         }
@@ -64,12 +64,12 @@ namespace Camera.Wpf.Models
                 {
                     Gvsp.StartRxThread();
 
-                    if (((await Gvcp.RegistersDictionary[nameof(GvcpRegister.GevSCPHostPort)].SetValueAsync((uint)PortRx).ConfigureAwait(false)) as GvcpReply).Status == GvcpStatus.GEV_STATUS_SUCCESS)
+                    if (((await Gvcp.RegistersDictionary[nameof(GvcpRegister.GevSCPHostPort)].pValue.SetValueAsync((uint)PortRx).ConfigureAwait(false)) as GvcpReply).Status == GvcpStatus.GEV_STATUS_SUCCESS)
                     {
-                        await Gvcp.RegistersDictionary[nameof(GvcpRegister.GevSCDA)].SetValueAsync(Converter.IpToNumber(IpRx)).ConfigureAwait(false);
-                        await Gvcp.RegistersDictionary[nameof(GvcpRegister.GevSCPSPacketSize)].SetValueAsync(Gvsp.PayloadSize).ConfigureAwait(false);
-                        await Gvcp.RegistersDictionary[nameof(RegisterName.AcquisitionStart)].SetValueAsync(Gvsp.PayloadSize).ConfigureAwait(false);
-                        if (((await Gvcp.RegistersDictionary[nameof(RegisterName.AcquisitionStart)].SetValueAsync(1).ConfigureAwait(false)) as GvcpReply).Status == GvcpStatus.GEV_STATUS_SUCCESS)
+                        await Gvcp.RegistersDictionary[nameof(GvcpRegister.GevSCDA)].pValue.SetValueAsync(Converter.IpToNumber(IpRx)).ConfigureAwait(false);
+                        await Gvcp.RegistersDictionary[nameof(GvcpRegister.GevSCPSPacketSize)].pValue.SetValueAsync(Gvsp.PayloadSize).ConfigureAwait(false);
+                        await Gvcp.RegistersDictionary[nameof(RegisterName.AcquisitionStart)].pValue.SetValueAsync(Gvsp.PayloadSize).ConfigureAwait(false);
+                        if (((await Gvcp.RegistersDictionary[nameof(RegisterName.AcquisitionStart)].pValue.SetValueAsync(1).ConfigureAwait(false)) as GvcpReply).Status == GvcpStatus.GEV_STATUS_SUCCESS)
                         {
                             IsStreaming = true;
                         }

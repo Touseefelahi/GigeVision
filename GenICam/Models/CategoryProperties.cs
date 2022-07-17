@@ -13,7 +13,9 @@
         /// Category Description
         /// </summary>
         public string Description { get; internal set; }
-
+        /// <summary>
+        /// The default value is an empty string.
+        /// </summary>
         public string ToolTip { get; internal set; }
 
         /// <summary>

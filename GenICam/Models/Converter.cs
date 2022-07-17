@@ -1,4 +1,5 @@
-﻿using System;
+﻿using org.mariuszgromada.math.mxparser;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -20,34 +21,32 @@ namespace GenICam
 
             foreach (var character in opreations)
             {
-                if (opreations.Where(x => x == character).Count() > 0)
+                if (opreations.Where(x => x == character).Any())
                 {
                     FormulaTo = FormulaTo.Replace($"{character}", $" {character} ");
                     FormulaFrom = FormulaFrom.Replace($"{character}", $" {character} ");
                 }
             }
 
-            PVariables = pVariables;
+           PVariables = pVariables;
             PValue = pValue;
             Slope = slope;
-            Task.Run(async () =>
-            {
-                await ExecuteFormulaFrom();
-                await ExecuteFormulaTo();
-            });
         }
 
         public IPValue PValue { get; private set; }
 
-        public Task<double> Value
+        private double value;
+        public double Value
         {
             get
             {
-                return ExecuteFormulaFrom();
+                return value;
+                //return ExecuteFormulaFrom();
             }
             set
             {
-                Value = ExecuteFormulaTo();
+                this.value = value;
+                //Value = ExecuteFormulaTo();
             }
         }
 
@@ -67,7 +66,7 @@ namespace GenICam
             expression = "( " + expression + " )";
             List<char> opreations = new List<char> { '(', '+', '-', '/', '*', '=', '?', ':', ')', '>', '<', '&', '|', '^', '~', '%' };
             foreach (var character in opreations)
-                if (opreations.Where(x => x == character).Count() > 0)
+                if (opreations.Where(x => x == character).Any())
                     expression = expression.Replace($"{character}", $" {character} ");
 
             Stack<string> opreators = new Stack<string>();
@@ -267,13 +266,14 @@ namespace GenICam
             throw new InvalidDataException("Failed to read the formula");
         }
 
-        public async Task<long> GetValueAsync()
+        public async Task<Int64> GetValueAsync()
         {
-            return await PValue.GetValueAsync();
+            return (long)(await ExecuteFormulaFrom());
         }
 
         public async Task<IReplyPacket> SetValueAsync(long value)
         {
+            value = (long)await ExecuteFormulaTo();
             return await PValue.SetValueAsync(value);
         }
 
@@ -563,7 +563,9 @@ namespace GenICam
                             last = last.Substring(0, last.Length - 1);
                             if (last != "+" || last != "-" || last != "/" || last != "*")
                             {
-                                result = Evaluate(last);
+                                //result = Evaluate(last);
+                                result = new Expression(formula.Replace("0x", "h.")).calculate();
+
                                 if (formula.Contains($"({last})"))
                                     formula = formula.Replace($"({last})", result.ToString());
                                 else
@@ -574,11 +576,12 @@ namespace GenICam
                         if (formula.Contains($"({equation})"))
                             formula = formula.Replace($"({equation})", equation);
                     }
-                    return Evaluate(formula);
+
+                    //return Evaluate(formula);
+                    return new Expression(formula.Replace("0x", "h.")).calculate();
                 }
             }
-
-            return 0;
+            return new Expression(FormulaFrom.Replace("0x", "h.")).calculate();
         }
 
         private async Task<double> ExecuteFormulaTo()
@@ -632,7 +635,9 @@ namespace GenICam
                             last = last.Substring(0, last.Length - 1);
                             if (last != "+" || last != "-" || last != "/" || last != "*")
                             {
-                                result = Evaluate(last);
+                                //result = Evaluate(last);
+                                result = new Expression(last.Replace("0x", "h.")).calculate();
+
                                 if (formula.Contains($"({last})"))
                                     formula = formula.Replace($"({last})", result.ToString());
                                 else
@@ -643,11 +648,12 @@ namespace GenICam
                         if (formula.Contains($"({equation})"))
                             formula = formula.Replace($"({equation})", equation);
                     }
-                    return Evaluate(formula);
+                    //return Evaluate(formula);
+                    return new Expression(formula.Replace("0x", "h.")).calculate();
                 }
             }
+            return new Expression(FormulaTo.Replace("0x", "h.")).calculate();
 
-            return 0;
         }
     }
 }

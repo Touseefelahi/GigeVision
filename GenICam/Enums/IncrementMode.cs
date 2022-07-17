@@ -4,7 +4,7 @@ using System.Text;
 
 namespace GenICam
 {
-    public enum IncMode
+    public enum IncrementMode
     {
         fixedIncrement,
         listIncrement,

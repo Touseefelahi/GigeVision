@@ -98,7 +98,7 @@ namespace GigeVision.Core.Models
         public List<ICategory> CategoryDictionary { get; private set; }
 
         #region Status Commands
-        public Dictionary<string, IRegister> RegistersDictionary { get; set; }
+        public Dictionary<string, (IPValue, IRegister)> RegistersDictionary { get; set; }
         public bool IsLoadingXml { get; private set; }
 
         /// <summary>
@@ -329,7 +329,7 @@ namespace GigeVision.Core.Models
                 //loading the XML file
                 XmlDocument xml = new XmlDocument();
                 xml.Load(await GetXmlFileFromCamera(cameraIp).ConfigureAwait(false));
-                var xmlHelper = new XmlHelper("Category", xml, new GenPort(this));
+                var xmlHelper = new XmlHelper(xml, new GenPort(this));
                 await xmlHelper.LoadUp();
                 CategoryDictionary = xmlHelper.CategoryDictionary;
 
@@ -338,14 +338,14 @@ namespace GigeVision.Core.Models
                 {
                     if (xmlHelper.CategoryDictionary.Count > 0)
                     {
-                        RegistersDictionary = new Dictionary<string, IRegister>();
+                        RegistersDictionary = new Dictionary<string, (IPValue, IRegister)>();
                         await ReadAllRegisters(CategoryDictionary);
                     }
                 };
             }
-            catch
+            catch (Exception ex)
             {
-                
+                throw ex;
             }
             finally
             {
@@ -380,10 +380,16 @@ namespace GigeVision.Core.Models
                     await ReadAllRegisters(category.PFeatures);
                 if (!RegistersDictionary.ContainsKey(category.CategoryProperties.Name))
                 {
+                    (IPValue, IRegister) tuple = new(null, null);
+                    if (category.PValue is IPValue pValue)
+                    {
+                        tuple.Item1 = pValue;
+                    }
                     if (category.PValue is IRegister register)
                     {
-                    RegistersDictionary.Add(category.CategoryProperties.Name, register);
+                        tuple.Item2 = register;
                     }
+                    RegistersDictionary.Add(category.CategoryProperties.Name, tuple);
 
                 }
             }

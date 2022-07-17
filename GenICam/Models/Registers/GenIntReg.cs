@@ -5,9 +5,12 @@ using System.Threading.Tasks;
 
 namespace GenICam
 {
+    /// <summary>
+    /// Extracts an integer lying byte-bounded in a register
+    /// </summary>
     public class GenIntReg : IRegister
     {
-        public GenIntReg(long? address, long length, GenAccessMode accessMode, Dictionary<string, IMathematical> expressions, object pAddress, IGenPort genPort)
+        public GenIntReg(long? address, long length, GenAccessMode accessMode, Dictionary<string, IMathematical> expressions, object pAddress, IPort genPort)
         {
             Address = address;
             PAddress = pAddress;
@@ -16,17 +19,13 @@ namespace GenICam
             Expressions = expressions;
             GenPort = genPort;
         }
-
-        public async Task<byte[]> GetAddressBytesAsync()
+        /// <summary>
+        /// Gets the register’s content to a buffer
+        /// </summary>
+        /// <returns></returns>
+        public async Task<byte[]> GetAsync()
         {
-            byte[] addressBytes = Array.Empty<byte>();
-            if (await GetAddressAsync() is long address)
-            {
-                addressBytes = BitConverter.GetBytes(address);
-                Array.Reverse(addressBytes);
-            }
-
-            return addressBytes;
+            return (await GenPort.ReadAsync(await GetAddressAsync(), Length)).Reply.ToArray();
         }
 
         /// <summary>
@@ -34,7 +33,7 @@ namespace GenICam
         /// </summary>
         public Int64? Address { get; private set; }
 
-        public object PAddress { get; private set; }
+        private object PAddress { get; set; }
 
         /// <summary>
         /// Register Length
@@ -47,35 +46,28 @@ namespace GenICam
         public GenAccessMode AccessMode { get; private set; }
 
         public Dictionary<string, IMathematical> Expressions { get; set; }
-        public IGenPort GenPort { get; }
-        public async Task<IReplyPacket> GetAsync(long length)
-        {
-            if (Address is long adress)
-                return await GenPort.ReadAsync(adress, Length);
-            else if (PAddress is IntSwissKnife pAddress)
-                return await GenPort.ReadAsync(await pAddress.GetValueAsync(), Length);
+        public IPort GenPort { get; }
+        //public async Task<IReplyPacket> GetAsync(long length)
+        //{
+        //    if (PAddress is IPValue<IConvertible> pValue)
+        //        return await GenPort.ReadAsync((long)await pValue.GetValueAsync(), Length);
+        //    else if (Address is long adress)
+        //        return await GenPort.ReadAsync(adress, Length);
 
-            return null;
-        }
+        //    return null;
+        //}
 
         public async Task<IReplyPacket> SetAsync(byte[] pBuffer, long length)
         {
-            if (Address is long adress)
-                return await GenPort.WriteAsync(pBuffer, adress, length);
-            else if (PAddress is IntSwissKnife pAddress)
-                return await GenPort.WriteAsync(pBuffer, await pAddress.GetValueAsync(), length);
-
-            return null;
+            return await GenPort.WriteAsync(pBuffer,await GetAddressAsync(), length);
         }
 
         public async Task<long?> GetAddressAsync()
         {
-            if (Address is long address)
-                return address;
-            else if (PAddress is IntSwissKnife swissKnife)
-                return (long)(await swissKnife.GetValueAsync());
+            if (PAddress is IPValue pValue)
+                return (long)(await pValue.GetValueAsync());
 
-            return null;
+            return Address;
         }
 
         public long GetLength()
@@ -83,67 +75,71 @@ namespace GenICam
             return Length;
         }
 
-        public async Task<long> GetValueAsync()
-        {
-            Int64 value;
+        //public async Task<long?> GetValueAsync()
+        //{
+        //    Int64? value = null;
 
-            var reply = await GetAsync(Length);
-            if (reply.MemoryValue != null)
-            {
-                switch (Length)
-                {
-                    case 2:
-                        value = BitConverter.ToUInt16(reply.MemoryValue);
-                        break;
+        //    var reply = await GetAsync(Length);
+        //    if (reply == null)
+        //    {
 
-                    case 4:
-                        value = BitConverter.ToUInt32(reply.MemoryValue);
-                        break;
+        //    }
+        //    if (reply.MemoryValue != null)
+        //    {
+        //        switch (Length)
+        //        {
+        //            case 2:
+        //                value = BitConverter.ToUInt16(reply.MemoryValue);
+        //                break;
 
-                    case 8:
-                        value = BitConverter.ToInt64(reply.MemoryValue);
-                        break;
+        //            case 4:
+        //                value = BitConverter.ToUInt32(reply.MemoryValue);
+        //                break;
 
-                    default:
-                        value = BitConverter.ToInt64(reply.MemoryValue);
-                        break;
-                }
-            }
-            else
-            {
-                value = Convert.ToInt64(reply.RegisterValue);
-            }
-            return value;
-        }
+        //            case 8:
+        //                value = BitConverter.ToInt64(reply.MemoryValue);
+        //                break;
 
-        public async Task<IReplyPacket> SetValueAsync(long value)
-        {
-            IReplyPacket reply = null;
-            if (AccessMode != GenAccessMode.RO)
-            {
-                var length = GetLength();
-                byte[] pBuffer = new byte[length];
+        //            default:
+        //                value = BitConverter.ToInt64(reply.MemoryValue);
+        //                break;
+        //        }
+        //    }
+        //    else
+        //    {
+        //        value = Convert.ToInt64(reply.RegisterValue);
+        //    }
+        //    return value;
+        //}
 
-                switch (length)
-                {
-                    case 2:
-                        pBuffer = BitConverter.GetBytes((UInt16)value);
-                        break;
+        //public async Task<IReplyPacket> SetValueAsync(long value)
+        //{
+        //    IReplyPacket reply = null;
+        //    if (AccessMode != GenAccessMode.RO)
+        //    {
+        //        var length = GetLength();
+        //        byte[] pBuffer = new byte[length];
 
-                    case 4:
-                        pBuffer = BitConverter.GetBytes((Int32)value);
-                        break;
+        //        switch (length)
+        //        {
+        //            case 2:
+        //                pBuffer = BitConverter.GetBytes((UInt16)value);
+        //                break;
 
-                    case 8:
-                        pBuffer = BitConverter.GetBytes(value);
-                        break;
-                }
+        //            case 4:
+        //                pBuffer = BitConverter.GetBytes((Int32)value);
+        //                break;
 
-                reply = await SetAsync(pBuffer, length);
-            }
+        //            case 8:
+        //                pBuffer = BitConverter.GetBytes(value);
+        //                break;
+        //        }
 
-            return reply;
-        }
+        //        reply = await SetAsync(pBuffer, length);
+        //    }
+
+        //    return reply;
+        //}
 
     }
 }

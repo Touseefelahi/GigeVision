@@ -1,25 +1,25 @@
 ﻿using Prism.Commands;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace GenICam
 {
-    public class GenCommand : GenCategory, IGenCommand
+    public class GenCommand : GenCategory, ICommand
     {
         public GenCommand(CategoryProperties categoryProperties, Int64 commandValue, IPValue pValue, Dictionary<string, IMathematical> expressions)
         {
             CategoryProperties = categoryProperties;
             CommandValue = commandValue;
             PValue = pValue;
-            Expressions = expressions;
 
-            SetValueCommand = new DelegateCommand(Execute);
+            SetValueCommand = new DelegateCommand(()=>Execute());
         }
 
         public Int64 Value { get; set; }
         public Int64 CommandValue { get; private set; }
 
-        public async void Execute()
+        public async Task Execute()
         {
             if (PValue is IRegister Register)
             {
@@ -45,7 +45,7 @@ namespace GenICam
             };
         }
 
-        public bool IsDone()
+        public async Task<bool> IsDone()
         {
             throw new NotImplementedException();
         }

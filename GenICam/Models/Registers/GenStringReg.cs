@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace GenICam
 {
-    public class GenStringReg : GenCategory, IGenString, IGenRegister
+    public class GenStringReg : GenCategory, IString
     {
         /// <summary>
         /// Register Address in hex format
@@ -23,11 +23,11 @@ namespace GenICam
         /// </summary>
         public GenAccessMode AccessMode { get; private set; }
 
-        public IGenPort GenPort { get; }
+        public IPort GenPort { get; }
         public string Value { get; set; }
         public string ValueToWrite { get; set; }
 
-        public GenStringReg(CategoryProperties categoryProperties, Int64 address, ushort length, GenAccessMode accessMode, IGenPort genPort)
+        public GenStringReg(CategoryProperties categoryProperties, Int64 address, ushort length, GenAccessMode accessMode, IPort genPort)
         {
             CategoryProperties = categoryProperties;
             Address = address;
@@ -114,7 +114,7 @@ namespace GenICam
             return Length;
         }
 
-        public async Task<byte[]> GetAddressBytesAsync()
+        public async Task<byte[]> GetAsync()
         {
             byte[] addressBytes = Array.Empty<byte>();
             if (await GetAddressAsync() is long address)

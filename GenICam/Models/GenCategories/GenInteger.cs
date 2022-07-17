@@ -6,65 +6,60 @@ using System.Windows.Input;
 
 namespace GenICam
 {
-    public class GenInteger : GenCategory, IGenInteger, IPValue
+    /// <summary>
+    /// Merges the integer’s value, min, max, and increment properties from different nodes
+    /// </summary>
+    public class GenInteger : GenCategory, IInteger
     {
-        public GenInteger(CategoryProperties categoryProperties, long min, long max, long inc, IncMode incMode, Representation representation, long value, string unit, IPValue pValue, Dictionary<string, IMathematical> expressions)
+        public GenInteger(CategoryProperties categoryProperties, long? min, long? max, long? inc, IMathematical pMax, IMathematical pMin, IMathematical pInc, IncrementMode? incMode, Representation representation, long? value, string unit, IPValue pValue)
         {
             CategoryProperties = categoryProperties;
-            Min = min;
-            if (max == 0)
-                max = Int32.MaxValue;
 
-            Max = max;
-            if (inc == 0)
-                inc = 1;
+            if (min is not null)
+                Min = (long)min;
 
-            Inc = inc;
+            if (max is not null)
+                Max = (long)max;
+
+            if (inc is not null)
+                Inc = (long)inc;
+
+            if (value is not null)
+                Value = (long)value;
+
             IncMode = incMode;
             Representation = representation;
-            Value = value;
+
             Unit = unit;
+
             PValue = pValue;
-            Expressions = expressions;
+            PMax = pMax;
+            PMin = pMin;
+
+            //Control Commands
             GetValueCommand = new DelegateCommand(ExecuteGetValueCommand);
             SetValueCommand = new DelegateCommand(ExecuteSetValueCommand);
         }
 
-        private async void ExecuteGetValueCommand()
-        {
-            Value = await GetValueAsync();
-            ValueToWrite = Value;
-            RaisePropertyChanged(nameof(Value));
-            RaisePropertyChanged(nameof(ValueToWrite));
-
-        }
-
-        public GenInteger(long value, IPValue pValue = null)
-        {
-            Value = value;
-            PValue = pValue;
-        }
-
-        public bool PIsLocked { get; internal set; }
-
-        public Representation Representation { get; internal set; }
+        public Representation Representation { get; private set; }
+        public string ValidValuesSet { get; private set; }
 
         /// <summary>
         /// Integer Minimum Value
         /// </summary>
-        public Int64 Min { get; private set; } = long.MinValue;
+        public long Min { get; private set; }
 
         /// <summary>
         /// Integer Maximum Value
         /// </summary>
-        public Int64 Max { get; private set; } = long.MaxValue;
+        public long Max { get; private set; }
 
         /// <summary>
         /// Integer Increment Value
         /// </summary>
-        public Int64 Inc { get; private set; } = 1;
-
-        public IncMode IncMode { get; private set; }
+        public long Inc { get; private set; }
+        public bool Streamble { get; set; }
+        public IncrementMode? IncMode { get; private set; }
 
         public long Value
         {
@@ -73,32 +68,30 @@ namespace GenICam
         }
 
         public List<Int64> ListOfValidValue { get; private set; }
-        public string Unit { get; private set; }
+        public string Unit { get; private set; } = string.Empty;
         public long ValueToWrite { get; set; }
+        public IMathematical PMax { get; }
+        public IMathematical PMin { get; }
 
-        public async Task<Int64> GetValueAsync()
+        public async Task<long> GetValueAsync()
         {
             if (PValue is IRegister register)
             {
                 if (register.AccessMode != GenAccessMode.WO)
-                    return await PValue.GetValueAsync();
-            }
-            else if (PValue is IntSwissKnife intSwissKnife)
-            {
-                return await intSwissKnife.GetValueAsync();
+                    return (long)(await PValue.GetValueAsync());
             }
 
-            throw new Exception("Failed To GetValue");
+            return Value;
         }
 
-        public async Task<IReplyPacket> SetValueAsync(Int64 value)
+        public async Task<IReplyPacket> SetValueAsync(long value)
         {
             IReplyPacket reply = null;
             if (PValue is IRegister Register)
             {
                 if (Register.AccessMode != GenAccessMode.RO)
                 {
-                    if ((value % Inc) == 0)
+                    if ((value % Inc) == 0 && (value <= await GetMaxAsync() && value >= await GetMinAsync()))
                     {
                         var length = Register.GetLength();
                         byte[] pBuffer = new byte[length];
@@ -124,32 +117,31 @@ namespace GenICam
                     }
                 }
             }
+
             ValueToWrite = Value;
             RaisePropertyChanged(nameof(ValueToWrite));
             return reply;
         }
 
-        public async Task<Int64> GetMinAsync()
+        public async Task<long> GetMinAsync()
         {
-            var pMin = await ReadIntSwissKnife("pMin");
-            if (pMin != null)
-                return (Int64)pMin;
+            if (PMin is IRegister register)
+            {
+                if (register.AccessMode != GenAccessMode.WO)
+                    return (long)(await PValue.GetValueAsync());
+            }
 
-            return Min;
+            return Value;
         }
 
-        public async Task<Int64> GetMaxAsync()
+        public async Task<long> GetMaxAsync()
         {
-            var pMax = await ReadIntSwissKnife("pMax");
-            if (pMax != null)
-                return (Int64)pMax;
-
-            return Max;
+            throw new NotImplementedException();
         }
 
-        public Int64? GetInc()
+        public Int64? GetIncrement()
         {
-            if (IncMode == IncMode.fixedIncrement)
+            if (IncMode == IncrementMode.fixedIncrement)
                 return Inc;
             else
                 return null;
@@ -157,15 +149,15 @@ namespace GenICam
 
         public List<Int64> GetListOfValidValue()
         {
-            if (IncMode == IncMode.listIncrement)
+            if (IncMode == IncrementMode.listIncrement)
                 return ListOfValidValue;
             else
                 return null;
         }
 
-        public IncMode GetIncMode()
+        public IncrementMode GetIncrementMode()
         {
-            return IncMode;
+            return (IncrementMode)IncMode;
         }
 
         public Representation GetRepresentation()
@@ -188,32 +180,43 @@ namespace GenICam
             throw new NotImplementedException();
         }
 
-        public IGenFloat GetFloatAlias()
+        public IFloat GetFloatAlias()
         {
             throw new NotImplementedException();
-        }
-
-        private async Task<Int64?> ReadIntSwissKnife(string pNode)
-        {
-            if (Expressions == null)
-                return null;
-
-            if (!Expressions.ContainsKey(pNode))
-                return null;
-
-            var pValueNode = Expressions[pNode];
-            if (pValueNode is IntSwissKnife intSwissKnife)
-            {
-                return await intSwissKnife.GetValueAsync();
-            }
-
-            return null;
         }
 
         private async void ExecuteSetValueCommand()
         {
             if (Value != ValueToWrite)
                 await SetValueAsync(ValueToWrite);
+        }
+
+        Task<long> IInteger.GetMaxAsync()
+        {
+            throw new NotImplementedException();
+        }
+
+        Task<long> IInteger.GetMinAsync()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<IReplyPacket> ImposeMinAsync(long value)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<IReplyPacket> ImposeMaxAsync(long value)
+        {
+            throw new NotImplementedException();
+        }
+        private async void ExecuteGetValueCommand()
+        {
+            Value = await GetValueAsync();
+            ValueToWrite = (long)Value;
+            RaisePropertyChanged(nameof(Value));
+            RaisePropertyChanged(nameof(ValueToWrite));
+
         }
     }
 }

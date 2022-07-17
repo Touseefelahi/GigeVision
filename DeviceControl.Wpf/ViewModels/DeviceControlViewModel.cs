@@ -27,7 +27,7 @@ namespace DeviceControl.Wpf.ViewModels
         /// </summary>
         public List<ICategory> Categories { get; set; }
 
-        public ICommand LoadedWindowCommand { get; }
+        public System.Windows.Input.ICommand LoadedWindowCommand { get; }
 
         public GenVisibility CameraRegisterVisibility { get; set; }
 

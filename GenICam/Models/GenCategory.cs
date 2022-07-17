@@ -10,14 +10,11 @@ namespace GenICam
     {
         public CategoryProperties CategoryProperties { get; internal set; }
         public List<ICategory> PFeatures { get; set; }
-
         public IPValue PValue { get; internal set; }
-
         public string GroupName { get; internal set; }
-        public ICommand SetValueCommand { get; internal set; }
-        public ICommand GetValueCommand { get; internal set; }
-
-        public Dictionary<string, IMathematical> Expressions { get; internal set; }
+        public System.Windows.Input.ICommand SetValueCommand { get; internal set; }
+        public System.Windows.Input.ICommand GetValueCommand { get; internal set; }
+        public GenAccessMode AccessMode { get; set; }
 
         public List<ICategory> GetFeatures()
         {

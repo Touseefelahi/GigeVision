@@ -3,9 +3,9 @@ using System.Threading.Tasks;
 
 namespace GenICam
 {
-    public interface IPValue : IIsImplemented
+    public interface IPValue
     {
-        Task<Int64> GetValueAsync();
+        Task<long> GetValueAsync();
         Task<IReplyPacket> SetValueAsync(long value);
 
     }
