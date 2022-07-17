@@ -26,7 +26,7 @@ namespace Camera.Wpf.Tests
 
         private async void Setup()
         {
-            camera = new GigeDaylightCamera("192.168.10.244");
+            camera = new GigeDaylightCamera("192.168.10.175");
             camera.OnFrameRecieved += FrameReady;
             var fpsDisplayTimer = new Timer(1000);
             fpsDisplayTimer.Elapsed += FpsDisplay;

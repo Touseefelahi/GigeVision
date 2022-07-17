@@ -5,7 +5,7 @@ namespace GenICam
 {
     public interface IPValue
     {
-        Task<long> GetValueAsync();
+        Task<long?> GetValueAsync();
         Task<IReplyPacket> SetValueAsync(long value);
 
     }

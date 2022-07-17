@@ -23,7 +23,7 @@ namespace GenICam
         {
             if (PValue is IRegister Register)
             {
-                var length = Register.Length;
+                var length = Register.GetLength() ;
                 byte[] pBuffer = new byte[length];
 
                 switch (length)

@@ -64,7 +64,7 @@ namespace GenICam
             var genCategory = new GenCategory() { GroupName = groupName, CategoryProperties = await GetCategoryProperties(categoryNode) };
 
             genCategory.PFeatures = await ReadCategoryFeature(categoryNode);
-            return genCategory; 
+            return genCategory;
         }
 
         #region GenIcam Getters
@@ -355,7 +355,7 @@ namespace GenICam
                 }
             }
 
-            return new GenInteger(categoryPropreties, min, max, inc,null,null,null, IncrementMode.fixedIncrement, representation, value, unit, pValue);
+            return new GenInteger(categoryPropreties, min, max, inc, null, null, null, IncrementMode.fixedIncrement, representation, value, unit, pValue);
         }
         private async Task<ICategory> GetCommandCategory(XmlNode xmlNode)
         {
@@ -393,8 +393,8 @@ namespace GenICam
                 return null;
 
 
-            //if (xmlNode.Name == nameof(RegisterType.Integer))
-            //    return await GetGenInteger(xmlNode);
+            if (xmlNode.Name == nameof(RegisterType.Integer))
+                return await GetGenInteger(xmlNode);
 
             var genRegister = await XmlNodeToGenRegister(xmlNode);
 
@@ -438,6 +438,8 @@ namespace GenICam
         {
             Int64? address = null;
             object pAddress = null;
+            ushort length = 0;
+            GenAccessMode accessMode = GenAccessMode.NA;
             var addressNode = SelectSingleNode(xmlNode, "Address");
 
             if (addressNode != null)
@@ -448,9 +450,15 @@ namespace GenICam
                     address = Int64.Parse(addressNode.InnerText);
             }
             var lengthNode = SelectSingleNode(xmlNode, "Length");
-            ushort length = ushort.Parse(lengthNode.InnerText);
+            if (lengthNode != null)
+            {
+                length = ushort.Parse(lengthNode.InnerText);
+            }
+            if (SelectSingleNode(xmlNode, "AccessMode") is XmlNode accessModeNode)
+            {
+                accessMode = (GenAccessMode)Enum.Parse(typeof(GenAccessMode), accessModeNode.InnerText);
 
-            GenAccessMode accessMode = (GenAccessMode)Enum.Parse(typeof(GenAccessMode), SelectSingleNode(xmlNode, "AccessMode").InnerText);
+            }
 
             if (SelectSingleNode(xmlNode, nodeName: "pAddress") is XmlNode pFeatureNode)
             {
@@ -515,7 +523,7 @@ namespace GenICam
                         break;
                 }
             }
-            return new GenInteger(null,null, null, null, null, null, null, null, Representation.PureNumber, value,"", pValue);
+            return new GenInteger(null, null, null, null, null, null, null, null, Representation.PureNumber, value, "", pValue);
 
         }
         public async Task<IMathematical> GetFormula(XmlNode xmlNode)

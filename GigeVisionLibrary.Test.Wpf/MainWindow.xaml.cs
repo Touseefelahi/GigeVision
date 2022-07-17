@@ -35,8 +35,8 @@ namespace GigeVisionLibrary.Test.Wpf
             camera = new Camera
             {
                 IsRawFrame = false,
-                IsMulticast = true,
-                MulticastIP = "239.168.10.15"
+                IsMulticast = false,
+                MulticastIP = "239.168.10.15",
             };
             var listOfDevices = await camera.Gvcp.GetAllGigeDevicesInNetworkAsnyc().ConfigureAwait(false);
             if (listOfDevices.Count > 0) { Camera.IP = listOfDevices.FirstOrDefault()?.IP; }

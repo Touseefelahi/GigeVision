@@ -60,10 +60,17 @@ namespace GenICam
         public async Task<long?> GetAddressAsync()
         {
             if (PAddress is IPValue pValue)
-                return (long)(await pValue.GetValueAsync());
-            else if (Address is long address)
-                return address;
-            return null;
+            {
+                if (Address != null)
+                {
+                    return Address + (long)(await pValue.GetValueAsync());
+                }
+                else
+                {
+                    return (long)(await pValue.GetValueAsync());
+                }
+            }
+            return Address;
         }
 
         public long GetLength()

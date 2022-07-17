@@ -8,7 +8,7 @@ namespace GenICam
     /// </summary>
     public interface IInteger : IPValue
     {
-        public Task<long> GetValueAsync();
+        public Task<long?> GetValueAsync();
         public Task<IReplyPacket> SetValueAsync(long value);
         Task<long> GetMaxAsync();
         Task<long> GetMinAsync();

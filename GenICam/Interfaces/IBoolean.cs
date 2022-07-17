@@ -10,6 +10,6 @@ namespace GenICam
     public interface IBoolean 
     {
         public Task<bool> GetValueAsync();
-        public Task SetValueAsync(bool value);
+        public Task<IReplyPacket> SetValueAsync(bool value);
     }
 }

@@ -57,11 +57,11 @@ namespace GenICam
         /// <summary>
         /// Integer Increment Value
         /// </summary>
-        public long Inc { get; private set; }
+        public long Inc { get; private set; } = 1;
         public bool Streamble { get; set; }
         public IncrementMode? IncMode { get; private set; }
 
-        public long Value
+        public long? Value
         {
             get;
             set;
@@ -73,7 +73,7 @@ namespace GenICam
         public IMathematical PMax { get; }
         public IMathematical PMin { get; }
 
-        public async Task<long> GetValueAsync()
+        public async Task<long?> GetValueAsync()
         {
             if (PValue is IRegister register)
             {
@@ -118,7 +118,7 @@ namespace GenICam
                 }
             }
 
-            ValueToWrite = Value;
+            ValueToWrite = (long)Value;
             RaisePropertyChanged(nameof(ValueToWrite));
             return reply;
         }
@@ -131,7 +131,7 @@ namespace GenICam
                     return (long)(await PValue.GetValueAsync());
             }
 
-            return Value;
+            return 0;
         }
 
         public async Task<long> GetMaxAsync()

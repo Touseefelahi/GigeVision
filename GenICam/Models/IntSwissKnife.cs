@@ -23,7 +23,11 @@ namespace GenICam
         /// <param name="value"></param>
         public IntSwissKnife(string formula, Dictionary<string, IPValue> pVaribles, Dictionary<string, double> constants = null, Dictionary<string, string> expressions = null)
         {
-          PVariables = pVaribles;
+            if (formula.Equals("0xD00 + (CHAN * 0x40)"))
+            {
+
+            }
+            PVariables = pVaribles;
             Formula = formula;
             Constants = constants;
             Expressions = expressions;
@@ -407,7 +411,7 @@ namespace GenICam
         /// Get SwissKinfe Value
         /// </summary>
         /// <returns></returns>
-        public async Task<Int64?> GetValueAsync()
+        public async Task<long?> GetValueAsync()
         {
             return (Int64)await ExecuteFormula();
         }

@@ -108,7 +108,7 @@ namespace GenICam
             throw new NotImplementedException();
         }
 
-        public async Task<long> GetValueAsync()
+        public async Task<long?> GetValueAsync()
         {
             if (PValue is IRegister register)
             {
@@ -197,6 +197,31 @@ namespace GenICam
             {
                 await SetValueAsync(ValueToWrite);
             }
+        }
+
+        Task<double> IFloat.GetValueAsync()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task SetValueAsync(double value)
+        {
+            throw new NotImplementedException();
+        }
+
+        long IFloat.GetDisplayPrecision()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task ImposeMinAsync(long min)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task ImposeMaxAsync(long max)
+        {
+            throw new NotImplementedException();
         }
     }
 }

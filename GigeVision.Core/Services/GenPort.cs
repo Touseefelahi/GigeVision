@@ -15,10 +15,15 @@ namespace GigeVision.Core
 
         public IGvcp Gvcp { get; }
 
-        public async Task<IReplyPacket> ReadAsync(long address, long length)
+        public async Task<IReplyPacket> ReadAsync(long? address, long length)
         {
+            if (address is null)
+            {
+                return null;
+            }
+
             GvcpReply reply = new();            
-            var addressBytes = GetAddressBytes(address, length);
+            var addressBytes = GetAddressBytes((long)address, length);
             Array.Reverse(addressBytes);
 
             if (length < 4)
@@ -36,9 +41,13 @@ namespace GigeVision.Core
             return reply;
         }
 
-        public async Task<IReplyPacket> WriteAsync(byte[] pBuffer, long address, long length)
+        public async Task<IReplyPacket> WriteAsync(byte[] pBuffer, long? address, long length)
         {
-            var addressBytes = GetAddressBytes(address, length);
+            if (address is null)
+            {
+                return null;
+            }
+            var addressBytes = GetAddressBytes((long)address, length);
             Array.Reverse(addressBytes);
             return await Gvcp.WriteRegisterAsync(addressBytes, BitConverter.ToUInt32(pBuffer)).ConfigureAwait(false);
         }

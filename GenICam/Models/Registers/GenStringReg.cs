@@ -67,8 +67,9 @@ namespace GenICam
             return Value;
         }
 
-        public async Task SetValueAsync(string value)
+        public async Task<IReplyPacket> SetValueAsync(string value)
         {
+            IReplyPacket reply = null ;
             if (PValue is IRegister Register)
             {
                 if (Register.AccessMode != GenAccessMode.RO)
@@ -77,7 +78,7 @@ namespace GenICam
                     byte[] pBuffer = new byte[length];
                     pBuffer = ASCIIEncoding.ASCII.GetBytes(value);
 
-                    var reply = await Register.SetAsync(pBuffer, length);
+                    reply = await Register.SetAsync(pBuffer, length);
                     if (reply.IsSentAndReplyReceived && reply.Reply[0] == 0)
                     {
                         if (reply.MemoryValue != null)
@@ -85,6 +86,8 @@ namespace GenICam
                     }
                 }
             }
+
+            return reply;
         }
 
         public long GetMaxLength()
@@ -104,9 +107,7 @@ namespace GenICam
 
         public async Task<long?> GetAddressAsync()
         {
-            if (Address is long address)
-                return address;
-            return null;
+            return Address;
         }
 
         public long GetLength()

@@ -32,27 +32,30 @@ namespace GenICam
             return value == 1;
         }
 
-        public async Task SetValueAsync(bool value)
+        public async Task<IReplyPacket> SetValueAsync(bool value)
         {
-            if (PValue is IRegister Register)
+            IReplyPacket reply = null; 
+            if (PValue is IRegister register)
             {
-                var length = Register.Length;
+                var length = register.GetLength();
                 byte[] pBuffer = new byte[length];
                 pBuffer[0] = Convert.ToByte(value);
 
-                var reply = await Register.SetAsync(pBuffer, length);
+                reply = await register.SetAsync(pBuffer, length);
                 if (reply.IsSentAndReplyReceived && reply.Reply[0] == 0)
                     Value = value;
             }
 
             ValueToWrite = Value;
             RaisePropertyChanged(nameof(ValueToWrite));
+
+            return reply;
         }
 
 
-        private void ExecuteSetValueCommand()
+        private async void ExecuteSetValueCommand()
         {
-            SetValueAsync(ValueToWrite);
+            await SetValueAsync(ValueToWrite);
 
         }
         private async void ExecuteGetValueCommand()

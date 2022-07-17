@@ -25,7 +25,7 @@ namespace GenICam
         /// <returns></returns>
         public async Task<byte[]> GetAsync()
         {
-            return (await GenPort.ReadAsync(await GetAddressAsync(), Length)).Reply.ToArray();
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -59,13 +59,22 @@ namespace GenICam
 
         public async Task<IReplyPacket> SetAsync(byte[] pBuffer, long length)
         {
-            return await GenPort.WriteAsync(pBuffer,await GetAddressAsync(), length);
+            return await GenPort.WriteAsync(pBuffer, await GetAddressAsync(), length);
         }
 
         public async Task<long?> GetAddressAsync()
         {
             if (PAddress is IPValue pValue)
-                return (long)(await pValue.GetValueAsync());
+            {
+                if (Address != null)
+                {
+                    return Address + (long)(await pValue.GetValueAsync());
+                }
+                else
+                {
+                    return (long)(await pValue.GetValueAsync());
+                }
+            }
 
             return Address;
         }
@@ -75,71 +84,39 @@ namespace GenICam
             return Length;
         }
 
-        //public async Task<long?> GetValueAsync()
-        //{
-        //    Int64? value = null;
+        public async Task<long?> GetValueAsync()
+        {
+            return (await GenPort.ReadAsync(await GetAddressAsync(), Length)).RegisterValue;
+        }
 
-        //    var reply = await GetAsync(Length);
-        //    if (reply == null)
-        //    {
+        public async Task<IReplyPacket> SetValueAsync(long value)
+        {
+            IReplyPacket reply = null;
+            if (AccessMode != GenAccessMode.RO)
+            {
+                var length = GetLength();
+                byte[] pBuffer = new byte[length];
 
-        //    }
-        //    if (reply.MemoryValue != null)
-        //    {
-        //        switch (Length)
-        //        {
-        //            case 2:
-        //                value = BitConverter.ToUInt16(reply.MemoryValue);
-        //                break;
+                switch (length)
+                {
+                    case 2:
+                        pBuffer = BitConverter.GetBytes((UInt16)value);
+                        break;
 
-        //            case 4:
-        //                value = BitConverter.ToUInt32(reply.MemoryValue);
-        //                break;
+                    case 4:
+                        pBuffer = BitConverter.GetBytes((Int32)value);
+                        break;
 
-        //            case 8:
-        //                value = BitConverter.ToInt64(reply.MemoryValue);
-        //                break;
+                    case 8:
+                        pBuffer = BitConverter.GetBytes(value);
+                        break;
+                }
 
-        //            default:
-        //                value = BitConverter.ToInt64(reply.MemoryValue);
-        //                break;
-        //        }
-        //    }
-        //    else
-        //    {
-        //        value = Convert.ToInt64(reply.RegisterValue);
-        //    }
-        //    return value;
-        //}
+                reply = await SetAsync(pBuffer, length);
+            }
 
-        //public async Task<IReplyPacket> SetValueAsync(long value)
-        //{
-        //    IReplyPacket reply = null;
-        //    if (AccessMode != GenAccessMode.RO)
-        //    {
-        //        var length = GetLength();
-        //        byte[] pBuffer = new byte[length];
-
-        //        switch (length)
-        //        {
-        //            case 2:
-        //                pBuffer = BitConverter.GetBytes((UInt16)value);
-        //                break;
-
-        //            case 4:
-        //                pBuffer = BitConverter.GetBytes((Int32)value);
-        //                break;
-
-        //            case 8:
-        //                pBuffer = BitConverter.GetBytes(value);
-        //                break;
-        //        }
-
-        //        reply = await SetAsync(pBuffer, length);
-        //    }
-
-        //    return reply;
-        //}
+            return reply;
+        }
 
     }
 }
