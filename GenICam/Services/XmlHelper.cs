@@ -294,21 +294,35 @@ namespace GenICam
 
             IPValue pValue = null;
 
+
+            var representationNode = SelectSingleNode(xmlNode, "Representation");
+            if (representationNode != null)
+            {
+                Enum.TryParse<Representation>(representationNode.InnerText, out representation);
+            }
+
+            int convertFromBase = 10;
+            if (representation == Representation.HexNumber)
+            {
+                convertFromBase = 16;
+            }
+
+
             foreach (XmlNode node in xmlNode.ChildNodes)
             {
                 switch (node.Name)
                 {
                     case "Value":
-                        value = Int64.Parse(node.InnerText);
+                        value = Convert.ToInt64(node.InnerText, convertFromBase);
 
                         break;
 
                     case "Min":
-                        min = Int64.Parse(node.InnerText);
+                        min = Convert.ToInt64(node.InnerText, convertFromBase);
                         break;
 
                     case "Max":
-                        max = Int64.Parse(node.InnerText);
+                        max = Convert.ToInt64(node.InnerText, convertFromBase);
                         break;
 
                     case "pMin":
@@ -326,7 +340,7 @@ namespace GenICam
                         break;
 
                     case "Inc":
-                        inc = Int64.Parse(node.InnerText);
+                        inc = Convert.ToInt64(node.InnerText, convertFromBase);
 
                         break;
 
@@ -343,7 +357,7 @@ namespace GenICam
                         break;
 
                     case "Representation":
-                        Enum.TryParse<Representation>(node.InnerText, out representation);
+
                         break;
 
                     case "Unit":
@@ -396,6 +410,9 @@ namespace GenICam
             if (xmlNode.Name == nameof(RegisterType.Integer))
                 return await GetGenInteger(xmlNode);
 
+            if (xmlNode.Name == nameof(RegisterType.Float))
+                return await GetFloatCategory(xmlNode) as IPValue;
+
             var genRegister = await XmlNodeToGenRegister(xmlNode);
 
             switch (xmlNode.Name)
@@ -429,10 +446,9 @@ namespace GenICam
                         sign = Enum.Parse<Sign>(signNode.InnerText);
 
                     return new GenMaskedIntReg(genRegister.address, genRegister.length, msb, lsb, bit, sign, genRegister.accessMode, genRegister.pAddress, GenPort);
-
             }
 
-            throw new NotImplementedException();
+            return null;
         }
         private async Task<(Int64? address, object pAddress, ushort length, GenAccessMode accessMode)> XmlNodeToGenRegister(XmlNode xmlNode)
         {

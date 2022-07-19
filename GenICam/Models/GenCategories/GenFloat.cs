@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace GenICam
 {
-    public class GenFloat : GenCategory, IFloat, IPValue
+    public class GenFloat : GenCategory, IFloat
     {
         public GenFloat(CategoryProperties categoryProperties, double min, double max, long inc, IncrementMode incMode, Representation representation, double value, string unit, IPValue pValue, Dictionary<string, IMathematical> expressions)
         {
