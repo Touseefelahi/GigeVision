@@ -41,9 +41,7 @@ namespace GigeVision.Core.Interfaces
         /// <summary>
         /// Dictionary for registers
         /// </summary>
-        Dictionary<string, string> RegistersDictionary { get; set; }
-
-        public Dictionary<string, IPValue> RegistersDictionaryValues { get; set; }
+        public Dictionary<string, IPValue> RegistersDictionary { get; set; }
 
         List<ICategory> CategoryDictionary { get; }
 
@@ -230,20 +228,20 @@ namespace GigeVision.Core.Interfaces
         /// Read all Register
         /// </summary>
         /// <returns>Dictionary of registers</returns>
-        Task<Dictionary<string, string>> ReadAllRegisterAddressFromCameraAsync(string cameraIp);
+        Task ReadAllRegisterAddressFromCameraAsync(string cameraIp);
 
         /// <summary>
         /// Read all Register
         /// </summary>
         /// <returns>Dictionary of registers</returns>
-        Task<Dictionary<string, string>> ReadAllRegisterAddressFromCameraAsync();
+        Task ReadAllRegisterAddressFromCameraAsync();
 
         /// <summary>
         /// Read all Register
         /// </summary>
         /// <param name="gvcp"></param>
         /// <returns></returns>
-        Task<Dictionary<string, string>> ReadAllRegisterAddressFromCameraAsync(IGvcp gvcp);
+        Task ReadAllRegisterAddressFromCameraAsync(IGvcp gvcp);
 
         /// <summary>
         /// Forces the IP of camera to be changed to the given IP

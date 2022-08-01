@@ -98,10 +98,7 @@ namespace GigeVision.Core.Models
         public List<ICategory> CategoryDictionary { get; private set; }
 
         #region Status Commands
-
-        public Dictionary<string, string> RegistersDictionary { get; set; }
-
-        public Dictionary<string, IPValue> RegistersDictionaryValues { get; set; }
+        public Dictionary<string, IPValue> RegistersDictionary { get; set; }
         public bool IsLoadingXml { get; private set; }
 
         /// <summary>
@@ -113,7 +110,7 @@ namespace GigeVision.Core.Models
         {
             if (ValidateIp(ip))
             {
-                var cameraStatusPacket = await ReadRegisterAsync(ip, GvcpRegister.CCP).ConfigureAwait(false);
+                var cameraStatusPacket = await ReadRegisterAsync(ip, GvcpRegister.GevCCP).ConfigureAwait(false);
                 return cameraStatusPacket.RegisterValue switch
                 {
                     0 => CameraStatus.Available,
@@ -321,7 +318,7 @@ namespace GigeVision.Core.Models
         /// </summary>
         /// <param name="cameraIp">Camera IP</param>
         /// <returns>Register dictionary</returns>
-        public async Task<Dictionary<string, string>> ReadAllRegisterAddressFromCameraAsync(string cameraIp)
+        public async Task ReadAllRegisterAddressFromCameraAsync(string cameraIp)
         {
             try
             {
@@ -341,18 +338,14 @@ namespace GigeVision.Core.Models
                 {
                     if (xmlHelper.CategoryDictionary.Count > 0)
                     {
-                        RegistersDictionary = new Dictionary<string, string>();
-                        RegistersDictionaryValues = new Dictionary<string, IPValue>();
-                        RegistersDictionary.Add("XmlVersion", xmlHelper.Xmlns.InnerText);
+                        RegistersDictionary = new Dictionary<string, IPValue>();
                         await ReadAllRegisters(CategoryDictionary);
                     }
-                }
-
-                return RegistersDictionary;
+                };
             }
             catch
             {
-                return null;
+                
             }
             finally
             {
@@ -364,14 +357,14 @@ namespace GigeVision.Core.Models
         /// Reads all register of camera
         /// </summary>
         /// <returns>Register dictionary</returns>
-        public async Task<Dictionary<string, string>> ReadAllRegisterAddressFromCameraAsync()
+        public async Task ReadAllRegisterAddressFromCameraAsync()
         {
-            return await ReadAllRegisterAddressFromCameraAsync(CameraIp);
+            await ReadAllRegisterAddressFromCameraAsync(CameraIp);
         }
 
-        public async Task<Dictionary<string, string>> ReadAllRegisterAddressFromCameraAsync(IGvcp gvcp)
+        public async Task ReadAllRegisterAddressFromCameraAsync(IGvcp gvcp)
         {
-            return await ReadAllRegisterAddressFromCameraAsync(gvcp.CameraIp);
+            await ReadAllRegisterAddressFromCameraAsync(gvcp.CameraIp);
         }
 
         private async Task ReadAllRegisters(List<ICategory> categories)
@@ -385,26 +378,8 @@ namespace GigeVision.Core.Models
 
                 if (category.PFeatures != null)
                     await ReadAllRegisters(category.PFeatures);
-                if (!RegistersDictionaryValues.ContainsKey(category.CategoryProperties.Name))
-                    RegistersDictionaryValues.Add(category.CategoryProperties.Name, category.PValue);
-
-                if (RegistersDictionary.ContainsKey(category.CategoryProperties.Name))
-                    continue;
-                else if (category is IGenRegister genRegister)
-                {
-                    if (RegistersDictionary.ContainsKey(category.CategoryProperties.Name))
-                        continue;
-
-                    RegistersDictionary.Add(category.CategoryProperties.Name, $"0x{ await genRegister.GetAddress():X4}");
-                }
-                else if (category.PValue is IRegister register)
-                {
-                    if (RegistersDictionary.ContainsKey(category.CategoryProperties.Name))
-                        continue;
-
-                    RegistersDictionary.Add(category.CategoryProperties.Name, $"0x{await register.GetAddress():X4}");
-
-                }
+                if (!RegistersDictionary.ContainsKey(category.CategoryProperties.Name))
+                    RegistersDictionary.Add(category.CategoryProperties.Name, category.PValue);
             }
         }
 
@@ -832,12 +807,12 @@ namespace GigeVision.Core.Models
 
         private async Task<bool> GetControlAsync(UdpClient socket)
         {
-            var currentStatus = await ReadRegisterAsync(Converter.RegisterStringToByteArray(GvcpRegister.CCP.ToString("X"))).ConfigureAwait(false);
+            var currentStatus = await ReadRegisterAsync(Converter.RegisterStringToByteArray(GvcpRegister.GevCCP.ToString("X"))).ConfigureAwait(false);
             if (currentStatus.IsValid)
             {
                 if (currentStatus.RegisterValue == 0)//Its free and can be controlled
                 {
-                    GvcpCommand controlCommand = new(Converter.RegisterStringToByteArray(GvcpRegister.CCP.ToString("X")),
+                    GvcpCommand controlCommand = new(Converter.RegisterStringToByteArray(GvcpRegister.GevCCP.ToString("X")),
                         GvcpCommandType.WriteReg, 2, gvcpRequestID++);
                     var reply = await SendGvcpCommand(socket, controlCommand).ConfigureAwait(false);
                     return reply.Status == GvcpStatus.GEV_STATUS_SUCCESS;
@@ -964,7 +939,7 @@ namespace GigeVision.Core.Models
             GvcpReply reply;
             do
             {
-                reply = await WriteRegisterAsync(GvcpRegister.CCP, 0).ConfigureAwait(false);
+                reply = await WriteRegisterAsync(GvcpRegister.GevCCP, 0).ConfigureAwait(false);
                 if (--retryCount == 0)
                 {
                     break;
@@ -1054,7 +1029,7 @@ namespace GigeVision.Core.Models
             Task.Run(async () =>
             {
                 isHeartBeatThreadRunning = true;
-                GvcpCommand command = new(Converter.RegisterStringToByteArray(GvcpRegister.CCP.ToString("X")), GvcpCommandType.ReadReg);
+                GvcpCommand command = new(Converter.RegisterStringToByteArray(GvcpRegister.GevCCP.ToString("X")), GvcpCommandType.ReadReg);
                 while (IsKeepingAlive)
                 {
                     try

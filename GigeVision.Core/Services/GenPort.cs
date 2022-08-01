@@ -38,8 +38,6 @@ namespace GigeVision.Core
 
         public async Task<IReplyPacket> Write(byte[] pBuffer, long address, long length)
         {
-            await Gvcp.TakeControl(false).ConfigureAwait(false);
-
             var addressBytes = GetAddressBytes(address, length);
             Array.Reverse(addressBytes);
             return await Gvcp.WriteRegisterAsync(addressBytes, BitConverter.ToUInt32(pBuffer)).ConfigureAwait(false);

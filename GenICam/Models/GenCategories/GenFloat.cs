@@ -20,8 +20,15 @@ namespace GenICam
             PValue = pValue;
             Expressions = expressions;
             SetValueCommand = new DelegateCommand(ExecuteSetValueCommand);
-          //  if (CategoryProperties.Visibility != GenVisibility.Invisible)
-              //  SetupFeatures();
+            GetValueCommand = new DelegateCommand(ExecuteGetValueCommand);
+        }
+
+        private async void ExecuteGetValueCommand()
+        {
+            Value = await GetValue();
+            ValueToWrite = Value;
+            RaisePropertyChanged(nameof(Value));
+            RaisePropertyChanged(nameof(ValueToWrite));
         }
 
         public double Min { get; private set; }
@@ -110,15 +117,11 @@ namespace GenICam
 
         public async Task<long> GetValue()
         {
-            double value = Value;
-
             if (PValue is IRegister Register)
             {
                 if (Register.AccessMode != GenAccessMode.WO)
                 {
-                    value = await Register.GetValue();
-
-                    byte[] pBuffer = BitConverter.GetBytes(value);
+                    byte[] pBuffer = BitConverter.GetBytes(await Register.GetValue());
 
                     if (Representation == Representation.HexNumber)
                         Array.Reverse(pBuffer);
@@ -126,25 +129,23 @@ namespace GenICam
                     switch (pBuffer.Length)
                     {
                         case 2:
-                            value = BitConverter.ToUInt16(pBuffer); ;
-                            break;
+                            return BitConverter.ToUInt16(pBuffer); ;
 
                         case 4:
-                            value = BitConverter.ToUInt32(pBuffer);
-                            break;
+                            return  BitConverter.ToUInt32(pBuffer);
 
                         case 8:
-                            value = BitConverter.ToInt64(pBuffer);
-                            break;
+                            return BitConverter.ToInt64(pBuffer);
+                            
                     }
                 }
             }
             else if (PValue is IntSwissKnife intSwissKnife)
             {
-                value = await intSwissKnife.GetValue();
+                return await intSwissKnife.GetValue();
             }
 
-            return (long)value;
+            throw new Exception("Failed To GetValue");
         }
 
         public async Task<IReplyPacket> SetValue(long value)
@@ -195,13 +196,6 @@ namespace GenICam
         public void ImposeMin(double min)
         {
             Min = min;
-        }
-
-        public async void SetupFeatures()
-        {
-            Value = await GetValue();
-            Max = await GetMax();
-            Min = await GetMin();
         }
 
         public async void SetValue(double value)

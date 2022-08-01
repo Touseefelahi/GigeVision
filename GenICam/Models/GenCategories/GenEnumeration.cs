@@ -15,8 +15,14 @@ namespace GenICam
             PValue = pValue;
             Expressions = expressions;
             SetValueCommand = new DelegateCommand(ExecuteSetValueCommand);
-           // if (CategoryProperties.Visibility != GenVisibility.Invisible)
-               // SetupFeatures();
+            GetValueCommand = new DelegateCommand(ExecuteGetValueCommand);
+        }
+        private async void ExecuteGetValueCommand()
+        {
+            Value = await GetIntValue();
+            ValueToWrite = Value;
+            RaisePropertyChanged(nameof(Value));
+            RaisePropertyChanged(nameof(ValueToWrite));
         }
 
         /// <summary>
@@ -43,7 +49,7 @@ namespace GenICam
                 return await intSwissKnife.GetValue();
             }
 
-            return Value;
+            throw new Exception("Failed to GetIntValue");
         }
 
         public async void SetIntValue(long value)
@@ -114,12 +120,6 @@ namespace GenICam
         public EnumEntry GetCurrentEntry(long entryValue)
         {
             return Entries.Values.FirstOrDefault(x => x.Value == entryValue);
-        }
-
-        public async void SetupFeatures()
-        {
-            Value = (long)(await GetIntValue());
-            ValueToWrite = Entries.Values.ToList().IndexOf(GetCurrentEntry(Value));
         }
 
         private void ExecuteSetValueCommand()
