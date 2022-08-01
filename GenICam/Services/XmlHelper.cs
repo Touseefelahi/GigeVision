@@ -477,20 +477,17 @@ namespace GenICam
                         default:
                             pAddress = await GetRegister(pNode);
                             if (pAddress is null)
-                                pAddress = await GetGenCategory (pNode);
+                                pAddress = await GetGenCategory(pNode);
                             break;
                     }
 
                     if (pAddress is null)
                         pAddress = await GetGenCategory(pNode);
                 }
-
             }
-
 
             ushort length = ushort.Parse(xmlNode.SelectSingleNode(NamespacePrefix + "Length", XmlNamespaceManager).InnerText);
             GenAccessMode accessMode = (GenAccessMode)Enum.Parse(typeof(GenAccessMode), xmlNode.SelectSingleNode(NamespacePrefix + "AccessMode", XmlNamespaceManager).InnerText);
-
 
             return new GenIntReg(address, length, accessMode, registers, pAddress, GenPort);
         }
@@ -577,7 +574,6 @@ namespace GenICam
                     if (pAddress is null)
                         pAddress = await GetGenCategory(pNode);
                 }
-
             }
 
             return new GenIntReg(address, length, accessMode, expressions, pAddress, GenPort);
@@ -598,7 +594,7 @@ namespace GenICam
             }
 
             ushort length = ushort.Parse(xmlNode.SelectSingleNode(NamespacePrefix + "Length", XmlNamespaceManager).InnerText);
-            GenAccessMode accessMode = Enum.Parse<GenAccessMode>(xmlNode.SelectSingleNode(NamespacePrefix + "AccessMode", XmlNamespaceManager).InnerText);
+            GenAccessMode accessMode = (GenAccessMode)Enum.Parse(typeof(GenAccessMode), xmlNode.SelectSingleNode(NamespacePrefix + "AccessMode", XmlNamespaceManager).InnerText);
 
             if (xmlNode.SelectSingleNode(NamespacePrefix + "pAddress", XmlNamespaceManager) is XmlNode pFeatureNode)
             {
@@ -628,9 +624,7 @@ namespace GenICam
                     if (pAddress is null)
                         pAddress = await GetGenCategory(pNode);
                 }
-
             }
-
 
             short? lsb = null, msb = null;
             byte? bit = null;
@@ -802,7 +796,7 @@ namespace GenICam
                         break;
 
                     case "Slope":
-                        slope = Enum.Parse<Slope>(node.InnerText);
+                        slope = (Slope)Enum.Parse(typeof(Slope), node.InnerText);
 
                         break;
 
@@ -839,7 +833,7 @@ namespace GenICam
             }
 
             if (xmlNode.SelectSingleNode(NamespacePrefix + "Visibility", XmlNamespaceManager) is XmlNode visibilityNode)
-                visibilty = Enum.Parse<GenVisibility>(visibilityNode.InnerText);
+                visibilty = (GenVisibility)Enum.Parse(typeof(GenVisibility), visibilityNode.InnerText);
             if (xmlNode.SelectSingleNode(NamespacePrefix + "ToolTip", XmlNamespaceManager) is XmlNode toolTipNode)
                 toolTip = toolTipNode.InnerText;
 
@@ -878,7 +872,7 @@ namespace GenICam
             }
             else if (GetNodeByAttirbuteValue(parentNode, "IntReg", pNode) is XmlNode intRegNode)
             {
-                var node = await LookForChildInsideAllParents (intRegNode, pNode);
+                var node = await LookForChildInsideAllParents(intRegNode, pNode);
                 return node;
             }
             else if (GetNodeByAttirbuteValue(parentNode, "IntSwissKnife", pNode) is XmlNode intSwissKnifeNode)

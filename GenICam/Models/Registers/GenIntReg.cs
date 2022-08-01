@@ -76,32 +76,32 @@ namespace GenICam
         {
             Int64 value;
 
-                var reply = await Get(Length);
-                if (reply.MemoryValue != null)
+            var reply = await Get(Length);
+            if (reply.MemoryValue != null)
+            {
+                switch (Length)
                 {
-                    switch (Length)
-                    {
-                        case 2:
-                            value = BitConverter.ToUInt16(reply.MemoryValue);
-                            break;
+                    case 2:
+                        value = BitConverter.ToUInt16(reply.MemoryValue, 0);
+                        break;
 
-                        case 4:
-                            value = BitConverter.ToUInt32(reply.MemoryValue);
-                            break;
+                    case 4:
+                        value = BitConverter.ToUInt32(reply.MemoryValue, 0);
+                        break;
 
-                        case 8:
-                            value = BitConverter.ToInt64(reply.MemoryValue);
-                            break;
+                    case 8:
+                        value = BitConverter.ToInt64(reply.MemoryValue, 0);
+                        break;
 
-                        default:
-                            value = BitConverter.ToInt64(reply.MemoryValue);
-                            break;
-                    }
+                    default:
+                        value = BitConverter.ToInt64(reply.MemoryValue, 0);
+                        break;
                 }
-                else
-                {
-                    value = Convert.ToInt64(reply.RegisterValue);
-                }
+            }
+            else
+            {
+                value = Convert.ToInt64(reply.RegisterValue);
+            }
             return value;
         }
 

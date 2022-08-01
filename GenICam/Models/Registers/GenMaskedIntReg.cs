@@ -12,12 +12,14 @@ namespace GenICam
         /// Register Address in hex format
         /// </summary>
         public Int64? Address { get; private set; }
+
         public object PAddress { get; private set; }
 
         /// <summary>
         /// Register Length
         /// </summary>
         public Int64 Length { get; private set; }
+
         public short? MSB { get; private set; }
         public short? LSB { get; private set; }
         public byte? Bit { get; private set; }
@@ -105,19 +107,19 @@ namespace GenICam
             switch (Length)
             {
                 case 2:
-                    value = BitConverter.ToUInt16(valueBytes);
+                    value = BitConverter.ToUInt16(valueBytes, 0);
                     break;
 
                 case 4:
-                    value = BitConverter.ToUInt32(valueBytes);
+                    value = BitConverter.ToUInt32(valueBytes, 0);
                     break;
 
                 case 8:
-                    value = BitConverter.ToInt64(valueBytes);
+                    value = BitConverter.ToInt64(valueBytes, 0);
                     break;
 
                 default:
-                    value = BitConverter.ToInt64(valueBytes);
+                    value = BitConverter.ToInt64(valueBytes, 0);
                     break;
             }
 

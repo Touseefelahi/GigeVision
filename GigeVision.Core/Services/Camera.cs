@@ -511,11 +511,11 @@ namespace GigeVision.Core.Models
 
                 if (Gvcp.RegistersDictionary?.Count > 0)
                 {
-                    Width = (uint)await Gvcp.RegistersDictionaryValues[nameof(RegisterName.Width)].GetValue().ConfigureAwait(false);
-                    Height = (uint)await Gvcp.RegistersDictionaryValues[nameof(RegisterName.Height)].GetValue().ConfigureAwait(false);
-                    OffsetX = (uint)await Gvcp.RegistersDictionaryValues[nameof(RegisterName.OffsetX)].GetValue().ConfigureAwait(false);
-                    OffsetY = (uint)await Gvcp.RegistersDictionaryValues[nameof(RegisterName.OffsetY)].GetValue().ConfigureAwait(false);
-                    PixelFormat = (PixelFormat)(uint)await Gvcp.RegistersDictionaryValues[nameof(RegisterName.PixelFormat)].GetValue().ConfigureAwait(false);
+                    Width = (uint)await Gvcp.RegistersDictionary[nameof(RegisterName.Width)].GetValue().ConfigureAwait(false);
+                    Height = (uint)await Gvcp.RegistersDictionary[nameof(RegisterName.Height)].GetValue().ConfigureAwait(false);
+                    OffsetX = (uint)await Gvcp.RegistersDictionary[nameof(RegisterName.OffsetX)].GetValue().ConfigureAwait(false);
+                    OffsetY = (uint)await Gvcp.RegistersDictionary[nameof(RegisterName.OffsetY)].GetValue().ConfigureAwait(false);
+                    PixelFormat = (PixelFormat)(uint)await Gvcp.RegistersDictionary[nameof(RegisterName.PixelFormat)].GetValue().ConfigureAwait(false);
                     bytesPerPixel = 3;
                 }
                 else

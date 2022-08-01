@@ -129,15 +129,13 @@ namespace GenICam
                     switch (pBuffer.Length)
                     {
                         case 2:
-                            value = BitConverter.ToUInt16(pBuffer); ;
-                            break;
+                            return (ushort)BitConverter.ToInt16(pBuffer, 0);
 
                         case 4:
-                            return  BitConverter.ToUInt32(pBuffer);
+                            return (uint)BitConverter.ToInt32(pBuffer, 0);
 
                         case 8:
-                            return BitConverter.ToInt64(pBuffer);
-                            
+                            return BitConverter.ToInt64(pBuffer, 0);
                     }
                 }
             }

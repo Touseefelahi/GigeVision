@@ -98,6 +98,7 @@ namespace GigeVision.Core.Models
         public List<ICategory> CategoryDictionary { get; private set; }
 
         #region Status Commands
+
         public Dictionary<string, IPValue> RegistersDictionary { get; set; }
         public bool IsLoadingXml { get; private set; }
 
@@ -333,7 +334,6 @@ namespace GigeVision.Core.Models
                 await xmlHelper.LoadUp();
                 CategoryDictionary = xmlHelper.CategoryDictionary;
 
-
                 if (xmlHelper.CategoryDictionary != null)
                 {
                     if (xmlHelper.CategoryDictionary.Count > 0)
@@ -345,7 +345,6 @@ namespace GigeVision.Core.Models
             }
             catch
             {
-                
             }
             finally
             {
@@ -507,10 +506,12 @@ namespace GigeVision.Core.Models
                     case "xml":
                         xmlFile = new MemoryStream(fileData);
                         break;
+
                     case "zip":
                         //converting the zip file from bytes to stream
                         xmlFile = UnZipEncodedZipFile(fileData);
                         break;
+
                     default:
                         break;
                 }
@@ -541,7 +542,6 @@ namespace GigeVision.Core.Models
             {
                 throw;
             }
-
         }
 
         #endregion Read All Registers Address XML

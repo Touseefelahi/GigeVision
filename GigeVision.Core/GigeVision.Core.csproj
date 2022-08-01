@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net6.0;net4.8</TargetFrameworks>
+    <TargetFrameworks>net6.0;net4.8;net4.7.1</TargetFrameworks>
     <Authors>Touseef Elahi</Authors>
     <Company>Stira.sa</Company>
     <Product>GigeVision</Product>
@@ -12,13 +12,14 @@
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 
-    <Version>2.2.1</Version>
+    <Version>2.3.1</Version>
 
     <PackageLicenseFile>License.txt</PackageLicenseFile>
     <PackageIcon>gige.png</PackageIcon>
     <PackageIconUrl />
     <Platforms>AnyCPU;x64;x86</Platforms>
     <PackageReleaseNotes>
+	  2.3.0: Compatible with .net framework 4.8
       2.1.1: Upgraded to Netcore 6.0 with Multicast reception fix
       1.8.0: Pushes the block id (frame number) in the frame event and Gives notification on frameloss
       Fix Receiver IP Detection
@@ -42,7 +43,8 @@
 
   <ItemGroup>
     <!--<PackageReference Include="GenICam" Version="2.0.0" />-->
-    <PackageReference Include="Stira.WpfCore" Version="1.1.0" />
+    <PackageReference Include="Stira.WpfCore" Version="1.2.1" />
+    <PackageReference Include="System.IO.Compression" Version="4.3.0" />
     <PackageReference Include="System.IO.Pipelines" Version="5.0.1" />
   </ItemGroup>
 

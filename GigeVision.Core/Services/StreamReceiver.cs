@@ -188,7 +188,6 @@ namespace GigeVision.Core.Models
             throw new NotImplementedException();
         }
 
-
         private void DecodePacketsRawSocket()
         {
             int packetID = 0, bufferIndex = 0, bufferLength = 0, bufferStart = 0, length = 0, packetRxCount = 1, packetRxCountClone, bufferIndexClone;
@@ -200,7 +199,7 @@ namespace GigeVision.Core.Models
             try
             {
                 DetectGvspType();
-                Span<byte> singlePacket = stackalloc byte[GvspInfo.PacketLength];
+                byte[] singlePacket = new byte[GvspInfo.PacketLength];
 
                 while (Camera.IsStreaming)
                 {
@@ -211,7 +210,7 @@ namespace GigeVision.Core.Models
                         packetID = (singlePacket[GvspInfo.PacketIDIndex] << 8) | singlePacket[GvspInfo.PacketIDIndex + 1];
                         bufferStart = (packetID - 1) * GvspInfo.PayloadSize; //This use buffer length of regular packet
                         bufferLength = length - GvspInfo.PayloadOffset;  //This will only change for final packet
-                        singlePacket.Slice(GvspInfo.PayloadOffset, bufferLength).CopyTo(buffer[bufferIndex].AsSpan().Slice(bufferStart, bufferLength));
+                        singlePacket.AsSpan().Slice(GvspInfo.PayloadOffset, bufferLength).CopyTo(buffer[bufferIndex].AsSpan().Slice(bufferStart, bufferLength));
                         continue;
                     }
                     if (singlePacket[4] == GvspInfo.DataEndIdentifier)
@@ -222,10 +221,10 @@ namespace GigeVision.Core.Models
                             GvspInfo.FinalPacketID = packetID - 1;
                         }
 
-                        blockID = singlePacket.Slice(GvspInfo.BlockIDIndex, GvspInfo.BlockIDLength).ToArray();
+                        blockID = singlePacket.AsSpan().Slice(GvspInfo.BlockIDIndex, GvspInfo.BlockIDLength).ToArray();
                         Array.Resize(ref blockID, 8);
                         Array.Reverse(blockID);
-                        imageID = BitConverter.ToUInt64(blockID);
+                        imageID = BitConverter.ToUInt64(blockID, 0);
                         packetRxCountClone = packetRxCount;
                         lastImageIDClone = lastImageID;
                         bufferIndexClone = bufferIndex;
@@ -259,14 +258,11 @@ namespace GigeVision.Core.Models
                 }
                 _ = Camera.StopStream();
             }
-
         }
-
-
 
         private void DetectGvspType()
         {
-            Span<byte> singlePacket = new byte[10000];
+            byte[] singlePacket = new byte[10000];
             socketRxRaw.Receive(singlePacket);
             IsDecodingAsVersion2 = ((singlePacket[4] & 0xF0) >> 4) == 8;
 
@@ -280,6 +276,7 @@ namespace GigeVision.Core.Models
 
             //Optimizing the array length for receive buffer
             int length = socketRxRaw.Receive(singlePacket);
+
             int packetID = (singlePacket[GvspInfo.PacketIDIndex] << 8) | singlePacket[GvspInfo.PacketIDIndex + 1];
             if (packetID > 0)
             {
