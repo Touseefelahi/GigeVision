@@ -1,12 +1,6 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using GigeVision.Core.Models;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using GigeVision.Core.Enums;
-using System.Linq.Expressions;
 
 namespace GigeVision.Core.Models.Tests
 {
