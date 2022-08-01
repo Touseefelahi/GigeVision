@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Prism.Commands;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
@@ -24,6 +25,7 @@ namespace GenICam
 
         public IGenPort GenPort { get; }
         public string Value { get; set; }
+        public string ValueToWrite { get; set; }
 
         public GenStringReg(CategoryProperties categoryProperties, Int64 address, ushort length, GenAccessMode accessMode, IGenPort genPort)
         {
@@ -32,7 +34,22 @@ namespace GenICam
             Length = length;
             AccessMode = accessMode;
             GenPort = genPort;
-            SetupFeatures();
+            GetValueCommand = new DelegateCommand(ExecuteGetValueCommand);
+            SetValueCommand = new DelegateCommand(ExecuteSetValueCommand);
+        }
+
+        private async void ExecuteGetValueCommand()
+        {
+            Value = await GetValue();
+            ValueToWrite = Value;
+            RaisePropertyChanged(nameof(Value));
+            RaisePropertyChanged(nameof(ValueToWrite));
+        }
+
+        private async void ExecuteSetValueCommand()
+        {
+            if (Value != ValueToWrite)
+                await SetValue(ValueToWrite);
         }
 
         public async Task<string> GetValue()
@@ -50,7 +67,7 @@ namespace GenICam
             return Value;
         }
 
-        public async void SetValue(string value)
+        public async Task SetValue(string value)
         {
             if (PValue is IRegister Register)
             {
@@ -97,9 +114,5 @@ namespace GenICam
             return Length;
         }
 
-        public async void SetupFeatures()
-        {
-            Value = await GetValue();
-        }
     }
 }
