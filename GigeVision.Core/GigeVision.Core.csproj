@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFrameworks>net6.0;net4.8</TargetFrameworks>
     <Authors>Touseef Elahi</Authors>
     <Company>Stira.sa</Company>
     <Product>GigeVision</Product>
@@ -41,9 +41,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="GenICam" Version="2.0.0" />
+    <!--<PackageReference Include="GenICam" Version="2.0.0" />-->
     <PackageReference Include="Stira.WpfCore" Version="1.1.0" />
     <PackageReference Include="System.IO.Pipelines" Version="5.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GenICam\GenICam.csproj" />
   </ItemGroup>
 
 </Project>

@@ -551,7 +551,7 @@ namespace GenICam
                 string equation = "";
                 while (formula.Contains('+') || formula.Contains('-') || formula.Contains('/') || formula.Contains('*'))
                 {
-                    foreach (var item in formula.Split('(', StringSplitOptions.None))
+                    foreach (var item in formula.Split('('))
                     {
                         equation = item;
                         if (item.Contains(')'))
@@ -620,7 +620,7 @@ namespace GenICam
                 string equation = "";
                 while (formula.Contains('+') || formula.Contains('-') || formula.Contains('/') || formula.Contains('*'))
                 {
-                    foreach (var item in formula.Split('(', StringSplitOptions.None))
+                    foreach (var item in formula.Split('('))
                     {
                         equation = item;
                         if (item.Contains(')'))

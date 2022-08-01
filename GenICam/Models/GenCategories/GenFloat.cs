@@ -20,8 +20,8 @@ namespace GenICam
             PValue = pValue;
             Expressions = expressions;
             SetValueCommand = new DelegateCommand(ExecuteSetValueCommand);
-          //  if (CategoryProperties.Visibility != GenVisibility.Invisible)
-              //  SetupFeatures();
+            //  if (CategoryProperties.Visibility != GenVisibility.Invisible)
+            //  SetupFeatures();
         }
 
         public double Min { get; private set; }
@@ -126,7 +126,7 @@ namespace GenICam
                     switch (pBuffer.Length)
                     {
                         case 2:
-                            value = BitConverter.ToUInt16(pBuffer); ;
+                            value = BitConverter.ToUInt16(pBuffer);
                             break;
 
                         case 4:

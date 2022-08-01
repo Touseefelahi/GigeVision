@@ -132,7 +132,7 @@ namespace GenICam
             double result;
             string equation;
 
-            foreach (var item in formula.Split('(', StringSplitOptions.None))
+            foreach (var item in formula.Split('('))
             {
                 equation = item;
                 if (item.Contains(')'))

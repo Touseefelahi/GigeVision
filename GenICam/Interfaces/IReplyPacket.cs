@@ -42,12 +42,12 @@ namespace GenICam
         /// <summary>
         /// Register value
         /// </summary>
-        public uint RegisterValue { get; set; }
+        uint RegisterValue { get; set; }
 
         /// <summary>
         /// Memory Value
         /// </summary>
-        public byte[] MemoryValue { get; set; }
+        byte[] MemoryValue { get; set; }
 
         /// <summary>
         /// It sets the list of byte

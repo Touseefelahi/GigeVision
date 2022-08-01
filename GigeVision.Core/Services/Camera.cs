@@ -86,7 +86,8 @@ namespace GigeVision.Core.Models
         /// <summary>
         /// Camera stream status
         /// </summary>
-        public bool IsStreaming { get => isStreaming; set { isStreaming = value; OnPropertyChanged(nameof(IsStreaming)); } }
+        public bool IsStreaming
+        { get => isStreaming; set { isStreaming = value; OnPropertyChanged(nameof(IsStreaming)); } }
 
         /// <summary>
         /// GVCP controller
@@ -320,7 +321,8 @@ namespace GigeVision.Core.Models
                         await Gvcp.WriteRegisterAsync(GvcpRegister.SCDA, Converter.IpToNumber(ip2Send)).ConfigureAwait(false);
                         await Gvcp.WriteRegisterAsync(GvcpRegister.SCPSPacketSize, Payload).ConfigureAwait(false);
                         string startReg = Gvcp.RegistersDictionary[nameof(RegisterName.AcquisitionStart)];
-                        if ((await Gvcp.WriteRegisterAsync(startReg, 1).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS)
+                        var reply = await Gvcp.WriteRegisterAsync(startReg, 1).ConfigureAwait(false);
+                        if (reply.Status == GvcpStatus.GEV_STATUS_SUCCESS)
                         {
                             IsStreaming = true;
                         }
@@ -515,11 +517,17 @@ namespace GigeVision.Core.Models
 
                 if (Gvcp.RegistersDictionary?.Count > 0)
                 {
-                    Width = (uint)await Gvcp.RegistersDictionaryValues[nameof(RegisterName.Width)].GetValue().ConfigureAwait(false);
-                    Height = (uint)await Gvcp.RegistersDictionaryValues[nameof(RegisterName.Height)].GetValue().ConfigureAwait(false);
-                    OffsetX = (uint)await Gvcp.RegistersDictionaryValues[nameof(RegisterName.OffsetX)].GetValue().ConfigureAwait(false);
-                    OffsetY = (uint)await Gvcp.RegistersDictionaryValues[nameof(RegisterName.OffsetY)].GetValue().ConfigureAwait(false);
-                    PixelFormat = (PixelFormat)(uint)await Gvcp.RegistersDictionaryValues[nameof(RegisterName.PixelFormat)].GetValue().ConfigureAwait(false);
+                    Width = (await Gvcp.ReadRegisterAsync(Gvcp.RegistersDictionary[nameof(RegisterName.Width)]).ConfigureAwait(false)).RegisterValue;
+                    Height = (await Gvcp.ReadRegisterAsync(Gvcp.RegistersDictionary[nameof(RegisterName.Height)]).ConfigureAwait(false)).RegisterValue;
+                    OffsetX = (await Gvcp.ReadRegisterAsync(Gvcp.RegistersDictionary[nameof(RegisterName.OffsetX)]).ConfigureAwait(false)).RegisterValue;
+                    OffsetY = (await Gvcp.ReadRegisterAsync(Gvcp.RegistersDictionary[nameof(RegisterName.OffsetY)]).ConfigureAwait(false)).RegisterValue;
+                    PixelFormat = (PixelFormat)(await Gvcp.ReadRegisterAsync(Gvcp.RegistersDictionary[nameof(RegisterName.PixelFormat)]).ConfigureAwait(false)).RegisterValue;
+
+                    //Width = (uint)await Gvcp.RegistersDictionaryValues[nameof(RegisterName.Width)].GetValue().ConfigureAwait(false);
+                    //Height = (uint)await Gvcp.RegistersDictionaryValues[nameof(RegisterName.Height)].GetValue().ConfigureAwait(false);
+                    //OffsetX = (uint)await Gvcp.RegistersDictionaryValues[nameof(RegisterName.OffsetX)].GetValue().ConfigureAwait(false);
+                    //OffsetY = (uint)await Gvcp.RegistersDictionaryValues[nameof(RegisterName.OffsetY)].GetValue().ConfigureAwait(false);
+                    //PixelFormat = (PixelFormat)(uint)await Gvcp.RegistersDictionaryValues[nameof(RegisterName.PixelFormat)].GetValue().ConfigureAwait(false);
                     bytesPerPixel = 3;
                 }
                 else
@@ -533,7 +541,6 @@ namespace GigeVision.Core.Models
                         }
                         await Gvcp.ReadAllRegisterAddressFromCameraAsync().ConfigureAwait(false);
                         await SyncParameters(0);
-
                     }
 
                     return false;

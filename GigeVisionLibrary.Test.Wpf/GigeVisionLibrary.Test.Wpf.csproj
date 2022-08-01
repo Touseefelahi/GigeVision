@@ -5,6 +5,7 @@
     <UseWPF>true</UseWPF>
     <AssemblyName>GigeVisionLibrary.Test.Wpf</AssemblyName>
     <Version>0.1</Version>
+    <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
    
   <ItemGroup>
