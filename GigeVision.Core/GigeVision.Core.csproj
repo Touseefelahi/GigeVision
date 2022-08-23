@@ -42,6 +42,8 @@
 
   <ItemGroup>
     <PackageReference Include="GenICam" Version="2.0.0" />
+    <PackageReference Include="Microsoft.Extensions.ObjectPool" Version="6.0.8" />
+    <PackageReference Include="Microsoft.Toolkit.HighPerformance" Version="7.1.2" />
     <PackageReference Include="Stira.WpfCore" Version="1.1.0" />
     <PackageReference Include="System.IO.Pipelines" Version="5.0.1" />
   </ItemGroup>
