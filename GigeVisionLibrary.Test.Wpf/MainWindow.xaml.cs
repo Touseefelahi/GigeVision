@@ -1,6 +1,7 @@
 ﻿using GigeVision.Core.Models;
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 
 namespace GigeVisionLibrary.Test.Wpf
@@ -32,14 +33,14 @@ namespace GigeVisionLibrary.Test.Wpf
 
         private async void Setup()
         {
-            camera = new Camera
-            {
-                IsRawFrame = false,
-                IsMulticast = true,
-                MulticastIP = "239.168.10.15"
-            };
+            camera = new Camera();
+
             var listOfDevices = await camera.Gvcp.GetAllGigeDevicesInNetworkAsnyc().ConfigureAwait(false);
-            if (listOfDevices.Count > 0) { Camera.IP = listOfDevices.FirstOrDefault()?.IP; }
+            listOfDevices = await camera.Gvcp.GetAllGigeDevicesInNetworkAsnyc().ConfigureAwait(false);
+            if (listOfDevices.Count > 0)
+            {
+                Camera.IP = listOfDevices.FirstOrDefault()?.IP;
+            }
             camera.FrameReady += FrameReady;
             camera.Gvcp.ElapsedOneSecond += UpdateFps;
         }
