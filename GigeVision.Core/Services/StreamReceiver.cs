@@ -90,7 +90,7 @@ namespace GigeVision.Core.Models
             }
         }
 
-        private void DecodePacketsRawSocket_workUnderprocess()
+        private void DecodePacketsRawSocket_bufferSwap()
         {
             int packetID = 0, bufferIndex = 0, bufferLength = 0, bufferStart = 0, length = 0, packetRxCount = 1, packetRxCountClone, bufferIndexClone;
             ulong imageID, lastImageID = 0, lastImageIDClone, deltaImageID;
