@@ -314,7 +314,7 @@ namespace GigeVision.Core.Models
                     if (((await Gvcp.RegistersDictionary[nameof(GvcpRegister.GevSCPHostPort)].pValue.SetValueAsync((uint)PortRx).ConfigureAwait(false)) as GvcpReply).Status == GvcpStatus.GEV_STATUS_SUCCESS)
                     {
                         await Gvcp.RegistersDictionary[nameof(GvcpRegister.GevSCDA)].pValue.SetValueAsync(Converter.IpToNumber(ip2Send)).ConfigureAwait(false);
-                        await Gvcp.RegistersDictionary[nameof(GvcpRegister.GevSCPSPacketSize)].pValue.SetValueAsync(8000).ConfigureAwait(false);
+                        await Gvcp.RegistersDictionary[nameof(GvcpRegister.GevSCPSPacketSize)].pValue.SetValueAsync(Payload).ConfigureAwait(false);
                         if (((await Gvcp.RegistersDictionary[nameof(RegisterName.AcquisitionStart)].pValue.SetValueAsync(1).ConfigureAwait(false)) as GvcpReply).Status == GvcpStatus.GEV_STATUS_SUCCESS)
                         {
                             IsStreaming = true;
@@ -522,13 +522,13 @@ namespace GigeVision.Core.Models
                 {
                     for (int i = 0; i < syncAttempts; i++)
                     {
+                        await Gvcp.ReadAllRegisterAddressFromCameraAsync().ConfigureAwait(false);
+
                         if (Gvcp.RegistersDictionary?.Count > 0)
                         {
                             await SyncParameters(0);
                             return true;
                         }
-                        await Gvcp.ReadAllRegisterAddressFromCameraAsync().ConfigureAwait(false);
-                        await SyncParameters(0);
 
                     }
 
