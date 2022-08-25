@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:GigeVisionLibrary.Test.Wpf"
+        xmlns:ImageControl="clr-namespace:Stira.ImageLibrary.Wpf;assembly=Stira.ImageLibrary.Wpf"
         mc:Ignorable="d"
         xmlns:flatStyle="clr-namespace:FlatStyle;assembly=FlatStyle"
         Title="MainWindow" Height="800" Width="1024">
@@ -21,7 +22,7 @@
             <CheckBox IsChecked="{Binding Camera.IsRawFrame}" ToolTip="Is Raw Frame"  Height="20"/>
         </StackPanel>
 
-            <local:LightImage2 x:Name="lightControl" Grid.Row="1"/>
-            <TextBlock Panel.ZIndex="2" VerticalAlignment="Bottom" x:Name="Fps" Grid.Row="1" Style="{StaticResource PrimaryBackgroundText}" />
-        </Grid>
+        <ImageControl:LightImage x:Name="lightControl" Grid.Row="1" />
+        <TextBlock Panel.ZIndex="2" VerticalAlignment="Bottom" x:Name="Fps" Grid.Row="1" Style="{StaticResource PrimaryBackgroundText}" />
+    </Grid>
 </Window>
