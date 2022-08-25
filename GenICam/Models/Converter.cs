@@ -1,4 +1,5 @@
-﻿using System;
+﻿using org.mariuszgromada.math.mxparser;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -20,7 +21,7 @@ namespace GenICam
 
             foreach (var character in opreations)
             {
-                if (opreations.Where(x => x == character).Count() > 0)
+                if (opreations.Where(x => x == character).Any())
                 {
                     FormulaTo = FormulaTo.Replace($"{character}", $" {character} ");
                     FormulaFrom = FormulaFrom.Replace($"{character}", $" {character} ");
@@ -30,24 +31,22 @@ namespace GenICam
             PVariables = pVariables;
             PValue = pValue;
             Slope = slope;
-            Task.Run(async () =>
-            {
-                await ExecuteFormulaFrom();
-                await ExecuteFormulaTo();
-            });
         }
 
         public IPValue PValue { get; private set; }
 
-        public Task<double> Value
+        private double value;
+        public double Value
         {
             get
             {
-                return ExecuteFormulaFrom();
+                return value;
+                //return ExecuteFormulaFrom();
             }
             set
             {
-                Value = ExecuteFormulaTo();
+                this.value = value;
+                //Value = ExecuteFormulaTo();
             }
         }
 
@@ -67,7 +66,7 @@ namespace GenICam
             expression = "( " + expression + " )";
             List<char> opreations = new List<char> { '(', '+', '-', '/', '*', '=', '?', ':', ')', '>', '<', '&', '|', '^', '~', '%' };
             foreach (var character in opreations)
-                if (opreations.Where(x => x == character).Count() > 0)
+                if (opreations.Where(x => x == character).Any())
                     expression = expression.Replace($"{character}", $" {character} ");
 
             Stack<string> opreators = new Stack<string>();
@@ -267,14 +266,15 @@ namespace GenICam
             throw new InvalidDataException("Failed to read the formula");
         }
 
-        public async Task<long> GetValue()
+        public async Task<long?> GetValueAsync()
         {
-            return await PValue.GetValue();
+            return (long)(await ExecuteFormulaFrom());
         }
 
-        public async Task<IReplyPacket> SetValue(long value)
+        public async Task<IReplyPacket> SetValueAsync(long value)
         {
-            return await PValue.SetValue(value);
+            value = (long)await ExecuteFormulaTo();
+            return await PValue.SetValueAsync(value);
         }
 
         private static bool DoMathOpreation(string opreator, Stack<string> opreators, Stack<double> values)
@@ -518,28 +518,28 @@ namespace GenICam
             {
                 if (word.Equals("TO"))
                 {
-                    double? value = null;
+                    long? value = null;
 
-                    value = await PValue.GetValue();
+                    value = await ExecuteFormulaTo();
 
                     if (value is null)
                         throw new Exception("Failed to read register value", new InvalidDataException());
 
-                    FormulaFrom = FormulaFrom.Replace(word, value.ToString());
+                    FormulaFrom = FormulaFrom.Replace(word, string.Format("0x{0:X8}", value));
                 }
 
                 foreach (var pVariable in PVariables)
                 {
                     if (pVariable.Key.Equals(word))
                     {
-                        double? value = null;
+                        long? value = null;
 
-                        value = await pVariable.Value.GetValue();
+                        value = await pVariable.Value.GetValueAsync();
 
                         if (value is null)
                             throw new Exception("Failed to read register value", new InvalidDataException());
 
-                        FormulaFrom = FormulaFrom.Replace(word, value.ToString());
+                        FormulaFrom = FormulaFrom.Replace(word, string.Format("0x{0:X8}", value));
                     }
                 }
             }
@@ -563,7 +563,9 @@ namespace GenICam
                             last = last.Substring(0, last.Length - 1);
                             if (last != "+" || last != "-" || last != "/" || last != "*")
                             {
-                                result = Evaluate(last);
+                                //result = Evaluate(last);
+                                result = new Expression(formula.Replace("0x", "h.")).calculate();
+
                                 if (formula.Contains($"({last})"))
                                     formula = formula.Replace($"({last})", result.ToString());
                                 else
@@ -574,41 +576,42 @@ namespace GenICam
                         if (formula.Contains($"({equation})"))
                             formula = formula.Replace($"({equation})", equation);
                     }
-                    return Evaluate(formula);
+
+                    //return Evaluate(formula);
+                    return new Expression(FormatExpression(formula)).calculate();
                 }
             }
-
-            return 0;
+            return new Expression(FormatExpression(FormulaFrom)).calculate();
         }
 
-        private async Task<double> ExecuteFormulaTo()
+        private async Task<long> ExecuteFormulaTo()
         {
             foreach (var word in FormulaTo.Split())
             {
                 if (word.Equals("FROM"))
                 {
-                    double? value = null;
+                    long? value = null;
 
-                    value = await PValue.GetValue();
+                    value = await PValue.GetValueAsync();
 
                     if (value is null)
                         throw new Exception("Failed to read register value", new InvalidDataException());
 
-                    FormulaTo = FormulaTo.Replace(word, value.ToString());
+                    FormulaTo = FormulaTo.Replace(word, string.Format("0x{0:X8}", value));
                 }
 
                 foreach (var pVariable in PVariables)
                 {
                     if (pVariable.Key.Equals(word))
                     {
-                        double? value = null;
+                        long? value = null;
 
-                        value = await pVariable.Value.GetValue();
+                        value = await pVariable.Value.GetValueAsync();
 
                         if (value is null)
                             throw new Exception("Failed to read register value", new InvalidDataException());
 
-                        FormulaTo = FormulaTo.Replace(word, value.ToString());
+                        FormulaTo = FormulaTo.Replace(word, string.Format("0x{0:X8}", value));
                     }
                 }
             }
@@ -632,7 +635,9 @@ namespace GenICam
                             last = last.Substring(0, last.Length - 1);
                             if (last != "+" || last != "-" || last != "/" || last != "*")
                             {
-                                result = Evaluate(last);
+                                //result = Evaluate(last);
+                                result = new Expression(last.Replace("0x", "h.")).calculate();
+
                                 if (formula.Contains($"({last})"))
                                     formula = formula.Replace($"({last})", result.ToString());
                                 else
@@ -643,11 +648,25 @@ namespace GenICam
                         if (formula.Contains($"({equation})"))
                             formula = formula.Replace($"({equation})", equation);
                     }
-                    return Evaluate(formula);
+
+                    //return Evaluate(formula);
+                    return (long)new Expression(FormatExpression(formula)).calculate();
                 }
             }
 
-            return 0;
+            return (long)new Expression(FormatExpression(FormulaTo)).calculate();
+
+        }
+
+        private static string FormatExpression(string formula)
+        {
+            return formula.Replace("0x", "h.")
+                .Replace("|", "@|")
+                .Replace("&", "@&")
+                .Replace("~", "@~")
+                .Replace("^", "@^")
+                .Replace("<<", "@<<")
+                .Replace(">>", "@>>");
         }
     }
 }

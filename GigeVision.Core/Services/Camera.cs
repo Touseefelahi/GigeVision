@@ -311,13 +311,11 @@ namespace GigeVision.Core.Models
                 if (await Gvcp.TakeControl(true).ConfigureAwait(false))
                 {
                     SetupRxThread();
-
-                    if (((await Gvcp.RegistersDictionary[nameof(GvcpRegister.GevSCPHostPort)].SetValue((uint)PortRx).ConfigureAwait(false)) as GvcpReply).Status == GvcpStatus.GEV_STATUS_SUCCESS)
+                    if (((await Gvcp.RegistersDictionary[nameof(GvcpRegister.GevSCPHostPort)].pValue.SetValueAsync((uint)PortRx).ConfigureAwait(false)) as GvcpReply).Status == GvcpStatus.GEV_STATUS_SUCCESS)
                     {
-                        await Gvcp.RegistersDictionary[nameof(GvcpRegister.GevSCDA)].SetValue(Converter.IpToNumber(ip2Send)).ConfigureAwait(false);
-                        await Gvcp.RegistersDictionary[nameof(GvcpRegister.GevSCPSPacketSize)].SetValue(Payload).ConfigureAwait(false);
-                        await Gvcp.RegistersDictionary[nameof(RegisterName.AcquisitionStart)].SetValue(Payload).ConfigureAwait(false);
-                        if (((await Gvcp.RegistersDictionary[nameof(RegisterName.AcquisitionStart)].SetValue(1).ConfigureAwait(false)) as GvcpReply).Status == GvcpStatus.GEV_STATUS_SUCCESS)
+                        await Gvcp.RegistersDictionary[nameof(GvcpRegister.GevSCDA)].pValue.SetValueAsync(Converter.IpToNumber(ip2Send)).ConfigureAwait(false);
+                        await Gvcp.RegistersDictionary[nameof(GvcpRegister.GevSCPSPacketSize)].pValue.SetValueAsync(8000).ConfigureAwait(false);
+                        if (((await Gvcp.RegistersDictionary[nameof(RegisterName.AcquisitionStart)].pValue.SetValueAsync(1).ConfigureAwait(false)) as GvcpReply).Status == GvcpStatus.GEV_STATUS_SUCCESS)
                         {
                             IsStreaming = true;
                         }
@@ -368,22 +366,22 @@ namespace GigeVision.Core.Models
             try
             {
                 await Gvcp.TakeControl().ConfigureAwait(false);
-                GvcpReply widthWriteReply = (await Gvcp.RegistersDictionary[nameof(RegisterName.Width)].SetValue(width).ConfigureAwait(false)) as GvcpReply;
-                GvcpReply heightWriteReply = (await Gvcp.RegistersDictionary[nameof(RegisterName.Height)].SetValue(width).ConfigureAwait(false)) as GvcpReply;
+                GvcpReply widthWriteReply = (await Gvcp.RegistersDictionary[nameof(RegisterName.Width)].pValue.SetValueAsync(width).ConfigureAwait(false)) as GvcpReply;
+                GvcpReply heightWriteReply = (await Gvcp.RegistersDictionary[nameof(RegisterName.Height)].pValue.SetValueAsync(width).ConfigureAwait(false)) as GvcpReply;
 
-                await Gvcp.RegistersDictionary[nameof(RegisterName.Height)].SetValue(height).ConfigureAwait(false);
+                await Gvcp.RegistersDictionary[nameof(RegisterName.Height)].pValue.SetValueAsync(height).ConfigureAwait(false);
                 bool status = (widthWriteReply.Status == GvcpStatus.GEV_STATUS_SUCCESS && heightWriteReply.Status == GvcpStatus.GEV_STATUS_SUCCESS);
                 if (status)
                 {
-                    long newWidth = (await Gvcp.RegistersDictionary[nameof(RegisterName.Width)].GetValue().ConfigureAwait(false));
-                    long newHeight = (await Gvcp.RegistersDictionary[nameof(RegisterName.Height)].GetValue().ConfigureAwait(false));
+                    long newWidth = (long)(await Gvcp.RegistersDictionary[nameof(RegisterName.Width)].pValue.GetValueAsync().ConfigureAwait(false));
+                    long newHeight = (long)(await Gvcp.RegistersDictionary[nameof(RegisterName.Height)].pValue.GetValueAsync().ConfigureAwait(false));
 
                     Width = (uint)newWidth;
                     Height = (uint)newHeight;
                 }
 
-                await Gvcp.LeaveControl().ConfigureAwait(false);
-                return status;
+                    await Gvcp.LeaveControl().ConfigureAwait(false);                
+                    return status;
             }
             catch (Exception)
             {
@@ -444,19 +442,22 @@ namespace GigeVision.Core.Models
             {
                 await Gvcp.TakeControl().ConfigureAwait(false);
             }
-            var offsetXStatus = ((await Gvcp.RegistersDictionary[nameof(RegisterName.OffsetX)].SetValue(offsetX).ConfigureAwait(false)) as GvcpReply).Status == GvcpStatus.GEV_STATUS_SUCCESS;
-            var offsetYStatus = ((await Gvcp.RegistersDictionary[nameof(RegisterName.OffsetY)].SetValue(offsetY).ConfigureAwait(false)) as GvcpReply).Status == GvcpStatus.GEV_STATUS_SUCCESS;
-            if (offsetYStatus && offsetYStatus)
+            string[] registers = new string[2];
+            registers[0] = string.Format("0x{0:X8}", (await Gvcp.RegistersDictionary[nameof(RegisterName.OffsetX)].register.GetAddressAsync()));
+            registers[1] = string.Format("0x{0:X8}", (await Gvcp.RegistersDictionary[nameof(RegisterName.OffsetY)].register.GetAddressAsync()));
+            uint[] valueToWrite = new uint[] { offsetX, offsetY };
+            bool status = (await Gvcp.WriteRegisterAsync(registers, valueToWrite).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS;
+            GvcpReply reply = await Gvcp.ReadRegisterAsync(registers).ConfigureAwait(false);
+            if (reply.Status == GvcpStatus.GEV_STATUS_SUCCESS)
             {
-                OffsetX = (uint)await Gvcp.RegistersDictionary[nameof(RegisterName.OffsetX)].GetValue().ConfigureAwait(false);
-                OffsetY = (uint)await Gvcp.RegistersDictionary[nameof(RegisterName.OffsetY)].GetValue().ConfigureAwait(false);
+                OffsetX = reply.RegisterValues[0];
+                OffsetY = reply.RegisterValues[1];
             }
-
             if (!IsStreaming)
             {
                 await Gvcp.LeaveControl().ConfigureAwait(false);
             }
-            return offsetYStatus && offsetXStatus;
+            return status;
         }
 
         /// <summary>
@@ -510,11 +511,11 @@ namespace GigeVision.Core.Models
 
                 if (Gvcp.RegistersDictionary?.Count > 0)
                 {
-                    Width = (uint)await Gvcp.RegistersDictionary[nameof(RegisterName.Width)].GetValue().ConfigureAwait(false);
-                    Height = (uint)await Gvcp.RegistersDictionary[nameof(RegisterName.Height)].GetValue().ConfigureAwait(false);
-                    OffsetX = (uint)await Gvcp.RegistersDictionary[nameof(RegisterName.OffsetX)].GetValue().ConfigureAwait(false);
-                    OffsetY = (uint)await Gvcp.RegistersDictionary[nameof(RegisterName.OffsetY)].GetValue().ConfigureAwait(false);
-                    PixelFormat = (PixelFormat)(uint)await Gvcp.RegistersDictionary[nameof(RegisterName.PixelFormat)].GetValue().ConfigureAwait(false);
+                    Width = (uint)await Gvcp.RegistersDictionary[nameof(RegisterName.Width)].pValue.GetValueAsync().ConfigureAwait(false);
+                    Height = (uint)await Gvcp.RegistersDictionary[nameof(RegisterName.Height)].pValue.GetValueAsync().ConfigureAwait(false);
+                    OffsetX = (uint)await Gvcp.RegistersDictionary[nameof(RegisterName.OffsetX)].pValue.GetValueAsync().ConfigureAwait(false);
+                    OffsetY = (uint)await Gvcp.RegistersDictionary[nameof(RegisterName.OffsetY)].pValue.GetValueAsync().ConfigureAwait(false);
+                    PixelFormat = (PixelFormat)(uint)await Gvcp.RegistersDictionary[nameof(RegisterName.PixelFormat)].pValue.GetValueAsync().ConfigureAwait(false);
                     bytesPerPixel = 3;
                 }
                 else

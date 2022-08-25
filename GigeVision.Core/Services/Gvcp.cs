@@ -98,7 +98,7 @@ namespace GigeVision.Core.Models
         public List<ICategory> CategoryDictionary { get; private set; }
 
         #region Status Commands
-        public Dictionary<string, IPValue> RegistersDictionary { get; set; }
+        public Dictionary<string, (IPValue, IRegister)> RegistersDictionary { get; set; }
         public bool IsLoadingXml { get; private set; }
 
         /// <summary>
@@ -324,12 +324,12 @@ namespace GigeVision.Core.Models
             {
                 IsLoadingXml = true;
 
-                if (!ValidateIp(CameraIp)) throw new InvalidIpException();
+                if (!ValidateIp(cameraIp)) throw new InvalidIpException();
 
                 //loading the XML file
                 XmlDocument xml = new XmlDocument();
                 xml.Load(await GetXmlFileFromCamera(cameraIp).ConfigureAwait(false));
-                var xmlHelper = new XmlHelper("Category", xml, new GenPort(this));
+                var xmlHelper = new XmlHelper(xml, new GenPort(this));
                 await xmlHelper.LoadUp();
                 CategoryDictionary = xmlHelper.CategoryDictionary;
 
@@ -338,14 +338,14 @@ namespace GigeVision.Core.Models
                 {
                     if (xmlHelper.CategoryDictionary.Count > 0)
                     {
-                        RegistersDictionary = new Dictionary<string, IPValue>();
+                        RegistersDictionary = new Dictionary<string, (IPValue, IRegister)>();
                         await ReadAllRegisters(CategoryDictionary);
                     }
                 };
             }
-            catch
+            catch (Exception ex)
             {
-                
+                throw ex;
             }
             finally
             {
@@ -379,7 +379,19 @@ namespace GigeVision.Core.Models
                 if (category.PFeatures != null)
                     await ReadAllRegisters(category.PFeatures);
                 if (!RegistersDictionary.ContainsKey(category.CategoryProperties.Name))
-                    RegistersDictionary.Add(category.CategoryProperties.Name, category.PValue);
+                {
+                    (IPValue, IRegister) tuple = new(null, null);
+                    if (category.PValue is IPValue pValue)
+                    {
+                        tuple.Item1 = pValue;
+                    }
+                    if (category.PValue is IRegister register)
+                    {
+                        tuple.Item2 = register;
+                    }
+                    RegistersDictionary.Add(category.CategoryProperties.Name, tuple);
+
+                }
             }
         }
 
