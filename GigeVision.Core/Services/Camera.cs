@@ -451,8 +451,8 @@ namespace GigeVision.Core.Models
                 await Gvcp.TakeControl().ConfigureAwait(false);
             }
             string[] registers = new string[2];
-            registers[0] =  "0x" + string.Join("",Gvcp.RegistersDictionary[nameof(RegisterName.OffsetX)].register.GetValueAsync());
-            registers[1] = "0x" + string.Join("", Gvcp.RegistersDictionary[nameof(RegisterName.OffsetY)].register.GetValueAsync());
+            registers[0] = string.Format("0x{0:X8}", (await Gvcp.RegistersDictionary[nameof(RegisterName.OffsetX)].register.GetAddressAsync()));
+            registers[1] = string.Format("0x{0:X8}", (await Gvcp.RegistersDictionary[nameof(RegisterName.OffsetY)].register.GetAddressAsync()));
             uint[] valueToWrite = new uint[] { offsetX, offsetY };
             bool status = (await Gvcp.WriteRegisterAsync(registers, valueToWrite).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS;
             GvcpReply reply = await Gvcp.ReadRegisterAsync(registers).ConfigureAwait(false);

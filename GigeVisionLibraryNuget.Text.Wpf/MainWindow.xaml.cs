@@ -96,6 +96,10 @@ namespace GigeVisionLibraryNuget.Text.Wpf
                     lightControl.IsColored = !camera.IsRawFrame;
                 });
                 await camera.StartStreamAsync().ConfigureAwait(false);
+                camera.OffsetX = 204;
+                camera.OffsetY = 260;
+
+                await camera.SetOffsetAsync();
             }
         }
     }

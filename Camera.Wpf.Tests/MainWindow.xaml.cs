@@ -57,6 +57,8 @@ namespace Camera.Wpf.Tests
                     lightControl.WidthImage = camera.Resoluation.X;
                     lightControl.HeightImage = camera.Resoluation.Y;
                 });
+
+            
             }
         }
     }
