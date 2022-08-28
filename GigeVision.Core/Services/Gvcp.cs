@@ -206,60 +206,67 @@ namespace GigeVision.Core.Models
             listUpdated?.Invoke(list);
         }
 
+        private UdpClient broadcastClient;
+        private List<CameraInformation> cameraInfoList;
+
         /// <summary>
         /// It will get all the devices from the network and returns the list updated list
         /// </summary>
         public async Task<List<CameraInformation>> GetAllGigeDevicesInNetworkAsnyc(string networkIP = "")
         {
-            var cameraInfoList = new List<CameraInformation>();
+            cameraInfoList = new List<CameraInformation>();
             try
             {
-                using var socket = new UdpClient();
+                byte[] ip;
                 if (string.IsNullOrEmpty(networkIP))
                 {
                     using var socketIP = new UdpClient();
                     socketIP.Connect(IPAddress.Parse("8.8.8.8"), PortGvcp);
-                    var ip = (socketIP.Client.LocalEndPoint as IPEndPoint)?.Address.GetAddressBytes();
+                    ip = (socketIP.Client.LocalEndPoint as IPEndPoint)?.Address.GetAddressBytes();
                     ip[3] = 255;
                     socketIP.Close();
                     socketIP.Dispose();
-                    socket.Connect(new IPAddress(ip), PortGvcp);
                 }
                 else
                 {
-                    var ip = IPAddress.Parse(networkIP).GetAddressBytes();
+                    ip = IPAddress.Parse(networkIP).GetAddressBytes();
                     ip[3] = 255;
-                    socket.Connect(new IPAddress(ip), PortGvcp);
                 }
-                socket.Client.SendTimeout = 100;
-                GvcpCommand discovery = new(GvcpCommandType.Discovery);
-                socket.Send(discovery.CommandBytes, discovery.Length);
-                int port = ((IPEndPoint)socket.Client.LocalEndPoint).Port;
-                using UdpClient udpClient = new();
-                socket.Close();
-                socket.Dispose();
-                var endPoint = new IPEndPoint(IPAddress.Any, port);
-                udpClient.Client.Bind(endPoint);
-                while (true)//listen for devices
+
+                IPEndPoint endPoint = new(new IPAddress(ip), PortGvcp);
+
+                broadcastClient = new UdpClient(0)
                 {
-                    Task<UdpReceiveResult> taskRecievePacket = udpClient.ReceiveAsync();
-                    if (await Task.WhenAny(taskRecievePacket, Task.Delay(500)).ConfigureAwait(false) == taskRecievePacket)
-                    {
-                        if (taskRecievePacket.Result.Buffer.Length > 255)
-                            cameraInfoList.Add(DecodeDiscoveryPacket(taskRecievePacket.Result.Buffer));
-                    }
-                    else
-                    {
-                        udpClient.Close();
-                        udpClient.Dispose();
-                        break;
-                    }
-                }
+                    EnableBroadcast = true
+                };
+                GvcpCommand discovery = new(GvcpCommandType.Discovery);
+                broadcastClient.BeginReceive(BroadcastMessage, null);
+                broadcastClient.Send(discovery.CommandBytes, discovery.CommandBytes.Length, endPoint);
+                await Task.Delay(500);
             }
             catch (Exception ex)
             {
             }
+            finally
+            {
+                broadcastClient.Close();
+                broadcastClient.Dispose();
+            }
             return cameraInfoList;
+        }
+
+        private void BroadcastMessage(IAsyncResult ar)
+        {
+            try
+            {
+                IPEndPoint ip = new(IPAddress.Any, ((IPEndPoint)broadcastClient.Client.LocalEndPoint).Port);
+                var bytess = broadcastClient.EndReceive(ar, ref ip);
+                cameraInfoList.Add(DecodeDiscoveryPacket(bytess));
+                broadcastClient.BeginReceive(BroadcastMessage, null); //Listen for next camera info (if any)
+            }
+            catch (Exception ex)
+            {
+            }
         }
 
         private CameraInformation DecodeDiscoveryPacket(byte[] discoveryPacket)
