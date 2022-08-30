@@ -1088,6 +1088,13 @@ namespace GigeVision.Core.Models
             {
                 ip = CameraIp;
             }
+            else
+            {
+                if (ValidateIp(ip) is false)
+                {
+                    throw new InvalidIpException();
+                }
+            }
             XmlDocument xml = new XmlDocument();
             xml.Load(await GetXmlFileFromCamera(ip).ConfigureAwait(false));
             xmlHelper = new XmlHelper(xml, new GenPort(this));
