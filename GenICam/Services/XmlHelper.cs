@@ -21,6 +21,8 @@ namespace GenICam
 
         public List<ICategory> CategoryDictionary { get; private set; }
 
+        private XmlNode rootCategoryNode;
+
         /// <summary>
         /// the main method to read XML file
         /// </summary>
@@ -48,14 +50,21 @@ namespace GenICam
         /// The nodes can either be retrieved by their(unique) name or can be found by traversing the node graph starting with the root node.
         /// </summary>
         /// <returns></returns>
-        public async Task LoadUp()
+        public async Task<bool> LoadUp(bool isReadAllRegisters = false)
         {
             CategoryDictionary = new List<ICategory>();
-            var categoryNode = xmlRoot.SelectSingleNode("//" + namespacePrefix + ":Category[@Name=\"Root\"]", xmlNamespaceManager);
-            if ((await GetCategoryFeatures(categoryNode)) is ICategory category)
+            rootCategoryNode = xmlRoot.SelectSingleNode("//" + namespacePrefix + ":Category[@Name=\"Root\"]", xmlNamespaceManager);
+            if (isReadAllRegisters)
             {
-                CategoryDictionary.Add(category);
+                if ((await GetCategoryFeatures(rootCategoryNode)) is ICategory category)
+                {
+                    CategoryDictionary.Add(category);
+                }
+
+                return CategoryDictionary.Count > 0;
             }
+
+            return rootCategoryNode != null && !isReadAllRegisters;
         }
 
         private async Task<ICategory> GetCategoryFeatures(XmlNode categoryNode)
@@ -68,7 +77,6 @@ namespace GenICam
         }
 
         #region GenIcam Getters
-
         private async Task<List<ICategory>> ReadCategoryFeature(XmlNode node)
         {
             var pFeatures = new List<ICategory>();
@@ -76,11 +84,14 @@ namespace GenICam
             var pFeatureNodes = SelectNodes(node, "pFeature");
             foreach (XmlNode pFeatureNode in pFeatureNodes)
             {
-                var pNode = await ReadPNode(pFeatureNode.InnerText);
-                if (pNode != null)
+                XmlNodeList pNodes = GetAllNodesByAttirbuteValue(attirbuteValue: pFeatureNode.InnerText, attirbuteName: "Name");
+                foreach (XmlNode pNode in pNodes)
                 {
-                    category = await GetGenCategory(pNode);
-                    pFeatures.Add(category);
+                    if (pNode != null)
+                    {
+                        category = await GetGenCategory(pNode);
+                        pFeatures.Add(category);
+                    }
                 }
             }
 
@@ -89,10 +100,6 @@ namespace GenICam
         private async Task<ICategory> GetGenCategory(XmlNode node)
         {
             ICategory genCategory = null;
-            if (node.Attributes["Name"].Value == "GevSCPSPacketSize")
-            {
-
-            }
             switch (node.Name)
             {
                 case nameof(CategoryType.StringReg):
@@ -755,6 +762,36 @@ namespace GenICam
         #endregion GenIcam Getters
 
         #region XML Mapping Helpers
+        private XmlNodeList GetAllNodesByAttirbuteValue(string elementName = "*", string attirbuteValue = null, string attirbuteName = "Name")
+        {
+            var xpath = $"//{namespacePrefix}:{elementName}";
+            bool hasElementName = !string.IsNullOrEmpty(elementName);
+            bool hasAttirbuteName = !string.IsNullOrEmpty(attirbuteName);
+            bool hasAttirbuteValue = !string.IsNullOrEmpty(attirbuteValue);
+
+            string attirbute = string.Empty;
+
+            if (hasAttirbuteName)
+            {
+                attirbute = $"@{attirbuteName}";
+            }
+            if (hasAttirbuteValue)
+            {
+                attirbute += $"='{attirbuteValue}'";
+            }
+
+            if (hasElementName && hasAttirbuteName)
+            {
+                xpath = $"{xpath}[{attirbute}]";
+            }
+            else
+            {
+                xpath += attirbute;
+            }
+            var nodes = xmlDocument.SelectNodes(xpath, xmlNamespaceManager);
+            return nodes;
+        }
+
         private XmlNode GetNodeByAttirbuteValue(string elementName = "*", string attirbuteValue = null, string attirbuteName = "Name")
         {
             var xpath = $"//{namespacePrefix}:{elementName}";
@@ -790,54 +827,6 @@ namespace GenICam
             {
                 return categoryNode;
             }
-            //else if (GetNodeByAttirbuteValue(attirbuteValue: pNode, attirbuteName: "Comment") is XmlNode groupNode)
-            //{
-            //    return groupNode;
-            //}
-            //if (GetNodeByAttirbuteValue("Integer", pNode) is XmlNode integerNode)
-            //{
-            //    return integerNode;
-            //}
-            //else if (GetNodeByAttirbuteValue("IntReg", pNode) is XmlNode intRegNode)
-            //{
-            //    return intRegNode;
-            //}
-            //else if (GetNodeByAttirbuteValue("IntSwissKnife", pNode) is XmlNode intSwissKnifeNode)
-            //{
-            //    return intSwissKnifeNode;
-            //}
-            //else if (GetNodeByAttirbuteValue("SwissKnife", pNode) is XmlNode swissKnifeNode)
-            //{
-            //    return swissKnifeNode;
-            //}
-            //else if (GetNodeByAttirbuteValue("Float", pNode) is XmlNode floatNode)
-            //{
-            //    return floatNode;
-            //}
-            //else if (GetNodeByAttirbuteValue("Boolean", pNode) is XmlNode booleanNode)
-            //{
-            //    return booleanNode;
-            //}
-            //else if (GetNodeByAttirbuteValue("MaskedIntReg", pNode) is XmlNode maskedIntRegNode)
-            //{
-            //    return maskedIntRegNode;
-            //}
-            //else if (GetNodeByAttirbuteValue("StructReg", pNode, "Comment") is XmlNode structReg)
-            //{
-            //    return structReg;
-            //}
-            //else if (GetNodeByAttirbuteValue("Category", pNode) is XmlNode category)
-            //{
-            //    return category;
-            //}
-            //else if (GetNodeByAttirbuteValue("Group", pNode, "Comment") is XmlNode group)
-            //{
-            //    return group;
-            //}
-            //else if (GetNodeByAttirbuteValue("Enumeration", pNode, "Name") is XmlNode enumeration)
-            //{
-            //    return enumeration;
-            //}
 
             throw new NotImplementedException();
         }
@@ -859,5 +848,28 @@ namespace GenICam
             return xmlNode.SelectNodes(xpath, xmlNamespaceManager);
         }
         #endregion XML Mapping Helpers
+        public async Task<(IPValue pValue, IRegister register)> GetRegisterByName(string name)
+        {
+            (IPValue pValue, IRegister register) tuple = new(null, null);
+            if (GetAllNodesByAttirbuteValue(attirbuteValue: name) is XmlNodeList xmlNodeList)
+            {
+                ICategory category = null;
+                foreach (XmlNode node in xmlNodeList)
+                {
+                    category = await GetGenCategory(node);
+                }
+
+                if (category.PValue is IPValue pValue)
+                {
+                    tuple.pValue = pValue;
+                }
+                if (category.PValue is IRegister register)
+                {
+                    tuple.register = register;
+                }
+            }
+            return tuple;
+        }
     }
+
 }

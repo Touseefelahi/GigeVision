@@ -60,19 +60,21 @@ namespace GigeVisionLibrary.Test.Wpf
 
         private async void Button_Click(object sender, RoutedEventArgs e)
         {
-            if (!isLoaded)
+            if (!Camera.Gvcp.IsXmlFileLoaded)
             {
-                await camera.Gvcp.ReadAllRegisterAddressFromCameraAsync();
-                if (camera.Gvcp.RegistersDictionary == null)
-                {
-                    return;
-                }
-                if (camera.Gvcp.RegistersDictionary.Count < 1)
-                {
-                    return;
-                }
 
-                isLoaded = true;
+                isLoaded = await Camera.Gvcp.ReadXmlFileAsync();
+                //await camera.Gvcp.ReadAllRegisterAddressFromCameraAsync();
+                //if (camera.Gvcp.RegistersDictionary == null)
+                //{
+                //    return;
+                //}
+                //if (camera.Gvcp.RegistersDictionary.Count < 1)
+                //{
+                //    return;
+                //}
+
+                //isLoaded = true;
             }
 
             if (camera.IsStreaming)
@@ -81,8 +83,8 @@ namespace GigeVisionLibrary.Test.Wpf
             }
             else
             {
-                    width = (int)camera.Width;
-                    height = (int)camera.Height;
+                width = (int)camera.Width;
+                height = (int)camera.Height;
                 Dispatcher.Invoke(() =>
                 {
                     lightControl.WidthImage = width;

@@ -390,7 +390,6 @@ namespace GigeVision.Core.Models
                         tuple.Item2 = register;
                     }
                     RegistersDictionary.Add(category.CategoryProperties.Name, tuple);
-
                 }
             }
         }
@@ -897,6 +896,8 @@ namespace GigeVision.Core.Models
         #region Common Methods
 
         private bool isHeartBeatThreadRunning;
+        private XmlHelper xmlHelper;
+        public bool IsXmlFileLoaded { get; private set; }
 
         /// <summary>
         /// Takes control of the devices
@@ -1079,6 +1080,26 @@ namespace GigeVision.Core.Models
                 return false;
             }
             return splitValues.All(r => byte.TryParse(r, out byte tempForParsing));
+        }
+
+        public async Task<bool> ReadXmlFileAsync(string ip = null)
+        {
+            if (string.IsNullOrEmpty(ip))
+            {
+                ip = CameraIp;
+            }
+            XmlDocument xml = new XmlDocument();
+            xml.Load(await GetXmlFileFromCamera(ip).ConfigureAwait(false));
+            xmlHelper = new XmlHelper(xml, new GenPort(this));
+            IsXmlFileLoaded = await xmlHelper.LoadUp();
+
+            return IsXmlFileLoaded;
+        }
+
+        public async Task<(IPValue pValue, IRegister register)> GetRegister(string name)
+        {
+            (IPValue pValue, IRegister register) tuple = new(null, null);
+            return await xmlHelper.GetRegisterByName(name);
         }
 
         #endregion Common Methods

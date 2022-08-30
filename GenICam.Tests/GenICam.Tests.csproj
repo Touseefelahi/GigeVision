@@ -21,7 +21,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\GenICam\GenICam.csproj" />
     <ProjectReference Include="..\GigeVision.Core\GigeVision.Core.csproj" />
   </ItemGroup>
 
