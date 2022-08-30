@@ -857,15 +857,19 @@ namespace GenICam
                 foreach (XmlNode node in xmlNodeList)
                 {
                     category = await GetGenCategory(node);
-                }
-
-                if (category.PValue is IPValue pValue)
-                {
-                    tuple.pValue = pValue;
-                }
-                if (category.PValue is IRegister register)
-                {
-                    tuple.register = register;
+                    if (category is null)
+                    {
+                        continue;
+                    }
+                    if (category.PValue is IPValue pValue)
+                    {
+                        tuple.pValue = pValue;
+                    }
+                    if (category.PValue is IRegister register)
+                    {
+                        tuple.register = register;
+                    }
+                    return tuple;
                 }
             }
             return tuple;
