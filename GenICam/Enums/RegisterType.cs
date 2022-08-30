@@ -11,6 +11,6 @@ namespace GenICam
         MaskedIntReg,
         Float,
         FloatReg,
-        IntSwissKnife
+        StructReg
     }
 }

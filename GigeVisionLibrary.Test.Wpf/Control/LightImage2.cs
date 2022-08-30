@@ -97,7 +97,7 @@ namespace GigeVisionLibrary.Test.Wpf
 
         private void SetupImage()
         {
-            if (Width != 0 && HeightImage != 0)
+            if (WidthImage != 0 && HeightImage != 0)
             {
                 rectBitmap = new Int32Rect(0, 0, WidthImage, HeightImage);
                 if (bytesPerPixel == 3)

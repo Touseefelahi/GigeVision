@@ -6,20 +6,19 @@ using System.Threading.Tasks;
 
 namespace GenICam
 {
-    public class GenEnumeration : GenCategory, IGenEnumeration
+    public class GenEnumeration : GenCategory, IEnumeration
     {
         public GenEnumeration(CategoryProperties categoryProperties, Dictionary<string, EnumEntry> entries, IPValue pValue, Dictionary<string, IMathematical> expressions = null)
         {
             CategoryProperties = categoryProperties;
             Entries = entries;
             PValue = pValue;
-            Expressions = expressions;
             SetValueCommand = new DelegateCommand(ExecuteSetValueCommand);
             GetValueCommand = new DelegateCommand(ExecuteGetValueCommand);
         }
         private async void ExecuteGetValueCommand()
         {
-            Value = await GetIntValue();
+            Value = await GetIntValueAsync();
             ValueToWrite = Value;
             RaisePropertyChanged(nameof(Value));
             RaisePropertyChanged(nameof(ValueToWrite));
@@ -37,22 +36,17 @@ namespace GenICam
 
         public long ValueToWrite { get; set; }
 
-        public async Task<long> GetIntValue()
+        public async Task<long> GetIntValueAsync()
         {
-            if (PValue is IRegister register)
+            if (PValue is IPValue pValue)
             {
-                if (register.AccessMode != GenAccessMode.WO)
-                    return await PValue.GetValue();
-            }
-            else if (PValue is IntSwissKnife intSwissKnife)
-            {
-                return await intSwissKnife.GetValue();
+                return (long)await pValue.GetValueAsync();
             }
 
-            throw new Exception("Failed to GetIntValue");
+            return Value;
         }
 
-        public async void SetIntValue(long value)
+        public async Task SetIntValueAsync(long value)
         {
             if (PValue is IRegister Register)
             {
@@ -81,7 +75,7 @@ namespace GenICam
                             break;
                     }
 
-                    var reply = await Register.Set(pBuffer, length);
+                    var reply = await Register.SetAsync(pBuffer, length);
 
                     if (reply.IsSentAndReplyReceived && reply.Reply[0] == 0)
                         Value = value;
@@ -122,9 +116,14 @@ namespace GenICam
             return Entries.Values.FirstOrDefault(x => x.Value == entryValue);
         }
 
-        private void ExecuteSetValueCommand()
+        private async void ExecuteSetValueCommand()
         {
-            SetIntValue(ValueToWrite);
+            await SetIntValueAsync(ValueToWrite);
+        }
+
+        Task IEnumeration.GetSymbolics(Dictionary<string, EnumEntry> entries)
+        {
+            throw new NotImplementedException();
         }
     }
 }
