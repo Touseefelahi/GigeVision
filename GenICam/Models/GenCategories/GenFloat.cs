@@ -5,9 +5,9 @@ using System.Threading.Tasks;
 
 namespace GenICam
 {
-    public class GenFloat : GenCategory, IGenFloat, IPValue
+    public class GenFloat : GenCategory, IFloat
     {
-        public GenFloat(CategoryProperties categoryProperties, double min, double max, long inc, IncMode incMode, Representation representation, double value, string unit, IPValue pValue, Dictionary<string, IMathematical> expressions)
+        public GenFloat(CategoryProperties categoryProperties, double min, double max, long inc, IncrementMode incMode, Representation representation, double value, string unit, IPValue pValue, Dictionary<string, IMathematical> expressions)
         {
             CategoryProperties = categoryProperties;
             Min = min;
@@ -18,14 +18,13 @@ namespace GenICam
             Value = value;
             Unit = unit;
             PValue = pValue;
-            Expressions = expressions;
             SetValueCommand = new DelegateCommand(ExecuteSetValueCommand);
             GetValueCommand = new DelegateCommand(ExecuteGetValueCommand);
         }
 
         private async void ExecuteGetValueCommand()
         {
-            Value = await GetValue();
+            Value = (long)await GetValueAsync();
             ValueToWrite = Value;
             RaisePropertyChanged(nameof(Value));
             RaisePropertyChanged(nameof(ValueToWrite));
@@ -34,7 +33,7 @@ namespace GenICam
         public double Min { get; private set; }
         public double Max { get; set; }
         public Int64 Inc { get; private set; } = 1;
-        public IncMode IncMode { get; private set; }
+        public IncrementMode IncMode { get; private set; }
         public Representation Representation { get; private set; }
         public double Value { get; set; }
         public List<double> ListOfValidValue { get; private set; }
@@ -43,7 +42,7 @@ namespace GenICam
         public uint DisplayPrecision { get; private set; }
         public double ValueToWrite { get; set; }
 
-        public IGenFloat GetFloatAlias()
+        public IFloat GetFloatAlias()
         {
             throw new NotImplementedException();
         }
@@ -58,51 +57,45 @@ namespace GenICam
             return DisplayPrecision;
         }
 
-        public IGenEnumeration GetEnumAlias()
+        public IEnumeration GetEnumAlias()
         {
             throw new NotImplementedException();
         }
 
-        public long? GetInc()
+        public long? GetIncrement()
         {
-            if (IncMode == IncMode.fixedIncrement)
+            if (IncMode == IncrementMode.fixedIncrement)
                 return Inc;
             else
                 return null;
         }
 
-        public IncMode GetIncMode()
+        public IncrementMode GetIncrementMode()
         {
             return IncMode;
         }
 
-        public IGenInteger GetIntAlias()
+        public IInteger GetIntAlias()
         {
             throw new NotImplementedException();
         }
 
         public List<double> GetListOfValidValue()
         {
-            if (IncMode == IncMode.listIncrement)
+            if (IncMode == IncrementMode.listIncrement)
                 return ListOfValidValue;
             else
                 return null;
         }
 
-        public async Task<double> GetMax()
+        public async Task<double> GetMaxAsync()
         {
-            var pMax = await ReadIntSwissKnife("pMax");
-            if (pMax != null) Max = (double)pMax;
-
-            return Max;
+            throw new NotImplementedException();
         }
 
-        public async Task<double> GetMin()
+        public async Task<double> GetMinAsync()
         {
-            var pMin = await ReadIntSwissKnife("pMin");
-            if (pMin != null) Min = (double)pMin;
-
-            return Min;
+            throw new NotImplementedException();
         }
 
         public Representation GetRepresentation()
@@ -115,40 +108,40 @@ namespace GenICam
             throw new NotImplementedException();
         }
 
-        public async Task<long> GetValue()
+        public async Task<long?> GetValueAsync()
         {
-            if (PValue is IRegister Register)
+            if (PValue is IRegister register)
             {
-                if (Register.AccessMode != GenAccessMode.WO)
-                {
-                    byte[] pBuffer = BitConverter.GetBytes(await Register.GetValue());
+                //if (register.AccessMode != GenAccessMode.WO)
+                //{
+                //    byte[] pBuffer = BitConverter.GetBytes(await register.GetValueAsync());
 
-                    if (Representation == Representation.HexNumber)
-                        Array.Reverse(pBuffer);
+                //    if (Representation == Representation.HexNumber)
+                //        Array.Reverse(pBuffer);
 
-                    switch (pBuffer.Length)
-                    {
-                        case 2:
-                            return BitConverter.ToUInt16(pBuffer); ;
+                //    switch (pBuffer.Length)
+                //    {
+                //        case 2:
+                //            return BitConverter.ToUInt16(pBuffer); ;
 
-                        case 4:
-                            return  BitConverter.ToUInt32(pBuffer);
+                //        case 4:
+                //            return BitConverter.ToUInt32(pBuffer);
 
-                        case 8:
-                            return BitConverter.ToInt64(pBuffer);
-                            
-                    }
-                }
+                //        case 8:
+                //            return BitConverter.ToInt64(pBuffer);
+
+                //    }
+                //}
             }
-            else if (PValue is IntSwissKnife intSwissKnife)
+            else if (PValue is IPValue pValue)
             {
-                return await intSwissKnife.GetValue();
+                return await pValue.GetValueAsync();
             }
 
-            throw new Exception("Failed To GetValue");
+            return (long)Value;
         }
 
-        public async Task<IReplyPacket> SetValue(long value)
+        public async Task<IReplyPacket> SetValueAsync(long value)
         {
             IReplyPacket reply = null;
 
@@ -177,7 +170,7 @@ namespace GenICam
                             break;
                     }
 
-                    reply = await Register.Set(pBuffer, length);
+                    reply = await Register.SetAsync(pBuffer, length);
                     if (reply.IsSentAndReplyReceived && reply.Reply[0] == 0)
                         Value = value;
                 }
@@ -198,34 +191,37 @@ namespace GenICam
             Min = min;
         }
 
-        public async void SetValue(double value)
-        {
-            await SetValue((long)value);
-        }
-
-        private async Task<Int64?> ReadIntSwissKnife(string pNode)
-        {
-            if (Expressions == null)
-                return null;
-
-            if (!Expressions.ContainsKey(pNode))
-                return null;
-
-            var pValueNode = Expressions[pNode];
-            if (pValueNode is IntSwissKnife intSwissKnife)
-            {
-                return await intSwissKnife.GetValue();
-            }
-
-            return null;
-        }
-
         private async void ExecuteSetValueCommand()
         {
             if (Value != ValueToWrite)
             {
-                await SetValue((long)ValueToWrite);
+                await SetValueAsync(ValueToWrite);
             }
+        }
+
+        Task<double> IFloat.GetValueAsync()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task SetValueAsync(double value)
+        {
+            throw new NotImplementedException();
+        }
+
+        long IFloat.GetDisplayPrecision()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task ImposeMinAsync(long min)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task ImposeMaxAsync(long max)
+        {
+            throw new NotImplementedException();
         }
     }
 }

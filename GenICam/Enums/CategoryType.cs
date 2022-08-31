@@ -11,6 +11,7 @@ namespace GenICam
         StringReg,
         Enumeration,
         Command,
-        Boolean
+        Boolean,
+        Category
     }
 }

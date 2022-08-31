@@ -98,7 +98,7 @@ namespace GigeVision.Core.Models
         public List<ICategory> CategoryDictionary { get; private set; }
 
         #region Status Commands
-        public Dictionary<string, IPValue> RegistersDictionary { get; set; }
+        public Dictionary<string, (IPValue, IRegister)> RegistersDictionary { get; set; }
         public bool IsLoadingXml { get; private set; }
 
         /// <summary>
@@ -324,12 +324,12 @@ namespace GigeVision.Core.Models
             {
                 IsLoadingXml = true;
 
-                if (!ValidateIp(CameraIp)) throw new InvalidIpException();
+                if (!ValidateIp(cameraIp)) throw new InvalidIpException();
 
                 //loading the XML file
                 XmlDocument xml = new XmlDocument();
                 xml.Load(await GetXmlFileFromCamera(cameraIp).ConfigureAwait(false));
-                var xmlHelper = new XmlHelper("Category", xml, new GenPort(this));
+                var xmlHelper = new XmlHelper(xml, new GenPort(this));
                 await xmlHelper.LoadUp();
                 CategoryDictionary = xmlHelper.CategoryDictionary;
 
@@ -338,14 +338,14 @@ namespace GigeVision.Core.Models
                 {
                     if (xmlHelper.CategoryDictionary.Count > 0)
                     {
-                        RegistersDictionary = new Dictionary<string, IPValue>();
+                        RegistersDictionary = new Dictionary<string, (IPValue, IRegister)>();
                         await ReadAllRegisters(CategoryDictionary);
                     }
                 };
             }
-            catch
+            catch (Exception ex)
             {
-                
+                throw ex;
             }
             finally
             {
@@ -379,7 +379,18 @@ namespace GigeVision.Core.Models
                 if (category.PFeatures != null)
                     await ReadAllRegisters(category.PFeatures);
                 if (!RegistersDictionary.ContainsKey(category.CategoryProperties.Name))
-                    RegistersDictionary.Add(category.CategoryProperties.Name, category.PValue);
+                {
+                    (IPValue, IRegister) tuple = new(null, null);
+                    if (category.PValue is IPValue pValue)
+                    {
+                        tuple.Item1 = pValue;
+                    }
+                    if (category.PValue is IRegister register)
+                    {
+                        tuple.Item2 = register;
+                    }
+                    RegistersDictionary.Add(category.CategoryProperties.Name, tuple);
+                }
             }
         }
 
@@ -885,6 +896,8 @@ namespace GigeVision.Core.Models
         #region Common Methods
 
         private bool isHeartBeatThreadRunning;
+        private XmlHelper xmlHelper;
+        public bool IsXmlFileLoaded { get; private set; }
 
         /// <summary>
         /// Takes control of the devices
@@ -1067,6 +1080,33 @@ namespace GigeVision.Core.Models
                 return false;
             }
             return splitValues.All(r => byte.TryParse(r, out byte tempForParsing));
+        }
+
+        public async Task<bool> ReadXmlFileAsync(string ip = null)
+        {
+            if (string.IsNullOrEmpty(ip))
+            {
+                ip = CameraIp;
+            }
+            else
+            {
+                if (ValidateIp(ip) is false)
+                {
+                    throw new InvalidIpException();
+                }
+            }
+            XmlDocument xml = new XmlDocument();
+            xml.Load(await GetXmlFileFromCamera(ip).ConfigureAwait(false));
+            xmlHelper = new XmlHelper(xml, new GenPort(this));
+            IsXmlFileLoaded = await xmlHelper.LoadUp();
+
+            return IsXmlFileLoaded;
+        }
+
+        public async Task<(IPValue pValue, IRegister register)> GetRegister(string name)
+        {
+            (IPValue pValue, IRegister register) tuple = new(null, null);
+            return await xmlHelper.GetRegisterByName(name);
         }
 
         #endregion Common Methods

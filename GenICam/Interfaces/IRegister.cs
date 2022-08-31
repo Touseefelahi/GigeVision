@@ -1,22 +1,22 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 namespace GenICam
 {
-    public interface IRegister : IPValue, IGenRegister
+    /// <summary>
+    /// Maps to an edit box showing a hex string
+    /// </summary>
+    public interface IRegister : INode, IPValue
     {
+        Task<IReplyPacket> SetAsync(byte[] pBuffer, long length);
+        Task<byte[]> GetAsync();
         /// <summary>
         /// Register Address in hex format
         /// </summary>
-        Int64? Address { get; }
-
+        Task<long?> GetAddressAsync();
         /// <summary>
         /// Register Length
         /// </summary>
-        Int64 Length { get; }
-
-        /// <summary>
-        /// Register Access Mode
-        /// </summary>
-        GenAccessMode AccessMode { get; }
+        Int64 GetLength();
     }
 }
