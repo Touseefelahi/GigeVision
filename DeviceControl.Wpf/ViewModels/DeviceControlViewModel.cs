@@ -1,16 +1,12 @@
 ﻿using GenICam;
-using GigeVision.Core;
 using GigeVision.Core.Enums;
 using GigeVision.Core.Interfaces;
 using GigeVision.Core.Models;
 using Prism.Commands;
 using Prism.Mvvm;
-using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-using System.Windows.Input;
-using System.Xml;
+using ICommand = System.Windows.Input.ICommand;
 
 namespace DeviceControl.Wpf.ViewModels
 {
@@ -62,7 +58,7 @@ namespace DeviceControl.Wpf.ViewModels
 
             Task.Run(async () =>
             {
-                 await Gvcp.ReadAllRegisterAddressFromCameraAsync().ConfigureAwait(false);
+                await Gvcp.ReadAllRegisterAddressFromCameraAsync().ConfigureAwait(false);
                 Categories = Gvcp.CategoryDictionary;
             });
             CheckControl();
