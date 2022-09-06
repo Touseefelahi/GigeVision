@@ -17,6 +17,7 @@ namespace GigeVisionLibrary.Test.Wpf
         private int height = 600;
 
         private Camera camera;
+        private bool isLoaded;
 
         public MainWindow()
         {
@@ -60,6 +61,23 @@ namespace GigeVisionLibrary.Test.Wpf
 
         private async void Button_Click(object sender, RoutedEventArgs e)
         {
+            if (!Camera.Gvcp.IsXmlFileLoaded)
+            {
+
+                isLoaded = await Camera.Gvcp.ReadXmlFileAsync();
+                //await camera.Gvcp.ReadAllRegisterAddressFromCameraAsync();
+                //if (camera.Gvcp.RegistersDictionary == null)
+                //{
+                //    return;
+                //}
+                //if (camera.Gvcp.RegistersDictionary.Count < 1)
+                //{
+                //    return;
+                //}
+
+                //isLoaded = true;
+            }
+
             if (camera.IsStreaming)
             {
                 await camera.StopStream().ConfigureAwait(false);
@@ -74,7 +92,14 @@ namespace GigeVisionLibrary.Test.Wpf
                     lightControl.HeightImage = height;
                     lightControl.IsColored = !camera.IsRawFrame;
                 });
+
                 await camera.StartStreamAsync().ConfigureAwait(false);
+
+                //camera.OffsetX = 264;
+                //camera.OffsetY = 208;
+
+                //await camera.SetOffsetAsync();
+
             }
         }
     }
