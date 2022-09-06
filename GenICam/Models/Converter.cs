@@ -1,8 +1,6 @@
-﻿using org.mariuszgromada.math.mxparser;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace GenICam
@@ -23,6 +21,7 @@ namespace GenICam
         public IPValue PValue { get; private set; }
 
         private double value;
+
         public double Value
         {
             get
@@ -114,10 +113,7 @@ namespace GenICam
                     FormulaTo = FormulaTo.Replace(word, string.Format("0x{0:X8}", value));
                 }
             }
-
             return (long)MathParserHelper.CalculateExpression(FormulaTo);
-
         }
-
     }
 }

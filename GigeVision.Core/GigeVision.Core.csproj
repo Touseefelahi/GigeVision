@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFrameworks>net5.0;net6.0</TargetFrameworks>
     <Authors>Touseef Elahi</Authors>
     <Company>Stira.sa</Company>
     <Product>GigeVision</Product>
@@ -17,7 +17,7 @@
     <PackageLicenseFile>License.txt</PackageLicenseFile>
     <PackageIcon>gige.png</PackageIcon>
     <PackageIconUrl />
-    <Platforms>AnyCPU;x64;x86</Platforms>
+    <Platforms>x64</Platforms>
     <PackageReleaseNotes>
       2.1.1: Upgraded to Netcore 6.0 with Multicast reception fix
       1.8.0: Pushes the block id (frame number) in the frame event and Gives notification on frameloss
@@ -41,9 +41,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="GenICam" Version="2.1.4" />
-    <PackageReference Include="Stira.WpfCore" Version="1.2.0" />
-    <PackageReference Include="System.IO.Pipelines" Version="6.0.3" />
+    <PackageReference Include="Stira.WpfCore" Version="1.2.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GenICam\GenICam.csproj" />
   </ItemGroup>
 
 </Project>
