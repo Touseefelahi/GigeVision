@@ -1,41 +1,55 @@
-﻿using org.mariuszgromada.math.mxparser;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System;
 using System.Linq;
+using org.mariuszgromada.math.mxparser;
 
 namespace GenICam
 {
+    /// <summary>
+    /// Math parser helper.
+    /// </summary>
     public class MathParserHelper
     {
+        private static readonly List<char> opreations = new() { '(', '+', '-', '/', '*', '=', '?', ':', ')', '>', '<', '&', '|', '^', '~', '%' };
 
-        private static readonly List<char> opreations = new List<char> { '(', '+', '-', '/', '*', '=', '?', ':', ')', '>', '<', '&', '|', '^', '~', '%' };
-
-        public static string PrepareFromula(string formula, Dictionary<string, string> Expressions = null)
+        /// <summary>
+        /// Prepare a formula.
+        /// </summary>
+        /// <param name="formula">The formula.</param>
+        /// <param name="expressions">The dictionnary for the expressions.</param>
+        /// <returns>A new formula with changes from the expressions.</returns>
+        public static string PrepareFromula(string formula, Dictionary<string, string> expressions = null)
         {
             foreach (var character in opreations)
             {
                 if (opreations.Where(x => x == character).Any())
                 {
                     formula = formula.Replace($"{character}", $" {character} ");
-                    if (Expressions != null)
+                    if (expressions != null)
                     {
-                        foreach (var expression in Expressions.ToList())
+                        foreach (var expression in expressions.ToList())
                         {
-                            Expressions[expression.Key] = expression.Value.Replace($"{character}", $" {character} ");
+                            expressions[expression.Key] = expression.Value.Replace($"{character}", $" {character} ");
                         }
                     }
                 }
             }
+
             return formula;
         }
 
+        /// <summary>
+        /// Calculate an expression.
+        /// </summary>
+        /// <param name="experssion">The expression to calculate.</param>
+        /// <returns>The result.</returns>
         public static double CalculateExpression(string experssion)
         {
             experssion = FormatExpression(experssion);
             if (experssion.Contains("?"))
             {
-                experssion = experssion.Replace(" ", "");
+                experssion = experssion.Replace(" ", string.Empty);
                 var cases = experssion.Split(':', 2);
                 var subs = cases[0].Split("?", 2);
 
@@ -45,7 +59,11 @@ namespace GenICam
             return new Expression(experssion).calculate();
         }
 
-
+        /// <summary>
+        /// Gets the bracketed formula.
+        /// </summary>
+        /// <param name="formula">The formlua to process.</param>
+        /// <returns>The formula in brackets.</returns>
         public static string GetBracketed(string formula)
         {
             int openBracketCounter = 0;
@@ -56,6 +74,7 @@ namespace GenICam
                 {
                     openBracketCounter++;
                 }
+
                 if (character == ')' && openBracketCounter < 1)
                 {
                     formula = formula.Remove(charIndex, 1);
@@ -78,6 +97,11 @@ namespace GenICam
             return formula;
         }
 
+        /// <summary>
+        /// Format the expression.
+        /// </summary>
+        /// <param name="formula">The formula ro process.</param>
+        /// <returns>A formated expression.</returns>
         public static string FormatExpression(string formula)
         {
             return formula.Replace("0x", "h.")
@@ -89,57 +113,22 @@ namespace GenICam
                 .Replace(">>", "@>>");
         }
 
-        [Obsolete]
-        private string EvaluateFormula(string formula)
-        {
-            double result;
-            string equation;
-
-            foreach (var item in formula.Split('(', StringSplitOptions.None))
-            {
-                equation = item;
-                if (item.Contains(')'))
-                    equation = item.Substring(0, item.IndexOf(')'));
-
-                if (equation.Contains('+') || equation.Contains('-') || equation.Contains('/') || equation.Contains('*'))
-                {
-
-                    var last = equation.Replace(" ", "");
-                    formula = formula.Replace(" ", "");
-                    //last = last.Substring(0, last.Length - 1);
-                    if (last != "+" || last != "-" || last != "/" || last != "*")
-                    {
-                        result = Evaluate(last);
-                        if (formula.Contains($"({last})"))
-                            formula = formula.Replace($"({last})", result.ToString());
-                        else
-                            formula = formula.Replace(last, result.ToString());
-                    }
-                }
-
-                if (formula.Contains($"({equation})"))
-                    formula = formula.Replace($"({equation})", equation);
-
-            }
-            if (formula.Contains("("))
-            {
-                formula = EvaluateFormula(formula);
-            }
-            return formula;
-        }
-
         /// <summary>
-        /// this method evaluate the formula expression
+        /// Evaluates the formula expression.
         /// </summary>
-        /// <param name="expression"></param>
-        /// <returns></returns>
+        /// <param name="expression">The expression to evaluate.</param>
+        /// <returns>The calculation of the pression.</returns>
         [Obsolete]
         public static double Evaluate(string expression)
         {
             expression = "( " + expression + " )";
             foreach (var character in opreations)
+            {
                 if (opreations.Where(x => x == character).Any())
+                {
                     expression = expression.Replace($"{character}", $" {character} ");
+                }
+            }
 
             Stack<string> opreators = new Stack<string>();
             Stack<double> values = new Stack<double>();
@@ -152,16 +141,20 @@ namespace GenICam
             {
                 if (word.StartsWith("0x"))
                 {
-                    values.Push(Int64.Parse(word.Substring(2), System.Globalization.NumberStyles.HexNumber));
-                    //valuesList.Last().Push(values.Peek());
+                    values.Push(long.Parse(word[2..], System.Globalization.NumberStyles.HexNumber));
+
+                    // valuesList.Last().Push(values.Peek());
                 }
                 else if (double.TryParse(word, out double tempNumber))
                 {
                     if (tempBoolean)
+                    {
                         return tempNumber;
+                    }
 
                     values.Push(tempNumber);
-                    //valuesList.Last().Push(values.Peek());
+
+                    // valuesList.Last().Push(values.Peek());
                 }
                 else
                 {
@@ -179,6 +172,7 @@ namespace GenICam
                                 isPower = true;
                                 opreators.Push(word);
                             }
+
                             isLeft = false;
                             isRight = false;
                             break;
@@ -217,6 +211,7 @@ namespace GenICam
                                 opreators.Push(word);
                                 isLeft = true;
                             }
+
                             isPower = false;
                             isRight = false;
                             break;
@@ -236,13 +231,14 @@ namespace GenICam
                             {
                                 opreators.Push(word);
                             }
+
                             isPower = false;
                             isRight = false;
                             isLeft = false;
                             break;
 
                         case "(":
-                            //valuesList.Add(new Stack<double>());
+                            // valuesList.Add(new Stack<double>());
                             opreators.Push(word);
                             isPower = false;
                             isLeft = false;
@@ -287,7 +283,7 @@ namespace GenICam
                         case ")":
                             while (values.Count > 0 && opreators.Count > 0)
                             {
-                                string opreator = "";
+                                string opreator = string.Empty;
 
                                 opreator = opreators.Pop();
                                 tempBoolean = DoMathOpreation(opreator, opreators, values);
@@ -300,7 +296,9 @@ namespace GenICam
                                         if (tempBoolean)
                                         {
                                             if (values.Count > 0)
+                                            {
                                                 return values.Pop();
+                                            }
                                         }
                                     }
                                     else if (opreators.Peek().Equals("("))
@@ -329,21 +327,29 @@ namespace GenICam
             }
 
             if (values.Count > 0)
+            {
                 return values.Pop();
+            }
 
             if (tempBoolean)
+            {
                 return 1;
+            }
             else
+            {
                 return 0;
+            }
+
             throw new InvalidDataException("Failed to read the formula");
         }
+
         [Obsolete]
         private static bool DoMathOpreation(string opreator, Stack<string> opreators, Stack<double> values)
         {
             bool tempBoolean = false;
             double value = 0;
             int integerValue = 0;
-            //ToDo: Implement (&&) , (||) Operators
+            // ToDo: Implement (&&) , (||) Operators
             if (values.Count > 1)
             {
                 if (opreator.Equals("+"))
@@ -351,10 +357,14 @@ namespace GenICam
                     if (opreators.Count > 0 && values.Count > 0)
                     {
                         if (opreators.Peek().Equals("*"))
+                        {
                             tempBoolean = DoMathOpreation(opreators.Pop(), opreators, values);
+                        }
 
                         if (opreators.Peek().Equals("/"))
+                        {
                             tempBoolean = DoMathOpreation(opreators.Pop(), opreators, values);
+                        }
                     }
 
                     value = (double)values.Pop();
@@ -366,11 +376,16 @@ namespace GenICam
                     if (opreators.Count > 0 && values.Count > 0)
                     {
                         if (opreators.Peek().Equals("*"))
+                        {
                             tempBoolean = DoMathOpreation(opreators.Pop(), opreators, values);
+                        }
 
                         if (opreators.Peek().Equals("/"))
+                        {
                             tempBoolean = DoMathOpreation(opreators.Pop(), opreators, values);
+                        }
                     }
+
                     value = (double)values.Pop();
                     value = (double)values.Pop() - value;
                     values.Push(value);
@@ -409,19 +424,25 @@ namespace GenICam
                     var secondValue = (int)GetLongValueFromString(values.Pop().ToString());
 
                     if (secondValue != firstValue)
+                    {
                         tempBoolean = true;
+                    }
                 }
                 else if (opreator.Equals(">="))
                 {
                     integerValue = (int)GetLongValueFromString(values.Pop().ToString());
                     if (GetLongValueFromString(values.Pop().ToString()) >= integerValue)
+                    {
                         tempBoolean = true;
+                    }
                 }
                 else if (opreator.Equals("<="))
                 {
                     integerValue = (int)GetLongValueFromString(values.Pop().ToString());
                     if (GetLongValueFromString(values.Pop().ToString()) <= integerValue)
+                    {
                         tempBoolean = true;
+                    }
                 }
                 else if (opreator.Equals("&"))
                 {
@@ -429,7 +450,7 @@ namespace GenICam
                     {
                         var byte2 = (int)GetLongValueFromString(values.Pop().ToString());
                         var byte1 = (int)GetLongValueFromString(values.Pop().ToString());
-                        integerValue = (byte1 & byte2);
+                        integerValue = byte1 & byte2;
                         values.Push(integerValue);
                     }
                 }
@@ -439,7 +460,7 @@ namespace GenICam
                     {
                         var byte2 = (int)GetLongValueFromString(values.Pop().ToString());
                         var byte1 = (int)GetLongValueFromString(values.Pop().ToString());
-                        integerValue = (byte1 | byte2);
+                        integerValue = byte1 | byte2;
                         values.Push(integerValue);
                     }
                 }
@@ -449,7 +470,7 @@ namespace GenICam
                     {
                         var byte2 = (int)GetLongValueFromString(values.Pop().ToString());
                         var byte1 = (int)GetLongValueFromString(values.Pop().ToString());
-                        integerValue = (byte1 ^ byte2);
+                        integerValue = byte1 ^ byte2;
                         values.Push(integerValue);
                     }
                 }
@@ -457,27 +478,32 @@ namespace GenICam
                 {
                     integerValue = (int)GetLongValueFromString(values.Pop().ToString());
                     if (GetLongValueFromString(values.Pop().ToString()) > integerValue)
+                    {
                         tempBoolean = true;
+                    }
                 }
                 else if (opreator.Equals(">>"))
                 {
                     integerValue = (int)GetLongValueFromString(values.Pop().ToString());
-                    integerValue = ((int)GetLongValueFromString(values.Pop().ToString()) >> integerValue);
+                    integerValue = (int)GetLongValueFromString(values.Pop().ToString()) >> integerValue;
                     values.Push(integerValue);
                 }
                 else if (opreator.Equals("<"))
                 {
                     integerValue = (int)GetLongValueFromString(values.Pop().ToString());
                     if (GetLongValueFromString(values.Pop().ToString()) < integerValue)
+                    {
                         tempBoolean = true;
+                    }
                 }
                 else if (opreator.Equals("<<"))
                 {
                     integerValue = (int)GetLongValueFromString(values.Pop().ToString());
-                    integerValue = ((int)GetLongValueFromString(values.Pop().ToString()) << integerValue);
+                    integerValue = (int)GetLongValueFromString(values.Pop().ToString()) << integerValue;
                     values.Push(integerValue);
                 }
             }
+
             if (opreator.Equals(":"))
             {
             }
@@ -556,27 +582,78 @@ namespace GenICam
         }
 
         /// <summary>
-        /// Parse Hexdecimal String to Actual Integer
+        /// Parse Hexdecimal String to Actual Integer.
         /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
+        /// <param name="value">The string value to parse.</param>
+        /// <returns>The hexadecimal value as a number.</returns>
         [Obsolete]
         private static long GetLongValueFromString(string value)
         {
             if (value.StartsWith("0x"))
             {
-                value = value.Replace("0x", "");
+                value = value.Replace("0x", string.Empty);
                 return long.Parse(value, System.Globalization.NumberStyles.HexNumber);
             }
 
             try
             {
-                return long.Parse(value); ;
+                return long.Parse(value);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
+                // Just catching all for simplicity.
             }
+
             return 0;
+        }
+
+        [Obsolete]
+        private string EvaluateFormula(string formula)
+        {
+            double result;
+            string equation;
+
+            foreach (var item in formula.Split('(', StringSplitOptions.None))
+            {
+                equation = item;
+                if (item.Contains(')'))
+                {
+                    equation = item.Substring(0, item.IndexOf(')'));
+                }
+
+                if (equation.Contains('+') || equation.Contains('-') || equation.Contains('/') || equation.Contains('*'))
+                {
+
+                    var last = equation.Replace(" ", string.Empty);
+                    formula = formula.Replace(" ", string.Empty);
+
+                    // last = last.Substring(0, last.Length - 1);
+                    if (last != "+" || last != "-" || last != "/" || last != "*")
+                    {
+                        result = Evaluate(last);
+                        if (formula.Contains($"({last})"))
+                        {
+                            formula = formula.Replace($"({last})", result.ToString());
+                        }
+                        else
+                        {
+                            formula = formula.Replace(last, result.ToString());
+                        }
+                    }
+                }
+
+                if (formula.Contains($"({equation})"))
+                {
+                    formula = formula.Replace($"({equation})", equation);
+                }
+            }
+
+            if (formula.Contains("("))
+            {
+                formula = EvaluateFormula(formula);
+            }
+
+            return formula;
         }
     }
 }

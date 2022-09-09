@@ -32,7 +32,7 @@ namespace GenICam
 
         public double Min { get; private set; }
         public double Max { get; set; }
-        public Int64 Inc { get; private set; } = 1;
+        public long Inc { get; private set; } = 1;
         public IncrementMode IncMode { get; private set; }
         public Representation Representation { get; private set; }
         public double Value { get; set; }
@@ -141,6 +141,7 @@ namespace GenICam
             return (long)Value;
         }
 
+        /// <inheritdoc/>
         public async Task<IReplyPacket> SetValueAsync(long value)
         {
             IReplyPacket reply = null;

@@ -67,7 +67,7 @@ namespace GenICam
             set;
         }
 
-        public List<Int64> ListOfValidValue { get; private set; }
+        public List<long> ListOfValidValue { get; private set; }
         public string Unit { get; private set; } = string.Empty;
         public long ValueToWrite { get; set; }
         public IMathematical PMax { get; }
@@ -139,7 +139,7 @@ namespace GenICam
             throw new NotImplementedException();
         }
 
-        public Int64? GetIncrement()
+        public long? GetIncrement()
         {
             if (IncMode == IncrementMode.fixedIncrement)
                 return Inc;
@@ -147,7 +147,7 @@ namespace GenICam
                 return null;
         }
 
-        public List<Int64> GetListOfValidValue()
+        public List<long> GetListOfValidValue()
         {
             if (IncMode == IncrementMode.listIncrement)
                 return ListOfValidValue;
@@ -170,12 +170,12 @@ namespace GenICam
             return Unit;
         }
 
-        public void ImposeMin(Int64 min)
+        public void ImposeMin(long min)
         {
             throw new NotImplementedException();
         }
 
-        public void ImposeMax(Int64 max)
+        public void ImposeMax(long max)
         {
             throw new NotImplementedException();
         }

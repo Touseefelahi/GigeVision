@@ -4,11 +4,21 @@ using System.Text;
 
 namespace GenICam
 {
+    /// <summary>
+    /// Representation.
+    /// </summary>
     public enum Representation
     {
+        /// <summary>Pure number.</summary>
         PureNumber,
+
+        /// <summary>Linear.</summary>
         Linear,
+
+        /// <summary>Logarithmic.</summary>
         Logarithmic,
-        HexNumber
+
+        /// <summary>Hexadecimal number.</summary>
+        HexNumber,
     }
 }

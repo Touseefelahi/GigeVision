@@ -1,15 +1,23 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace GenICam
+﻿namespace GenICam
 {
+    /// <summary>
+    /// Slope enumeration.
+    /// </summary>
     public enum Slope
     {
+        /// <summary>None.</summary>
         None,
+
+        /// <summary>Increasing.</summary>
         Increasing,
+
+        /// <summary>Decreasing.</summary>
         Decreasing,
+
+        /// <summary>Varying.</summary>
         Varying,
-        Automatic
+
+        /// <summary>Automatic.</summary>
+        Automatic,
     }
 }

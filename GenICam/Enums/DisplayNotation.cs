@@ -4,10 +4,18 @@ using System.Text;
 
 namespace GenICam
 {
+    /// <summary>
+    /// Display notation.
+    /// </summary>
     public enum DisplayNotation
     {
+        /// <summary>Automatic.</summary>
         Automatic,
+
+        /// <summary>Fixed.</summary>
         Fixed,
-        Scientific
+
+        /// <summary>Scientific.</summary>
+        Scientific,
     }
 }

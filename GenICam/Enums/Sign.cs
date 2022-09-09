@@ -1,8 +1,12 @@
 ﻿namespace GenICam
 {
+    /// <summary>Sign of the element.</summary>
     public enum Sign
     {
+        /// <summary>Signed.</summary>
         Signed,
-        Unsigned
+
+        /// <summary>Unsigned.</summary>
+        Unsigned,
     }
 }

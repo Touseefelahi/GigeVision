@@ -1,7 +1,13 @@
 ﻿namespace GenICam
 {
+    /// <summary>
+    /// Interface for a node.
+    /// </summary>
     public interface INode
     {
-        GenAccessMode AccessMode { get; }
+        /// <summary>
+        /// Gets the access mode.
+        /// </summary>
+        public GenAccessMode AccessMode { get; }
     }
 }

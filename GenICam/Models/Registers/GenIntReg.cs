@@ -31,14 +31,14 @@ namespace GenICam
         /// <summary>
         /// Register Address in hex format
         /// </summary>
-        public Int64? Address { get; private set; }
+        public long? Address { get; private set; }
 
         private object PAddress { get; set; }
 
         /// <summary>
         /// Register Length
         /// </summary>
-        public Int64 Length { get; private set; }
+        public long Length { get; private set; }
 
         /// <summary>
         /// Register Access Mode

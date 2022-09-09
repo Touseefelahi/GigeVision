@@ -1,39 +1,58 @@
-﻿using Prism.Commands;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Prism.Commands;
 
 namespace GenICam
 {
+    /// <summary>
+    /// GenICam command implementation.
+    /// </summary>
     public class GenCommand : GenCategory, ICommand
     {
-        public GenCommand(CategoryProperties categoryProperties, Int64 commandValue, IPValue pValue, Dictionary<string, IMathematical> expressions)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="GenCommand"/> class.
+        /// </summary>
+        /// <param name="categoryProperties">The category properties.</param>
+        /// <param name="commandValue">The command value.</param>
+        /// <param name="pValue">The PValue.</param>
+        /// <param name="expressions">The expressions.</param>
+        public GenCommand(CategoryProperties categoryProperties, long commandValue, IPValue pValue, Dictionary<string, IMathematical> expressions)
         {
             CategoryProperties = categoryProperties;
             CommandValue = commandValue;
             PValue = pValue;
 
-            SetValueCommand = new DelegateCommand(()=>Execute());
+            // As the Execute method is async and the CommandValue is not, we should wait for the execution.
+            SetValueCommand = new DelegateCommand(() => Execute().GetAwaiter().GetResult());
         }
 
-        public Int64 Value { get; set; }
-        public Int64 CommandValue { get; private set; }
+        /// <summary>
+        /// Gets or sets the value.
+        /// </summary>
+        public long Value { get; set; }
 
+        /// <summary>
+        /// Gets the command value.
+        /// </summary>
+        public long CommandValue { get; private set; }
+
+        /// <inheritdoc/>
         public async Task Execute()
         {
             if (PValue is IRegister Register)
             {
-                var length = Register.GetLength() ;
+                var length = Register.GetLength();
                 byte[] pBuffer = new byte[length];
 
                 switch (length)
                 {
                     case 2:
-                        pBuffer = BitConverter.GetBytes((UInt16)CommandValue);
+                        pBuffer = BitConverter.GetBytes((ushort)CommandValue);
                         break;
 
                     case 4:
-                        pBuffer = BitConverter.GetBytes((Int32)CommandValue);
+                        pBuffer = BitConverter.GetBytes((int)CommandValue);
                         break;
 
                     case 8:
@@ -42,9 +61,10 @@ namespace GenICam
                 }
 
                 await Register.SetAsync(pBuffer, length);
-            };
+            }
         }
 
+        /// <inheritdoc/>
         public async Task<bool> IsDone()
         {
             throw new NotImplementedException();
