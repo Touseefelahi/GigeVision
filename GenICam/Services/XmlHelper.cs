@@ -7,7 +7,7 @@ using System.Xml;
 namespace GenICam
 {
     /// <summary>
-    /// this class helps Gvcp to read all the registers from XML file
+    /// this class helps Gvcp to read all the registers from XML file.
     /// </summary>
     public class XmlHelper : IXmlHelper
     {
@@ -55,7 +55,6 @@ namespace GenICam
 
             this.xmlDocument = xmlDocument;
             GenPort = genPort;
-
         }
 
         /// <summary>
@@ -140,6 +139,7 @@ namespace GenICam
                     return tuple;
                 }
             }
+
             return tuple;
         }
 
@@ -264,7 +264,7 @@ namespace GenICam
 
                         break;
 
-                    case NodeRepresentation :
+                    case NodeRepresentation:
                         _ = Enum.TryParse<Representation>(node.InnerText, out representation);
                         break;
 
@@ -332,6 +332,7 @@ namespace GenICam
                 uint.TryParse(SelectSingleNode(enumEntry, NodeValue).InnerText, out entryValue);
                 entry.Add(enumEntry.Attributes[NodeName].Value, new EnumEntry(entryValue, isImplementedValue));
             }
+
             IPValue pValue = null;
 
             var enumPValue = SelectSingleNode(xmlNode, NodePValue);
@@ -388,10 +389,10 @@ namespace GenICam
 
             IPValue pValue = null;
 
-            var representationNode = SelectSingleNode(xmlNode, NodeRepresentation );
+            var representationNode = SelectSingleNode(xmlNode, NodeRepresentation);
             if (representationNode != null)
             {
-                Enum.TryParse<Representation>(representationNode.InnerText, out representation);
+                _ = Enum.TryParse<Representation>(representationNode.InnerText, out representation);
             }
 
             int convertFromBase = 10;
@@ -447,13 +448,14 @@ namespace GenICam
                         {
                             pValue = await GetRegister(pNode);
                             if (pValue is null)
+                            {
                                 pValue = await GetFormula(pNode);
+                            }
                         }
 
                         break;
 
-                    case NodeRepresentation :
-
+                    case NodeRepresentation:
                         break;
 
                     case "Unit":
@@ -626,7 +628,6 @@ namespace GenICam
 
                     pAddress ??= await GetGenCategory(pNode);
                 }
-
             }
 
             return (address, pAddress, length, accessMode);
@@ -670,7 +671,6 @@ namespace GenICam
 
             return new GenInteger(null, null, null, null, null, null, null, null, Representation.PureNumber, value, string.Empty, pValue);
         }
-
 
         private async Task<IntSwissKnife> GetIntSwissKnife(XmlNode xmlNode)
         {
@@ -824,10 +824,10 @@ namespace GenICam
         }
 
         /// <summary>
-        /// Get Category Properties such as Name, AccessMode and Visibility
+        /// Get Category Properties such as Name, AccessMode and Visibility.
         /// </summary>
         /// <param name="xmlNode">The XML node to get the category property.</param>
-        /// <returns>A Category property</returns>
+        /// <returns>A Category property.</returns>
         private async Task<CategoryProperties> GetCategoryProperties(XmlNode xmlNode)
         {
             if (xmlNode.Name == NodePFeature)
@@ -839,8 +839,8 @@ namespace GenICam
             string displayName = string.Empty, toolTip = string.Empty, description = string.Empty;
             bool isStreamable = false;
 
-            //if (xmlNode.SelectSingleNode( "DisplayName") is XmlNode displayNameNode)
-            //    displayName = displayNameNode.InnerText;
+            //// if (xmlNode.SelectSingleNode( "DisplayName") is XmlNode displayNameNode)
+            ////    displayName = displayNameNode.InnerText;
 
             if (displayName == string.Empty)
             {
@@ -895,6 +895,7 @@ namespace GenICam
             {
                 attirbute = $"@{attirbuteName}";
             }
+
             if (hasAttirbuteValue)
             {
                 attirbute += $"='{attirbuteValue}'";
@@ -926,6 +927,7 @@ namespace GenICam
             {
                 attirbute = $"@{attirbuteName}";
             }
+
             if (hasAttirbuteValue)
             {
                 attirbute += $"='{attirbuteValue}'";
@@ -976,5 +978,4 @@ namespace GenICam
 
         #endregion XML Mapping Helpers
     }
-
 }

@@ -67,7 +67,7 @@ namespace GenICam
         /// Restricts the minimum.
         /// </summary>
         /// <param name="value">The value to impose.</param>
-        /// <returns></returns>
+        /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation.</returns>
         public Task<IReplyPacket> ImposeMinAsync(long value);
 
         /// <summary>
