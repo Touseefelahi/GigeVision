@@ -26,8 +26,10 @@ namespace GenICam
             Formula = formula;
             Constants = constants;
             Expressions = expressions;
+
             // Prepare Expression
             Formula = Formula.Replace(" ", string.Empty);
+
             // Value = ExecuteFormula();
             Formula = MathParserHelper.PrepareFromula(Formula, Expressions);
         }
@@ -70,7 +72,6 @@ namespace GenICam
                 {
                     if (PVariables.ContainsKey(word))
                     {
-
                         await ReadExpressionPValues(word);
                     }
 
@@ -120,7 +121,6 @@ namespace GenICam
                     //     return Evaluate(formula);
                     // }
                 }
-
             }
             catch (Exception)
             {
@@ -186,6 +186,7 @@ namespace GenICam
             {
                 // To implement.
             }
+
             double? value = null;
             value = await PVariables[key].GetValueAsync();
 

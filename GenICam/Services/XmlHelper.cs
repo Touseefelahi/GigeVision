@@ -229,27 +229,18 @@ namespace GenICam
                 switch (node.Name)
                 {
                     case NodeValue:
-                        double.TryParse(node.InnerText, out value);
-
+                        _ = double.TryParse(node.InnerText, out value);
                         break;
 
                     case NodeMin:
-                        double.TryParse(node.InnerText, out min);
+                        _ = double.TryParse(node.InnerText, out min);
                         break;
 
                     case NodeMax:
-                        double.TryParse(node.InnerText, out max);
+                        _ = double.TryParse(node.InnerText, out max);
                         break;
 
                     case NodePMin:
-                        pNode = await ReadPNode(node.InnerText);
-                        if (pNode != null)
-                        {
-                            expressions.Add(node.Name, await GetFormula(pNode));
-                        }
-
-                        break;
-
                     case NodePMax:
                         pNode = await ReadPNode(node.InnerText);
                         if (pNode != null)
@@ -260,25 +251,21 @@ namespace GenICam
                         break;
 
                     case NodeInc:
-                        long.TryParse(node.InnerText, out inc);
+                        _ = long.TryParse(node.InnerText, out inc);
                         break;
 
                     case NodePValue:
-
                         pNode = await ReadPNode(node.InnerText);
                         if (pNode != null)
                         {
                             pValue = await GetRegister(pNode);
-                            if (pValue is null)
-                            {
-                                pValue = await GetFormula(pNode);
-                            }
+                            pValue ??= await GetFormula(pNode);
                         }
 
                         break;
 
                     case NodeRepresentation :
-                        Enum.TryParse<Representation>(node.InnerText, out representation);
+                        _ = Enum.TryParse<Representation>(node.InnerText, out representation);
                         break;
 
                     case "Unit":

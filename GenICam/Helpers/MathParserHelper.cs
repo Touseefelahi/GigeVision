@@ -601,6 +601,7 @@ namespace GenICam
             }
             catch (Exception)
             {
+                // Just catching all for simplicity.
             }
 
             return 0;
