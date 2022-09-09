@@ -14,28 +14,28 @@ namespace GenICam
     {
 
         /// <summary>
-        /// Main Method that calculate the given formula
+        /// Initializes a new instance of the <see cref="IntSwissKnife"/> class.
         /// </summary>
-        /// <param name="gvcp"></param>
-        /// <param name="formula"></param>
-        /// <param name="pVarible"></param>
-        /// <param name="value"></param>
+        /// <param name="formula">The formula to evaluate.</param>
+        /// <param name="pVaribles">The variables.</param>
+        /// <param name="constants">The contants.</param>
+        /// <param name="expressions">The expression.</param>
         public IntSwissKnife(string formula, Dictionary<string, IPValue> pVaribles, Dictionary<string, double> constants = null, Dictionary<string, string> expressions = null)
         {
             PVariables = pVaribles;
             Formula = formula;
             Constants = constants;
             Expressions = expressions;
-            //Prepare Expression
-            Formula = Formula.Replace(" ", "");
-            //Value = ExecuteFormula();
+            // Prepare Expression
+            Formula = Formula.Replace(" ", string.Empty);
+            // Value = ExecuteFormula();
             Formula = MathParserHelper.PrepareFromula(Formula, Expressions);
         }
+
         /// <summary>
-        /// this method calculates the formula and returns the result
+        /// Calculates the formula and returns the result.
         /// </summary>
-        /// <param name="intSwissKnife"></param>
-        /// <returns></returns>
+        /// <returns>The result as a double.</returns>
         private async Task<double> ExecuteFormula()
         {
             try
@@ -113,17 +113,17 @@ namespace GenICam
 
                     return (double)MathParserHelper.CalculateExpression(formula);
 
-                    //while (opreations.Any(c => formula.Contains(c)))
-                    //{
-                    //    formula = EvaluateFormula(formula);
-                    //    return Evaluate(formula);
-                    //}
+                    // Keeping the code as may need some implementation.
+                    // while (opreations.Any(c => formula.Contains(c)))
+                    // {
+                    //     formula = EvaluateFormula(formula);
+                    //     return Evaluate(formula);
+                    // }
                 }
 
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-
                 throw;
             }
 
@@ -131,73 +131,69 @@ namespace GenICam
         }
 
         /// <summary>
-        /// Formula Result
+        /// Gets the formula result.
         /// </summary>
         public double Value { get; private set; }
 
         /// <summary>
-        /// SwisKinfe Variable Parameters
+        /// Gets or sets SwisKinfe Variable parameters.
         /// </summary>
         private Dictionary<string, IPValue> PVariables { get; set; }
 
         /// <summary>
-        /// SwisKinfe Constants Values
+        /// Gets or sets the SwisKinfe constants values.
         /// </summary>
         private Dictionary<string, double> Constants { get; set; }
 
         /// <summary>
-        /// SwisKinfe Expressions
+        /// Gets or sets the SwisKinfe expressions.
         /// </summary>
         private Dictionary<string, string> Expressions { get; set; }
 
         /// <summary>
-        /// Formula Expression
+        /// Gets or sets the formula expression.
         /// </summary>
         private string Formula { get; set; }
 
 
         /// <summary>
-        /// Get SwissKinfe Value
+        /// Get SwissKinfe value async.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The result as a long.</returns>
         public async Task<long?> GetValueAsync()
         {
-            return (Int64)await ExecuteFormula();
+            return (long)await ExecuteFormula();
         }
 
         /// <summary>
-        /// Set SwissKnife Value
+        /// Set SwissKnife value async.
         /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
+        /// <param name="value">The value to set.</param>
+        /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation.</returns>
         public Task<IReplyPacket> SetValueAsync(long value)
         {
             throw new NotImplementedException();
         }
 
         /// <summary>
-        /// Helper To Calculate Math Opreations
+        /// Helper To Read SwissKinfe Experssion Parameters.
         /// </summary>
-        /// <param name="opreator"></param>
-        /// <param name="opreators"></param>
-        /// <param name="values"></param>
-        /// <returns></returns>
-        /// <summary>
-        /// Helper To Read SwissKinfe Experssion Parameters
-        /// </summary>
-        /// <param name="word"></param>
-        /// <returns></returns>
+        /// <param name="key">The key to read.</param>
+        /// <returns>A task.</returns>
         private async Task ReadExpressionPValues(string key)
         {
             if (key.Equals("BINXFPGA"))
             {
-
+                // To implement.
             }
             double? value = null;
             value = await PVariables[key].GetValueAsync();
 
             if (value is null)
+            {
                 throw new Exception("Failed to read register value", new InvalidDataException());
+            }
+
             Formula = Formula.Replace(key, value.ToString());
         }
     }

@@ -14,13 +14,13 @@ namespace GenICam
         /// <summary>
         /// Register Address in hex format
         /// </summary>
-        public Int64? Address { get; private set; }
+        public long? Address { get; private set; }
         public object PAddress { get; private set; }
 
         /// <summary>
         /// Register Length
         /// </summary>
-        public Int64 Length { get; private set; }
+        public long Length { get; private set; }
         public short? MSB { get; private set; }
         public short? LSB { get; private set; }
         public byte? Bit { get; private set; }
@@ -90,7 +90,7 @@ namespace GenICam
 
         public async Task<long?> GetValueAsync()
         {
-            Int64? value = null;
+            long? value = null;
 
             var key = (await GetAddressAsync()).ToString();
 
@@ -138,7 +138,7 @@ namespace GenICam
         public long ReadMask(long registerValue)
         {
             var mask = 0xFFFF0000;
-            Int64 value = 0;
+            long value = 0;
 
             if (MSB is short msb && LSB is short lsb)
             {

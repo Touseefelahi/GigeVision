@@ -5,60 +5,60 @@ using System.Text;
 namespace GenICam
 {
     /// <summary>
-    /// General reply: can be used for UDP/TCP
+    /// General reply: can be used for UDP/TCP.
     /// </summary>
     public interface IReplyPacket
     {
         /// <summary>
-        /// Error to display if any
+        /// Gets or sets error to display if any.
         /// </summary>
-        string Error { get; set; }
+        public string Error { get; set; }
 
         /// <summary>
-        /// IP address of the sender
+        /// Gets or sets iP address of the sender.
         /// </summary>
-        string IPSender { get; set; }
+        public string IPSender { get; set; }
 
         /// <summary>
-        /// Command sent
+        /// Gets or sets a value indicating whether command sent.
         /// </summary>
-        bool IsSent { get; set; }
+        public bool IsSent { get; set; }
 
         /// <summary>
-        /// Command Sent and camera replied
+        /// Gets or sets a value indicating whether command Sent and camera replied.
         /// </summary>
-        bool IsSentAndReplyReceived { get; set; }
+        public bool IsSentAndReplyReceived { get; set; }
 
         /// <summary>
-        /// Sending Port
+        /// Gets or sets sending Port.
         /// </summary>
-        int PortSender { get; set; }
+        public int PortSender { get; set; }
 
         /// <summary>
-        /// Raw reply packet
+        /// Gets raw reply packet.
         /// </summary>
-        List<byte> Reply { get; }
+        public List<byte> Reply { get; }
 
         /// <summary>
-        /// Register value
+        /// Gets or sets register value.
         /// </summary>
         public uint RegisterValue { get; set; }
 
         /// <summary>
-        /// Memory Value
+        /// Gets or sets memory Value.
         /// </summary>
         public byte[] MemoryValue { get; set; }
 
         /// <summary>
-        /// It sets the list of byte
+        /// It sets the list of byte.
         /// </summary>
-        /// <param name="reply"></param>
-        void SetReply(byte[] reply);
+        /// <param name="reply">The reply bytes.</param>
+        public void SetReply(byte[] reply);
 
         /// <summary>
-        /// It sets the list of byte
+        /// It sets the list of byte.
         /// </summary>
-        /// <param name="reply"></param>
-        void SetReply(List<byte> reply);
+        /// <param name="reply">The reply bytes.</param>
+        public void SetReply(List<byte> reply);
     }
 }

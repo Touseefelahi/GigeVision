@@ -4,19 +4,34 @@ using System.Threading.Tasks;
 namespace GenICam
 {
     /// <summary>
-    /// Maps to an edit box showing a hex string
+    /// Maps to an edit box showing a hex string.
     /// </summary>
     public interface IRegister : INode, IPValue
     {
-        Task<IReplyPacket> SetAsync(byte[] pBuffer, long length);
-        Task<byte[]> GetAsync();
         /// <summary>
-        /// Register Address in hex format
+        /// Set the register bytes async.
         /// </summary>
-        Task<long?> GetAddressAsync();
+        /// <param name="pBuffer">The bytes to write.</param>
+        /// <param name="length">The lenght of bytes to write.</param>
+        /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation.</returns>
+        public Task<IReplyPacket> SetAsync(byte[] pBuffer, long length);
+
         /// <summary>
-        /// Register Length
+        /// Gets the register bytes async.
         /// </summary>
-        Int64 GetLength();
+        /// <returns>The register bytes.</returns>
+        public Task<byte[]> GetAsync();
+
+        /// <summary>
+        /// Gets the register address as a long.
+        /// </summary>
+        /// <returns>The register address as a long.</returns>
+        public Task<long?> GetAddressAsync();
+
+        /// <summary>
+        /// Gets the register length.
+        /// </summary>
+        /// <returns>The length in byte.</returns>
+        public long GetLength();
     }
 }

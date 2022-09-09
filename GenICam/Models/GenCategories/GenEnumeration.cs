@@ -1,13 +1,23 @@
-﻿using Prism.Commands;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Prism.Commands;
 
 namespace GenICam
 {
+    /// <summary>
+    /// GenICam Enumeration implementation.
+    /// </summary>
     public class GenEnumeration : GenCategory, IEnumeration
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="GenEnumeration"/> class.
+        /// </summary>
+        /// <param name="categoryProperties">The category properties.</param>
+        /// <param name="entries">The entries.</param>
+        /// <param name="pValue">The pValue.</param>
+        /// <param name="expressions">The expressions.</param>
         public GenEnumeration(CategoryProperties categoryProperties, Dictionary<string, EnumEntry> entries, IPValue pValue, Dictionary<string, IMathematical> expressions = null)
         {
             CategoryProperties = categoryProperties;
@@ -16,26 +26,23 @@ namespace GenICam
             SetValueCommand = new DelegateCommand(ExecuteSetValueCommand);
             GetValueCommand = new DelegateCommand(ExecuteGetValueCommand);
         }
-        private async void ExecuteGetValueCommand()
-        {
-            Value = await GetIntValueAsync();
-            ValueToWrite = Value;
-            RaisePropertyChanged(nameof(Value));
-            RaisePropertyChanged(nameof(ValueToWrite));
-        }
 
         /// <summary>
-        /// Enumeration Entry List
+        /// Gets or sets the enumeration entry list.
         /// </summary>
         public Dictionary<string, EnumEntry> Entries { get; set; }
 
         /// <summary>
-        /// Enumeration Value Parameter
+        /// Gets or sets the enumeration value parameter.
         /// </summary>
-        public Int64 Value { get; set; }
+        public long Value { get; set; }
 
+        /// <summary>
+        /// Gets or sets the value to write.
+        /// </summary>
         public long ValueToWrite { get; set; }
 
+        /// <inheritdoc/>
         public async Task<long> GetIntValueAsync()
         {
             if (PValue is IPValue pValue)
@@ -46,6 +53,7 @@ namespace GenICam
             return Value;
         }
 
+        /// <inheritdoc/>
         public async Task SetIntValueAsync(long value)
         {
             if (PValue is IRegister Register)
@@ -63,11 +71,11 @@ namespace GenICam
                     switch (length)
                     {
                         case 2:
-                            pBuffer = BitConverter.GetBytes((UInt16)value);
+                            pBuffer = BitConverter.GetBytes((ushort)value);
                             break;
 
                         case 4:
-                            pBuffer = BitConverter.GetBytes((Int32)value);
+                            pBuffer = BitConverter.GetBytes((int)value);
                             break;
 
                         case 8:
@@ -78,7 +86,9 @@ namespace GenICam
                     var reply = await Register.SetAsync(pBuffer, length);
 
                     if (reply.IsSentAndReplyReceived && reply.Reply[0] == 0)
+                    {
                         Value = value;
+                    }
                 }
             }
 
@@ -86,44 +96,63 @@ namespace GenICam
             RaisePropertyChanged(nameof(ValueToWrite));
         }
 
+        /// <inheritdoc/>
         public Dictionary<string, EnumEntry> GetEntries()
         {
             return Entries;
         }
 
+        /// <summary>
+        /// Sets the symbolic list of elements to Entries.
+        /// </summary>
+        /// <param name="list">The list of symobolic elements.</param>
         public void GetSymbolics(Dictionary<string, EnumEntry> list)
         {
             Entries = list;
         }
 
+        /// <inheritdoc/>
         public EnumEntry GetEntryByName(string entryName)
         {
             return Entries[entryName];
         }
 
+        /// <inheritdoc/>
         public EnumEntry GetEntry(long entryValue)
         {
             var entries = Entries.Where(x => x.Value.Value == entryValue);
 
-            if (entries.Count() > 0)
+            if (entries.Any())
+            {
                 return entries.First().Value;
+            }
 
             return null;
         }
 
+        /// <inheritdoc/>
         public EnumEntry GetCurrentEntry(long entryValue)
         {
             return Entries.Values.FirstOrDefault(x => x.Value == entryValue);
         }
 
-        private async void ExecuteSetValueCommand()
-        {
-            await SetIntValueAsync(ValueToWrite);
-        }
-
+        /// <inheritdoc/>
         Task IEnumeration.GetSymbolics(Dictionary<string, EnumEntry> entries)
         {
             throw new NotImplementedException();
+        }
+
+        private async void ExecuteGetValueCommand()
+        {
+            Value = await GetIntValueAsync();
+            ValueToWrite = Value;
+            RaisePropertyChanged(nameof(Value));
+            RaisePropertyChanged(nameof(ValueToWrite));
+        }
+
+        private async void ExecuteSetValueCommand()
+        {
+            await SetIntValueAsync(ValueToWrite);
         }
     }
 }

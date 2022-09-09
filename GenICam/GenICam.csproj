@@ -12,5 +12,9 @@
   <ItemGroup>
     <PackageReference Include="MathParser.org-mXparser" Version="5.0.7" />
     <PackageReference Include="Prism.Core" Version="8.1.97" />
+    <PackageReference Include="StyleCop.Analyzers" Version="1.1.118">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 </Project>
