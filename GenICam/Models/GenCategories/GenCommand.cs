@@ -40,9 +40,9 @@ namespace GenICam
         /// <inheritdoc/>
         public async Task Execute()
         {
-            if (PValue is IRegister Register)
+            if (PValue is IRegister register)
             {
-                var length = Register.GetLength();
+                var length = register.GetLength();
                 byte[] pBuffer = new byte[length];
 
                 switch (length)
@@ -60,7 +60,7 @@ namespace GenICam
                         break;
                 }
 
-                await Register.SetAsync(pBuffer, length);
+                await register.SetAsync(pBuffer, length);
             }
         }
 

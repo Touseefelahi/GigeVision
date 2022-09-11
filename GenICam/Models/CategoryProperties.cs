@@ -8,12 +8,12 @@
         /// <summary>
         /// Initializes a new instance of the <see cref="CategoryProperties"/> class.
         /// </summary>
-        /// <param name="rootName"></param>
-        /// <param name="name"></param>
-        /// <param name="toolTip"></param>
-        /// <param name="description"></param>
-        /// <param name="visibilty"></param>
-        /// <param name="isStreamable"></param>
+        /// <param name="rootName">The root name.</param>
+        /// <param name="name">The name.</param>
+        /// <param name="toolTip">The tool tip.</param>
+        /// <param name="description">The description.</param>
+        /// <param name="visibilty">The visibility.</param>
+        /// <param name="isStreamable">True if streamable.</param>
         public CategoryProperties(string rootName, string name, string toolTip, string description, GenVisibility visibilty, bool isStreamable)
         {
             RootName = rootName;

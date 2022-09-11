@@ -77,15 +77,15 @@ namespace GenICam
         public async Task<IReplyPacket> SetValueAsync(string value)
         {
             IReplyPacket reply = null;
-            if (PValue is IRegister Register)
+            if (PValue is IRegister register)
             {
-                if (Register.AccessMode != GenAccessMode.RO)
+                if (register.AccessMode != GenAccessMode.RO)
                 {
-                    var length = Register.GetLength();
+                    var length = register.GetLength();
                     byte[] pBuffer = new byte[length];
                     pBuffer = ASCIIEncoding.ASCII.GetBytes(value);
 
-                    reply = await Register.SetAsync(pBuffer, length);
+                    reply = await register.SetAsync(pBuffer, length);
                     if (reply.IsSentAndReplyReceived && reply.Reply[0] == 0)
                     {
                         if (reply.MemoryValue != null)
