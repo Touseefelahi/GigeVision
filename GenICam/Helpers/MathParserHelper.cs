@@ -349,6 +349,7 @@ namespace GenICam
             bool tempBoolean = false;
             double value = 0;
             int integerValue = 0;
+
             // ToDo: Implement (&&) , (||) Operators
             if (values.Count > 1)
             {
@@ -623,7 +624,6 @@ namespace GenICam
 
                 if (equation.Contains('+') || equation.Contains('-') || equation.Contains('/') || equation.Contains('*'))
                 {
-
                     var last = equation.Replace(" ", string.Empty);
                     formula = formula.Replace(" ", string.Empty);
 

@@ -1,5 +1,4 @@
-﻿using org.mariuszgromada.math.mxparser;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -8,11 +7,10 @@ using System.Threading.Tasks;
 namespace GenICam
 {
     /// <summary>
-    /// this is a mathematical class for register parameter computations
+    /// this is a mathematical class for register parameter computations.
     /// </summary>
     public class IntSwissKnife : IMathematical
     {
-
         /// <summary>
         /// Initializes a new instance of the <see cref="IntSwissKnife"/> class.
         /// </summary>
@@ -32,6 +30,50 @@ namespace GenICam
 
             // Value = ExecuteFormula();
             Formula = MathParserHelper.PrepareFromula(Formula, Expressions);
+        }
+
+        /// <summary>
+        /// Gets the formula result.
+        /// </summary>
+        public double Value { get; private set; }
+
+        /// <summary>
+        /// Gets or sets SwisKinfe Variable parameters.
+        /// </summary>
+        private Dictionary<string, IPValue> PVariables { get; set; }
+
+        /// <summary>
+        /// Gets or sets the SwisKinfe constants values.
+        /// </summary>
+        private Dictionary<string, double> Constants { get; set; }
+
+        /// <summary>
+        /// Gets or sets the SwisKinfe expressions.
+        /// </summary>
+        private Dictionary<string, string> Expressions { get; set; }
+
+        /// <summary>
+        /// Gets or sets the formula expression.
+        /// </summary>
+        private string Formula { get; set; }
+
+        /// <summary>
+        /// Get SwissKinfe value async.
+        /// </summary>
+        /// <returns>The result as a long.</returns>
+        public async Task<long?> GetValueAsync()
+        {
+            return (long)await ExecuteFormula();
+        }
+
+        /// <summary>
+        /// Set SwissKnife value async.
+        /// </summary>
+        /// <param name="value">The value to set.</param>
+        /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation.</returns>
+        public Task<IReplyPacket> SetValueAsync(long value)
+        {
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -93,7 +135,6 @@ namespace GenICam
 
                     if (Expressions != null)
                     {
-
                         if (Expressions.ContainsKey(word))
                         {
                             foreach (var expression in Expressions)
@@ -128,51 +169,6 @@ namespace GenICam
             }
 
             return 0;
-        }
-
-        /// <summary>
-        /// Gets the formula result.
-        /// </summary>
-        public double Value { get; private set; }
-
-        /// <summary>
-        /// Gets or sets SwisKinfe Variable parameters.
-        /// </summary>
-        private Dictionary<string, IPValue> PVariables { get; set; }
-
-        /// <summary>
-        /// Gets or sets the SwisKinfe constants values.
-        /// </summary>
-        private Dictionary<string, double> Constants { get; set; }
-
-        /// <summary>
-        /// Gets or sets the SwisKinfe expressions.
-        /// </summary>
-        private Dictionary<string, string> Expressions { get; set; }
-
-        /// <summary>
-        /// Gets or sets the formula expression.
-        /// </summary>
-        private string Formula { get; set; }
-
-
-        /// <summary>
-        /// Get SwissKinfe value async.
-        /// </summary>
-        /// <returns>The result as a long.</returns>
-        public async Task<long?> GetValueAsync()
-        {
-            return (long)await ExecuteFormula();
-        }
-
-        /// <summary>
-        /// Set SwissKnife value async.
-        /// </summary>
-        /// <param name="value">The value to set.</param>
-        /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation.</returns>
-        public Task<IReplyPacket> SetValueAsync(long value)
-        {
-            throw new NotImplementedException();
         }
 
         /// <summary>
