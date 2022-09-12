@@ -221,58 +221,31 @@ namespace GigeVision.Core.Models
             broadCastReplyStarted = false;
             try
             {
-                if (string.IsNullOrEmpty(networkIP))
-                {
-                    //We are sending the broadcast packet at max 10 times, because In my network the broadcast message was not being sent
-                    //and most of the time I had to send the packet 4 times to successfully send atleast one broadcast packet
-                    for (int i = 0; i < 10; i++)
-                    {
-                        broadcastClient = new UdpClient(0)
-                        {
-                            EnableBroadcast = true,
-                            DontFragment = true,
-                            MulticastLoopback = false
-                        };
-                        broadcastClient.BeginReceive(BroadcastMessage, null);
-                        endPoint = new IPEndPoint(IPAddress.Broadcast, PortGvcp);
-                        broadcastClient.Send(discovery.CommandBytes, discovery.CommandBytes.Length, endPoint);
-                        await Task.Delay(10);
-                        if (i > 3 && broadCastReplyStarted)
-                        {
-                            //Making sure that all the broadcast packets received, this is not the optimum way- I couldn't find any better solution
-                            await Task.Delay(100);
-                            return cameraInfoList;
-                        }
-                    }
-                }
-                //If the broadcast packet doesn't work, we fall back to old way, which will send subnet broadcast message
-
                 byte[] ip;
                 if (string.IsNullOrEmpty(networkIP))
                 {
                     using var socketIP = new UdpClient();
                     socketIP.Connect(IPAddress.Parse("8.8.8.8"), PortGvcp);
                     ip = (socketIP.Client.LocalEndPoint as IPEndPoint)?.Address.GetAddressBytes();
-                    ip[3] = 255;
                     socketIP.Close();
                     socketIP.Dispose();
                 }
                 else
                 {
                     ip = IPAddress.Parse(networkIP).GetAddressBytes();
-                    ip[3] = 255;
                 }
 
-                endPoint = new(new IPAddress(ip), PortGvcp);
-
-                broadcastClient = new UdpClient(0)
+                broadcastClient = new UdpClient()
                 {
-                    EnableBroadcast = true
+                    EnableBroadcast = true,
                 };
-
+                broadcastClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+                var endPoint2 = new IPEndPoint(new IPAddress(ip), 0);
+                broadcastClient.Client.Bind(endPoint2);
                 broadcastClient.BeginReceive(BroadcastMessage, null);
+                endPoint = new IPEndPoint(IPAddress.Broadcast, PortGvcp);
                 broadcastClient.Send(discovery.CommandBytes, discovery.CommandBytes.Length, endPoint);
-                await Task.Delay(500);
+                await Task.Delay(100);
             }
             catch (Exception ex)
             {
