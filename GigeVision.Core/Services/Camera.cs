@@ -2,6 +2,8 @@
 using GigeVision.Core.Interfaces;
 using Stira.WpfCore;
 using System;
+using System.Net;
+using System.Net.Sockets;
 using System.Threading.Tasks;
 
 namespace GigeVision.Core.Models
@@ -296,7 +298,9 @@ namespace GigeVision.Core.Models
             {
                 if (PortRx == 0)
                 {
-                    PortRx = new Random().Next(5000, 6000);
+                    UdpClient udpClient = new(0);
+                    PortRx = ((IPEndPoint)(udpClient.Client.LocalEndPoint)).Port;
+                    udpClient.Dispose();
                 }
             }
             else
