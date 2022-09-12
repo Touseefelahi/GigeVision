@@ -170,19 +170,20 @@ namespace GigeVision.Core.Models
             gateWayBytes[3] = 0x01;
             Array.Copy(gateWayBytes, 0, forceIpCommand, 60, 4);//4bytes, TotalLength= 64
 
-            using var client = new UdpClient();
-            client.Connect(IPAddress.Broadcast, 3956);
-            client.Client.SendTimeout = 100;
-            client.Client.ReceiveTimeout = 500;
-            var reply = await SendUdp(client, forceIpCommand, true).ConfigureAwait(false);
-            if (reply?.Length > 5)
+            var broadCast = SendBroadCastPacket(forceIpCommand, ParseReply);
+            bool status = false;
+            void ParseReply(IPEndPoint endPoint, byte[] data)
             {
-                if (reply[3] == 0x05 && reply[0] == 0 && reply[1] == 0) //ForceIp acknowledgment
+                if (data?.Length > 5)
                 {
-                    return true;
+                    if (data[3] == 0x05 && data[0] == 0 && data[1] == 0) //ForceIp acknowledgment
+                    {
+                        status = true;
+                    }
                 }
             }
-            return false;
+            await broadCast;
+            return status;
         }
 
         /// <summary>
@@ -206,9 +207,7 @@ namespace GigeVision.Core.Models
             listUpdated?.Invoke(list);
         }
 
-        private UdpClient broadcastClient;
         private List<CameraInformation> cameraInfoList;
-        private bool broadCastReplyStarted;
 
         /// <summary>
         /// It will get all the devices from the network and returns the Camera list
@@ -217,61 +216,20 @@ namespace GigeVision.Core.Models
         {
             cameraInfoList = new List<CameraInformation>();
             GvcpCommand discovery = new(GvcpCommandType.Discovery);
-            IPEndPoint endPoint = null;
-            broadCastReplyStarted = false;
-            try
-            {
-                byte[] ip;
-                if (string.IsNullOrEmpty(networkIP))
-                {
-                    using var socketIP = new UdpClient();
-                    socketIP.Connect(IPAddress.Parse("8.8.8.8"), PortGvcp);
-                    ip = (socketIP.Client.LocalEndPoint as IPEndPoint)?.Address.GetAddressBytes();
-                    socketIP.Close();
-                    socketIP.Dispose();
-                }
-                else
-                {
-                    ip = IPAddress.Parse(networkIP).GetAddressBytes();
-                }
-
-                broadcastClient = new UdpClient()
-                {
-                    EnableBroadcast = true,
-                };
-                broadcastClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-                var endPoint2 = new IPEndPoint(new IPAddress(ip), 0);
-                broadcastClient.Client.Bind(endPoint2);
-                broadcastClient.BeginReceive(BroadcastMessage, null);
-                endPoint = new IPEndPoint(IPAddress.Broadcast, PortGvcp);
-                broadcastClient.Send(discovery.CommandBytes, discovery.CommandBytes.Length, endPoint);
-                await Task.Delay(100);
-            }
-            catch (Exception ex)
-            {
-                Console.Write(ex.Message);
-            }
+            var data = SendBroadCastPacket(discovery.CommandBytes, DiscoveryReception);
+            await data;
             return cameraInfoList;
         }
 
-        private void BroadcastMessage(IAsyncResult ar)
+        /// <summary>
+        /// Deconds and Add camera in camera list
+        /// </summary>
+        /// <param name="senderEndpoint">Sender End point</param>
+        /// <param name="data">Data</param>
+        private void DiscoveryReception(IPEndPoint senderEndpoint, byte[] data)
         {
-            try
-            {
-                IPEndPoint ip = new(IPAddress.Any, ((IPEndPoint)broadcastClient.Client.LocalEndPoint).Port);
-                var bytess = broadcastClient.EndReceive(ar, ref ip);
-                broadCastReplyStarted = true;
-                var camera = DecodeDiscoveryPacket(bytess);
-                broadcastClient.BeginReceive(BroadcastMessage, null); //Listen for next camera info (if any)
-                var cameraAlreadyThereList = cameraInfoList.Where(x => string.Equals(camera.IP, x.IP)).ToList();
-                if (cameraAlreadyThereList.Count == 0) //Add only if new
-                {
-                    cameraInfoList.Add(camera);
-                }
-            }
-            catch (Exception ex)
-            {
-            }
+            var camera = DecodeDiscoveryPacket(data);
+            cameraInfoList.Add(camera);
         }
 
         private CameraInformation DecodeDiscoveryPacket(byte[] discoveryPacket)
@@ -1005,6 +963,55 @@ namespace GigeVision.Core.Models
             task.Start();
             await task.ConfigureAwait(false);
             return reply;
+        }
+
+        /// <summary>
+        /// This function will send Broadcast packet to the socket (IP/port)
+        /// </summary>
+        /// <param name="socket"></param>
+        /// <param name="inputCommand"></param>
+        /// <param name="replySize"></param>
+        /// <returns></returns>
+        private async Task SendBroadCastPacket(byte[] packet, Action<IPEndPoint, byte[]> receptionEvent, string ipNetwork = "")
+        {
+            var reply = Array.Empty<byte>();
+            IPAddress ip = null;
+            if (IPAddress.TryParse(ipNetwork, out ip) is false)
+            {
+                using var socketIP = new UdpClient();
+                socketIP.Connect(IPAddress.Parse("8.8.8.8"), PortGvcp);
+                var ipBytes = (socketIP.Client.LocalEndPoint as IPEndPoint)?.Address.GetAddressBytes();
+                ip = new IPAddress(ipBytes);
+                socketIP.Close();
+                socketIP.Dispose();
+            }
+
+            var broadcastClientLocal = new UdpClient()
+            {
+                EnableBroadcast = true,
+            };
+            broadcastClientLocal.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+            var endPoint2 = new IPEndPoint(ip, 0);
+            broadcastClientLocal.Client.Bind(endPoint2);
+            var endPoint = new IPEndPoint(IPAddress.Broadcast, PortGvcp);
+            broadcastClientLocal.Send(packet, packet.Length, endPoint);
+            broadcastClientLocal.Client.ReceiveTimeout = 500;
+            await Task.Run(() =>
+            {
+                while (true)
+                {
+                    try
+                    {
+                        IPEndPoint endPointRx = null;
+                        var data = broadcastClientLocal.Receive(ref endPointRx);
+                        receptionEvent?.Invoke(endPointRx, data);
+                    }
+                    catch (Exception ex)
+                    {
+                        break;
+                    }
+                }
+            });
         }
 
         private static async Task<GvcpReply> SendGvcpCommand(UdpClient socketTx, GvcpCommand command)

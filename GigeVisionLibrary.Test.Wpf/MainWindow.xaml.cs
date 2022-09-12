@@ -42,7 +42,7 @@ namespace GigeVisionLibrary.Test.Wpf
             {
                 Camera.IP = listOfDevices.FirstOrDefault()?.IP;
             }
-            //camera.Gvcp.ForceIPAsync(listOfDevices[0].MacAddress, "192.168.10.243");
+            camera.Gvcp.ForceIPAsync(listOfDevices[0].MacAddress, "192.168.10.243");
             //camera.Payload = 1400;
             //camera.IsMulticast = true;
             //camera.MulticastIP = "239.168.10.21";

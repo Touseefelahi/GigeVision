@@ -18,18 +18,18 @@ Simple GigeVision implementation, GVSP, GVCP protocol implemented
 To write register you must take the control by Writing 0x02 to CCP register, you can write it manually or use the TakeControl Method from library.
 If succeeded it will give you control for the time that is set in Heartbeat Register, send True as a parameter to keep the control status alive
 
-       var gvcp = new Gvcp
-       {
-           CameraIp = "192.168.10.99"
-       };
-       if (await gvcp.TakeControl()) //Send True as a parameter to keep alive
-       {
-           var reply = await gvcp.WriteRegisterAsync("0x0D04", 1000);
-       }
-       else
-       {
-           throw new Exception("Camera is already in control");
-       }
+    var gvcp = new Gvcp
+    {
+        CameraIp = "192.168.10.99"
+    };
+    if (await gvcp.TakeControl()) //Send True as a parameter to keep alive
+    {
+        var reply = await gvcp.WriteRegisterAsync("0x0D04", 1000);
+    }
+    else
+    {
+        throw new Exception("Camera is already in control");
+    }
                        
 ### Read Memory
 
@@ -62,6 +62,17 @@ Once the frame is fully received the FrameReady event will be invoked
       // e contains the raw data in bytes
     }
     
+
+ ### Force IP - In this example we are setting the IP for first detected camera to fix IP to 192.168.10.243
+
+    var camera = new Camera();
+    var listOfDevices = await camera.Gvcp.GetAllGigeDevicesInNetworkAsnyc().ConfigureAwait(true);
+    if (listOfDevices.Count > 0)
+    {
+        camera.Gvcp.ForceIPAsync(listOfDevices[0].MacAddress, "192.168.10.243");
+    }
+
+
 Simple WPF app example is here https://github.com/Touseefelahi/GigeVision/blob/master/GigeVisionLibrary.Test.Wpf/MainWindow.xaml.cs
 
 There are some issues with the namespaces it is conflicting Services and Models, it will be fixed someday
