@@ -35,13 +35,15 @@ namespace GigeVisionLibrary.Test.Wpf
         private async void Setup()
         {
             camera = new Camera();
-
-            var listOfDevices = await camera.Gvcp.GetAllGigeDevicesInNetworkAsnyc().ConfigureAwait(false);
-            listOfDevices = await camera.Gvcp.GetAllGigeDevicesInNetworkAsnyc().ConfigureAwait(false);
+            var listOfDevices = await camera.Gvcp.GetAllGigeDevicesInNetworkAsnyc().ConfigureAwait(true);
+            cameraCount.Text = "Cam count: " + listOfDevices.Count.ToString();
             if (listOfDevices.Count > 0)
             {
                 Camera.IP = listOfDevices.FirstOrDefault()?.IP;
             }
+            //camera.Payload = 1400;
+            //camera.IsMulticast = true;
+            //camera.MulticastIP = "239.168.10.21";
             camera.FrameReady += FrameReady;
             camera.Gvcp.ElapsedOneSecond += UpdateFps;
         }
@@ -63,7 +65,6 @@ namespace GigeVisionLibrary.Test.Wpf
         {
             if (!Camera.Gvcp.IsXmlFileLoaded)
             {
-
                 isLoaded = await Camera.Gvcp.ReadXmlFileAsync();
                 //await camera.Gvcp.ReadAllRegisterAddressFromCameraAsync();
                 //if (camera.Gvcp.RegistersDictionary == null)
@@ -99,7 +100,6 @@ namespace GigeVisionLibrary.Test.Wpf
                 //camera.OffsetY = 208;
 
                 //await camera.SetOffsetAsync();
-
             }
         }
     }

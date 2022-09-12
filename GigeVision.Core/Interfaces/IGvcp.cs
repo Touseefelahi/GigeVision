@@ -298,10 +298,29 @@ namespace GigeVision.Core.Interfaces
         /// </summary>
         /// <returns>Leave Status</returns>
         Task<bool> LeaveControl();
+
+        /// <summary>
+        /// Get register
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
         Task<(IPValue pValue, IRegister register)> GetRegister(string name);
+
+        /// <summary>
+        /// Reads xml file
+        /// </summary>
+        /// <param name="ip">Camera IP</param>
+        /// <returns></returns>
         Task<bool> ReadXmlFileAsync(string ip = null);
 
+        /// <summary>
+        /// Sycnronization check for xml file loading
+        /// </summary>
         bool IsLoadingXml { get; }
+
+        /// <summary>
+        /// Xml file loaded check
+        /// </summary>
         bool IsXmlFileLoaded { get; }
     }
 }

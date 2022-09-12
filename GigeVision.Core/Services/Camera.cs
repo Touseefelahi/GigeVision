@@ -80,7 +80,15 @@ namespace GigeVision.Core.Models
         /// <summary>
         /// Camera stream status
         /// </summary>
-        public bool IsStreaming { get => isStreaming; set { isStreaming = value; OnPropertyChanged(nameof(IsStreaming)); } }
+        public bool IsStreaming
+        {
+            get => isStreaming;
+            set
+            {
+                isStreaming = value;
+                OnPropertyChanged(nameof(IsStreaming));
+            }
+        }
 
         /// <summary>
         /// GVCP controller
@@ -509,7 +517,6 @@ namespace GigeVision.Core.Models
         /// <returns></returns>
         public async Task<bool> SyncParameters(int syncAttempts = 1)
         {
-
             try
             {
                 if (!await Gvcp.ReadXmlFileAsync(IP))
@@ -526,7 +533,6 @@ namespace GigeVision.Core.Models
                 OffsetY = (uint)await offsetYPValue.GetValueAsync().ConfigureAwait(false);
                 PixelFormat = (PixelFormat)(uint)await pixelFormatPValue.GetValueAsync().ConfigureAwait(false);
                 bytesPerPixel = 3;
-
             }
             catch (Exception ex)
             {
