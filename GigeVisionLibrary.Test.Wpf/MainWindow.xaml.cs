@@ -1,4 +1,5 @@
-﻿using GigeVision.Core.Models;
+﻿using GigeVision.Core.Enums;
+using GigeVision.Core.Models;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -41,6 +42,7 @@ namespace GigeVisionLibrary.Test.Wpf
             {
                 Camera.IP = listOfDevices.FirstOrDefault()?.IP;
             }
+            //camera.Gvcp.ForceIPAsync(listOfDevices[0].MacAddress, "192.168.10.243");
             //camera.Payload = 1400;
             //camera.IsMulticast = true;
             //camera.MulticastIP = "239.168.10.21";
@@ -66,17 +68,6 @@ namespace GigeVisionLibrary.Test.Wpf
             if (!Camera.Gvcp.IsXmlFileLoaded)
             {
                 isLoaded = await Camera.Gvcp.ReadXmlFileAsync();
-                //await camera.Gvcp.ReadAllRegisterAddressFromCameraAsync();
-                //if (camera.Gvcp.RegistersDictionary == null)
-                //{
-                //    return;
-                //}
-                //if (camera.Gvcp.RegistersDictionary.Count < 1)
-                //{
-                //    return;
-                //}
-
-                //isLoaded = true;
             }
 
             if (camera.IsStreaming)

@@ -2,6 +2,12 @@
 Simple GigeVision implementation, GVSP, GVCP protocol implemented
 
 ## How to use:
+
+### Get all cameras in the network
+
+    var camera = new Camera();
+    var listOfDevices = await camera.Gvcp.GetAllGigeDevicesInNetworkAsnyc().ConfigureAwait();    
+
 ### Read Register   
         
     var gvcp = new Gvcp();
@@ -9,10 +15,21 @@ Simple GigeVision implementation, GVSP, GVCP protocol implemented
     var reply = await gvcp.ReadRegisterAsync("0x0D04");
     
 ### Write Register
+To write register you must take the control by Writing 0x02 to CCP register, you can write it manually or use the TakeControl Method from library.
+If succeeded it will give you control for the time that is set in Heartbeat Register, send True as a parameter to keep the control status alive
 
-    var gvcp = new Gvcp();
-    gvcp.CameraIP = "192.168.10.99";
-    var reply = await gvcp.WriteRegisterAsync("0x0D04", 1000);
+       var gvcp = new Gvcp
+       {
+           CameraIp = "192.168.10.99"
+       };
+       if (await gvcp.TakeControl()) //Send True as a parameter to keep alive
+       {
+           var reply = await gvcp.WriteRegisterAsync("0x0D04", 1000);
+       }
+       else
+       {
+           throw new Exception("Camera is already in control");
+       }
                        
 ### Read Memory
 
