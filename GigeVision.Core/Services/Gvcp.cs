@@ -98,6 +98,7 @@ namespace GigeVision.Core.Models
         public List<ICategory> CategoryDictionary { get; private set; }
 
         #region Status Commands
+
         public Dictionary<string, (IPValue, IRegister)> RegistersDictionary { get; set; }
         public bool IsLoadingXml { get; private set; }
 
@@ -205,60 +206,99 @@ namespace GigeVision.Core.Models
             listUpdated?.Invoke(list);
         }
 
+        private UdpClient broadcastClient;
+        private List<CameraInformation> cameraInfoList;
+        private bool broadCastReplyStarted;
+
         /// <summary>
-        /// It will get all the devices from the network and returns the list updated list
+        /// It will get all the devices from the network and returns the Camera list
         /// </summary>
         public async Task<List<CameraInformation>> GetAllGigeDevicesInNetworkAsnyc(string networkIP = "")
         {
-            var cameraInfoList = new List<CameraInformation>();
+            cameraInfoList = new List<CameraInformation>();
+            GvcpCommand discovery = new(GvcpCommandType.Discovery);
+            IPEndPoint endPoint = null;
+            broadCastReplyStarted = false;
             try
             {
-                using var socket = new UdpClient();
+                if (string.IsNullOrEmpty(networkIP))
+                {
+                    //We are sending the broadcast packet at max 10 times, because In my network the broadcast message was not being sent
+                    //and most of the time I had to send the packet 4 times to successfully send atleast one broadcast packet
+                    for (int i = 0; i < 10; i++)
+                    {
+                        broadcastClient = new UdpClient(0)
+                        {
+                            EnableBroadcast = true,
+                            DontFragment = true,
+                            MulticastLoopback = false
+                        };
+                        broadcastClient.BeginReceive(BroadcastMessage, null);
+                        endPoint = new IPEndPoint(IPAddress.Broadcast, PortGvcp);
+                        broadcastClient.Send(discovery.CommandBytes, discovery.CommandBytes.Length, endPoint);
+                        await Task.Delay(10);
+                        if (i > 3 && broadCastReplyStarted)
+                        {
+                            //Making sure that all the broadcast packets received, this is not the optimum way- I couldn't find any better solution
+                            await Task.Delay(100);
+                            return cameraInfoList;
+                        }
+                    }
+                }
+                //If the broadcast packet doesn't work, we fall back to old way, which will send subnet broadcast message
+
+                byte[] ip;
                 if (string.IsNullOrEmpty(networkIP))
                 {
                     using var socketIP = new UdpClient();
                     socketIP.Connect(IPAddress.Parse("8.8.8.8"), PortGvcp);
-                    var ip = (socketIP.Client.LocalEndPoint as IPEndPoint)?.Address.GetAddressBytes();
+                    ip = (socketIP.Client.LocalEndPoint as IPEndPoint)?.Address.GetAddressBytes();
                     ip[3] = 255;
                     socketIP.Close();
                     socketIP.Dispose();
-                    socket.Connect(new IPAddress(ip), PortGvcp);
                 }
                 else
                 {
-                    var ip = IPAddress.Parse(networkIP).GetAddressBytes();
+                    ip = IPAddress.Parse(networkIP).GetAddressBytes();
                     ip[3] = 255;
-                    socket.Connect(new IPAddress(ip), PortGvcp);
                 }
-                socket.Client.SendTimeout = 100;
-                GvcpCommand discovery = new(GvcpCommandType.Discovery);
-                socket.Send(discovery.CommandBytes, discovery.Length);
-                int port = ((IPEndPoint)socket.Client.LocalEndPoint).Port;
-                using UdpClient udpClient = new();
-                socket.Close();
-                socket.Dispose();
-                var endPoint = new IPEndPoint(IPAddress.Any, port);
-                udpClient.Client.Bind(endPoint);
-                while (true)//listen for devices
+
+                endPoint = new(new IPAddress(ip), PortGvcp);
+
+                broadcastClient = new UdpClient(0)
                 {
-                    Task<UdpReceiveResult> taskRecievePacket = udpClient.ReceiveAsync();
-                    if (await Task.WhenAny(taskRecievePacket, Task.Delay(500)).ConfigureAwait(false) == taskRecievePacket)
-                    {
-                        if (taskRecievePacket.Result.Buffer.Length > 255)
-                            cameraInfoList.Add(DecodeDiscoveryPacket(taskRecievePacket.Result.Buffer));
-                    }
-                    else
-                    {
-                        udpClient.Close();
-                        udpClient.Dispose();
-                        break;
-                    }
+                    EnableBroadcast = true
+                };
+
+                broadcastClient.BeginReceive(BroadcastMessage, null);
+                broadcastClient.Send(discovery.CommandBytes, discovery.CommandBytes.Length, endPoint);
+                await Task.Delay(500);
+            }
+            catch (Exception ex)
+            {
+                Console.Write(ex.Message);
+            }
+            return cameraInfoList;
+        }
+
+        private void BroadcastMessage(IAsyncResult ar)
+        {
+            try
+            {
+                IPEndPoint ip = new(IPAddress.Any, ((IPEndPoint)broadcastClient.Client.LocalEndPoint).Port);
+                var bytess = broadcastClient.EndReceive(ar, ref ip);
+                broadCastReplyStarted = true;
+                var camera = DecodeDiscoveryPacket(bytess);
+                broadcastClient.BeginReceive(BroadcastMessage, null); //Listen for next camera info (if any)
+                var cameraAlreadyThereList = cameraInfoList.Where(x => string.Equals(camera.IP, x.IP)).ToList();
+                if (cameraAlreadyThereList.Count == 0) //Add only if new
+                {
+                    cameraInfoList.Add(camera);
                 }
             }
             catch (Exception ex)
             {
             }
-            return cameraInfoList;
         }
 
         private CameraInformation DecodeDiscoveryPacket(byte[] discoveryPacket)
@@ -332,7 +372,6 @@ namespace GigeVision.Core.Models
                 var xmlHelper = new XmlHelper(xml, new GenPort(this));
                 await xmlHelper.LoadUp();
                 CategoryDictionary = xmlHelper.CategoryDictionary;
-
 
                 if (xmlHelper.CategoryDictionary != null)
                 {
@@ -518,10 +557,12 @@ namespace GigeVision.Core.Models
                     case "xml":
                         xmlFile = new MemoryStream(fileData);
                         break;
+
                     case "zip":
                         //converting the zip file from bytes to stream
                         xmlFile = UnZipEncodedZipFile(fileData);
                         break;
+
                     default:
                         break;
                 }
@@ -552,7 +593,6 @@ namespace GigeVision.Core.Models
             {
                 throw;
             }
-
         }
 
         #endregion Read All Registers Address XML
