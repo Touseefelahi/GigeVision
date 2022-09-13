@@ -12,13 +12,14 @@
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 
-    <Version>2.3.5</Version>
+    <Version>2.4</Version>
 
     <PackageLicenseFile>License.txt</PackageLicenseFile>
     <PackageIcon>gige.png</PackageIcon>
     <PackageIconUrl />
     <Platforms>x64</Platforms>
     <PackageReleaseNotes>
+	  2.4: Fix Get all registers, Force IP command, Documentation Added and .net5.0 support added
       2.1.1: Upgraded to Netcore 6.0 with Multicast reception fix
       1.8.0: Pushes the block id (frame number) in the frame event and Gives notification on frameloss
       Fix Receiver IP Detection
@@ -41,11 +42,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="GenICam" Version="2.1.5.1" />
     <PackageReference Include="Stira.WpfCore" Version="1.2.2" />
   </ItemGroup>
 
-  <ItemGroup>
+  <!--<ItemGroup>
     <ProjectReference Include="..\GenICam\GenICam.csproj" />
-  </ItemGroup>
+  </ItemGroup>-->
 
 </Project>
