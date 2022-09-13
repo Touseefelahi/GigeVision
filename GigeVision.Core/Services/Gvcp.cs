@@ -968,10 +968,9 @@ namespace GigeVision.Core.Models
         /// <summary>
         /// This function will send Broadcast packet to the socket (IP/port)
         /// </summary>
-        /// <param name="socket"></param>
-        /// <param name="inputCommand"></param>
-        /// <param name="replySize"></param>
-        /// <returns></returns>
+        /// <param name="packet"></param>
+        /// <param name="receptionEvent"></param>
+        /// <param name="ipNetwork"></param>
         private async Task SendBroadCastPacket(byte[] packet, Action<IPEndPoint, byte[]> receptionEvent, string ipNetwork = "")
         {
             var reply = Array.Empty<byte>();
@@ -979,7 +978,7 @@ namespace GigeVision.Core.Models
             if (IPAddress.TryParse(ipNetwork, out ip) is false)
             {
                 using var socketIP = new UdpClient();
-                socketIP.Connect(IPAddress.Parse("8.8.8.8"), PortGvcp);
+                socketIP.Connect(IPAddress.Parse("8.8.8.8"), 0);
                 var ipBytes = (socketIP.Client.LocalEndPoint as IPEndPoint)?.Address.GetAddressBytes();
                 ip = new IPAddress(ipBytes);
                 socketIP.Close();

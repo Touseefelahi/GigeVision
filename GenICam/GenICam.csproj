@@ -4,8 +4,11 @@
     <TargetFrameworks>net5.0;net6.0</TargetFrameworks>
     <Platforms>x64</Platforms>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>2.1.4</Version>
+    <Version>2.1.5.1</Version>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+	  <PackageReleaseNotes>
+		  2.1.5.1: 	Updated Docs
+	  </PackageReleaseNotes>
   </PropertyGroup>
 
 
