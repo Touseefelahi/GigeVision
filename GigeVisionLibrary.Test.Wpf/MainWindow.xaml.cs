@@ -1,8 +1,6 @@
-﻿using GigeVision.Core.Enums;
-using GigeVision.Core.Models;
+﻿using GigeVision.Core.Models;
 using System;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Windows;
 
 namespace GigeVisionLibrary.Test.Wpf
@@ -36,6 +34,7 @@ namespace GigeVisionLibrary.Test.Wpf
         private async void Setup()
         {
             camera = new Camera();
+            GigeVision.Core.NetworkService.AllowAppThroughFirewall();
             var listOfDevices = await camera.Gvcp.GetAllGigeDevicesInNetworkAsnyc().ConfigureAwait(true);
             cameraCount.Text = "Cam count: " + listOfDevices.Count.ToString();
             if (listOfDevices.Count > 0)

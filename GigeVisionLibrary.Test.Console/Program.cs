@@ -6,6 +6,7 @@ namespace GigeVisionLibrary.Test.Con
     {
         private static void Main(string[] args)
         {
+            GigeVision.Core.NetworkService.AllowAppThroughFirewall();
             Camera camera = new();
             camera.FrameReady += FrameReady;
             camera.Updates += Updates;
