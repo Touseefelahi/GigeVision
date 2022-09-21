@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Xml;
 
 namespace GenICam
 {
@@ -149,46 +150,26 @@ namespace GenICam
                     }
                 }
 
-                if (Formula != string.Empty)
-                {
-                    string formula = Formula;
-
-                    return (double)MathParserHelper.CalculateExpression(formula);
-
-                    // Keeping the code as may need some implementation.
-                    // while (opreations.Any(c => formula.Contains(c)))
-                    // {
-                    //     formula = EvaluateFormula(formula);
-                    //     return Evaluate(formula);
-                    // }
-                }
+                return (double)MathParserHelper.CalculateExpression(Formula);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                throw;
+                throw new GenICamException(message: $"Failed to calculate the given formula {Formula}", ex);
             }
-
-            return 0;
         }
 
         /// <summary>
-        /// Helper To Read SwissKinfe Experssion Parameters.
+        /// Helper To Read SwissKinfe Expression Parameters.
         /// </summary>
         /// <param name="key">The key to read.</param>
         /// <returns>A task.</returns>
         private async Task ReadExpressionPValues(string key)
         {
-            if (key.Equals("BINXFPGA"))
-            {
-                // To implement.
-            }
-
-            double? value = null;
-            value = await PVariables[key].GetValueAsync();
+            long? value = await PVariables[key].GetValueAsync();
 
             if (value is null)
             {
-                throw new Exception("Failed to read register value", new InvalidDataException());
+                throw new GenICamException("Failed to read expression register", new NullReferenceException());
             }
 
             Formula = Formula.Replace(key, value.ToString());

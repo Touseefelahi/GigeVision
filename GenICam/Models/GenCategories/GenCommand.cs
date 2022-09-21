@@ -18,10 +18,9 @@ namespace GenICam
         /// <param name="pValue">The PValue.</param>
         /// <param name="expressions">The expressions.</param>
         public GenCommand(CategoryProperties categoryProperties, long commandValue, IPValue pValue, Dictionary<string, IMathematical> expressions)
+                : base(categoryProperties, pValue)
         {
-            CategoryProperties = categoryProperties;
             CommandValue = commandValue;
-            PValue = pValue;
 
             // As the Execute method is async and the CommandValue is not, we should wait for the execution.
             SetValueCommand = new DelegateCommand(() => Execute().GetAwaiter().GetResult());
@@ -38,30 +37,14 @@ namespace GenICam
         public long CommandValue { get; private set; }
 
         /// <inheritdoc/>
-        public async Task Execute()
+        public async Task<IReplyPacket> Execute()
         {
-            if (PValue is IRegister register)
+            if (PValue is IPValue pValue)
             {
-                var length = register.GetLength();
-                byte[] pBuffer = new byte[length];
-
-                switch (length)
-                {
-                    case 2:
-                        pBuffer = BitConverter.GetBytes((ushort)CommandValue);
-                        break;
-
-                    case 4:
-                        pBuffer = BitConverter.GetBytes((int)CommandValue);
-                        break;
-
-                    case 8:
-                        pBuffer = BitConverter.GetBytes(CommandValue);
-                        break;
-                }
-
-                await register.SetAsync(pBuffer, length);
+                return await pValue.SetValueAsync(CommandValue);
             }
+
+            throw new GenICamException(message: $"Unable to get the value, missing register reference", new MissingFieldException());
         }
 
         /// <inheritdoc/>

@@ -24,8 +24,8 @@ namespace GenICam
         /// <param name="pValue">The PValue.</param>
         /// <param name="expressions">The expressions.</param>
         public GenFloat(CategoryProperties categoryProperties, double min, double max, long inc, IncrementMode incMode, Representation representation, double value, string unit, IPValue pValue, Dictionary<string, IMathematical> expressions)
+                : base(categoryProperties, pValue)
         {
-            CategoryProperties = categoryProperties;
             Min = min;
             Max = max;
             Inc = inc;
@@ -33,7 +33,6 @@ namespace GenICam
             Representation = representation;
             Value = value;
             Unit = unit;
-            PValue = pValue;
             SetValueCommand = new DelegateCommand(ExecuteSetValueCommand);
             GetValueCommand = new DelegateCommand(ExecuteGetValueCommand);
         }
@@ -56,7 +55,7 @@ namespace GenICam
         /// <summary>
         /// Gets the increment mode.
         /// </summary>
-        public IncrementMode IncMode { get; private set; }
+        public IncrementMode? IncMode { get; private set; }
 
         /// <summary>
         /// Gets the representation.
@@ -132,16 +131,24 @@ namespace GenICam
             {
                 return Inc;
             }
-            else
+
+            if (IncMode != null)
             {
-                return null;
+                throw new GenICamException(message: $"Unable to get the increment value, Increment mode is {Enum.GetName((IncrementMode)IncMode)}", new InvalidOperationException());
             }
+
+            throw new GenICamException(message: $"Unable to get the increment value, Increment mode is missing", new NullReferenceException());
         }
 
         /// <inheritdoc/>
         public IncrementMode GetIncrementMode()
         {
-            return IncMode;
+            if (IncMode is null)
+            {
+                throw new GenICamException(message: $"Unable to get the increment mode value, Increment mode is missing", new NullReferenceException());
+            }
+
+            return (IncrementMode)IncMode;
         }
 
         /// <inheritdoc/>
@@ -157,10 +164,13 @@ namespace GenICam
             {
                 return ListOfValidValue;
             }
-            else
+
+            if (IncMode != null)
             {
-                return null;
+                throw new GenICamException(message: $"Unable to get the valid values list, Increment mode is {Enum.GetName((IncrementMode)IncMode)}", new InvalidOperationException());
             }
+
+            throw new GenICamException(message: $"Unable to get the increment value, Increment mode is missing", new NullReferenceException());
         }
 
         /// <inheritdoc/>

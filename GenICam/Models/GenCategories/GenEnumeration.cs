@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Prism.Commands;
@@ -19,11 +20,10 @@ namespace GenICam
         /// <param name="pValue">The pValue.</param>
         /// <param name="expressions">The expressions.</param>
         public GenEnumeration(CategoryProperties categoryProperties, Dictionary<string, EnumEntry> entries, IPValue pValue, Dictionary<string, IMathematical> expressions = null)
+                : base(categoryProperties, pValue)
         {
-            CategoryProperties = categoryProperties;
             Entries = entries;
-            PValue = pValue;
-            SetValueCommand = new DelegateCommand(ExecuteSetValueCommand);
+            SetValueCommand = new DelegateCommand<long>(ExecuteSetValueCommand);
             GetValueCommand = new DelegateCommand(ExecuteGetValueCommand);
         }
 
@@ -37,13 +37,8 @@ namespace GenICam
         /// </summary>
         public long Value { get; set; }
 
-        /// <summary>
-        /// Gets or sets the value to write.
-        /// </summary>
-        public long ValueToWrite { get; set; }
-
         /// <inheritdoc/>
-        public async Task<long> GetIntValueAsync()
+        public async Task<long> GetValueAsync()
         {
             if (PValue is IPValue pValue)
             {
@@ -54,46 +49,24 @@ namespace GenICam
         }
 
         /// <inheritdoc/>
-        public async Task SetIntValueAsync(long value)
+        public async Task<IReplyPacket> SetValueAsync(long value)
         {
-            if (PValue is IRegister Register)
+            if (PValue is IPValue pValue)
             {
-                if (Register.AccessMode != GenAccessMode.RO)
+                if (AccessMode != GenAccessMode.RO)
                 {
                     if (Entries.Select(x => x.Value.Value == value).Count() == 0)
                     {
-                        return;
+                        throw new GenICamException("Invalid Value been sent", new InvalidDataException());
                     }
 
-                    var length = Register.GetLength();
-                    byte[] pBuffer = new byte[length];
-
-                    switch (length)
-                    {
-                        case 2:
-                            pBuffer = BitConverter.GetBytes((ushort)value);
-                            break;
-
-                        case 4:
-                            pBuffer = BitConverter.GetBytes((int)value);
-                            break;
-
-                        case 8:
-                            pBuffer = BitConverter.GetBytes(value);
-                            break;
-                    }
-
-                    var reply = await Register.SetAsync(pBuffer, length);
-
-                    if (reply.IsSentAndReplyReceived && reply.Reply[0] == 0)
-                    {
-                        Value = value;
-                    }
+                    return await pValue.SetValueAsync(value);
                 }
+
+                throw new GenICamException(message: $"Unable to set the register value; it's read only", new AccessViolationException());
             }
 
-            ValueToWrite = Entries.Values.ToList().IndexOf(GetCurrentEntry(Value));
-            RaisePropertyChanged(nameof(ValueToWrite));
+            throw new GenICamException(message: $"Unable to set the value, missing register reference", new MissingFieldException());
         }
 
         /// <inheritdoc/>
@@ -144,15 +117,13 @@ namespace GenICam
 
         private async void ExecuteGetValueCommand()
         {
-            Value = await GetIntValueAsync();
-            ValueToWrite = Value;
+            Value = await GetValueAsync();
             RaisePropertyChanged(nameof(Value));
-            RaisePropertyChanged(nameof(ValueToWrite));
         }
 
-        private async void ExecuteSetValueCommand()
+        private async void ExecuteSetValueCommand(long value)
         {
-            await SetIntValueAsync(ValueToWrite);
+            await SetValueAsync(value);
         }
     }
 }

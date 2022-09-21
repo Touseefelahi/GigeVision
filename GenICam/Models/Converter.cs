@@ -44,16 +44,16 @@ namespace GenICam
             get
             {
                 return value;
-
                 // Why this commented code?
+                //Answer: the following code been commented  for implementation test purposes, it could be uncommented and used or removed later, it depends on the final implementation of GenICam Interface.
                 // return ExecuteFormulaFrom();
             }
 
             set
             {
                 this.value = value;
-
                 // Why this commented code?
+                //Answer: the following code been commented  for implementation test purposes, it could be uncommented and used or removed later, it depends on the final implementation of GenICam Interface.
                 // Value = ExecuteFormulaTo();
             }
         }
@@ -82,80 +82,97 @@ namespace GenICam
         /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation..</returns>
         public async Task<IReplyPacket> SetValueAsync(long value)
         {
-            value = (long)await ExecuteFormulaTo();
+            return await SetValueAsync();
+        }
+
+        private async Task<IReplyPacket> SetValueAsync()
+        {
+            var value = await ExecuteFormulaTo();
             return await PValue.SetValueAsync(value);
         }
 
         private async Task<double> ExecuteFormulaFrom()
         {
-            foreach (var word in FormulaFrom.Split())
+            try
             {
-                if (word.Equals("TO"))
+                foreach (var word in FormulaFrom.Split())
                 {
-                    long? value = null;
-
-                    value = await ExecuteFormulaTo();
-
-                    if (value is null)
+                    if (word.Equals("TO"))
                     {
-                        throw new Exception("Failed to read register value", new InvalidDataException());
+                        long? value = null;
+
+                        value = await ExecuteFormulaTo();
+
+                        if (value is null)
+                        {
+                            throw new GenICamException("Failed to read formula register value", new NullReferenceException());
+                        }
+
+                        FormulaFrom = FormulaFrom.Replace(word, string.Format("0x{0:X8}", value));
                     }
 
-                    FormulaFrom = FormulaFrom.Replace(word, string.Format("0x{0:X8}", value));
-                }
-
-                if (PVariables.ContainsKey(word))
-                {
-                    long? value = null;
-
-                    value = await PVariables[word].GetValueAsync();
-
-                    if (value is null)
+                    if (PVariables.ContainsKey(word))
                     {
-                        throw new Exception("Failed to read register value", new InvalidDataException());
-                    }
+                        long? value = null;
 
-                    FormulaFrom = FormulaFrom.Replace(word, string.Format("0x{0:X8}", value));
+                        value = await PVariables[word].GetValueAsync();
+
+                        if (value is null)
+                        {
+                            throw new GenICamException("Failed to read formula register value", new NullReferenceException());
+                        }
+
+                        FormulaFrom = FormulaFrom.Replace(word, string.Format("0x{0:X8}", value));
+                    }
                 }
+
+                return MathParserHelper.CalculateExpression(FormulaFrom);
             }
-
-            return MathParserHelper.CalculateExpression(FormulaFrom);
+            catch (Exception ex)
+            {
+                throw new GenICamException(message: $"Failed to calculate the given formula {FormulaFrom}", ex);
+            }
         }
 
         private async Task<long> ExecuteFormulaTo()
         {
-            foreach (var word in FormulaTo.Split())
+            try
             {
-                if (word.Equals("FROM"))
+                foreach (var word in FormulaTo.Split())
                 {
-                    long? value = null;
-
-                    value = await PValue.GetValueAsync();
-
-                    if (value is null)
+                    if (word.Equals("FROM"))
                     {
-                        throw new Exception("Failed to read register value", new InvalidDataException());
+                        long? value = await PValue.GetValueAsync();
+
+                        if (value is null)
+                        {
+                            throw new GenICamException("Failed to read formula register value", new NullReferenceException());
+                        }
+
+                        FormulaTo = FormulaTo.Replace(word, string.Format("0x{0:X8}", value));
                     }
 
-                    FormulaTo = FormulaTo.Replace(word, string.Format("0x{0:X8}", value));
-                }
-
-                if (PVariables.ContainsKey(word))
-                {
-                    long? value = null;
-
-                    value = await PVariables[word].GetValueAsync();
-
-                    if (value is null)
+                    if (PVariables.ContainsKey(word))
                     {
-                        throw new Exception("Failed to read register value", new InvalidDataException());
-                    }
+                        long? value = null;
 
-                    FormulaTo = FormulaTo.Replace(word, string.Format("0x{0:X8}", value));
+                        value = await PVariables[word].GetValueAsync();
+
+                        if (value is null)
+                        {
+                            throw new GenICamException("Failed to read formula register value", new NullReferenceException());
+                        }
+
+                        FormulaTo = FormulaTo.Replace(word, string.Format("0x{0:X8}", value));
+                    }
                 }
+
+                return (long)MathParserHelper.CalculateExpression(FormulaTo);
             }
-
-            return (long)MathParserHelper.CalculateExpression(FormulaTo);
+            catch (Exception ex)
+            {
+                throw new GenICamException(message: $"Failed to calculate the given formula {FormulaTo}", ex);
+            }
         }
     }
 }

@@ -13,14 +13,14 @@ namespace GenICam
         /// Gets the index value corresponding to the enumeration value.
         /// </summary>
         /// <returns>The index value as a long.</returns>
-        public Task<long> GetIntValueAsync();
+        public Task<long> GetValueAsync();
 
         /// <summary>
         /// Sets the index value corresponding to the enumeration value.
         /// </summary>
         /// <param name="value">The index value to set.</param>
         /// <returns>A task.</returns>
-        public Task SetIntValueAsync(long value);
+        public Task<IReplyPacket> SetValueAsync(long value);
 
         /// <summary>
         /// Gets the entries of the enumeration.
