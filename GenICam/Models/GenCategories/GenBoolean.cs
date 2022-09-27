@@ -16,19 +16,17 @@ namespace GenICam
         /// <param name="categoryProperties">The category properties.</param>
         /// <param name="pValue">the pointeur in the value.</param>
         /// <param name="expressions">The expressions for evaluation.</param>
-        public GenBoolean(CategoryProperties categoryProperties, IPValue pValue, Dictionary<string, IMathematical> expressions)
+        public GenBoolean(CategoryProperties categoryProperties, IPValue pValue)
         : base(categoryProperties, pValue)
         {
             GetValueCommand = new DelegateCommand(ExecuteGetValueCommand);
-            SetValueCommand = new DelegateCommand<bool>(ExecuteSetValueCommand);
-            Expressions = expressions;
+            SetValueCommand = new DelegateCommand<object>(ExecuteSetValueCommand);
         }
 
         /// <summary>
         /// Gets or sets a value indicating whether the value is true or false.
         /// </summary>
         public bool Value { get; set; }
-        public Dictionary<string, IMathematical> Expressions { get; }
 
         /// <summary>
         /// Gets the value async.
@@ -36,15 +34,10 @@ namespace GenICam
         /// <returns>The value as a bool.</returns>
         public async Task<bool> GetValueAsync()
         {
-            if (PValue is IPValue pValue)
+            if (PValue is not null)
             {
-                if (AccessMode != GenAccessMode.WO)
-                {
-                    var value = await pValue.GetValueAsync();
-                    return value == 1;
-                }
-
-                throw new GenICamException(message: $"Unable to get the register value; it's write only", new AccessViolationException());
+                var value = await PValue.GetValueAsync();
+                return value == 1;
             }
 
             throw new GenICamException(message: $"Unable to get the value, missing register reference", new MissingFieldException());
@@ -57,24 +50,39 @@ namespace GenICam
         /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation.</returns>
         public async Task<IReplyPacket> SetValueAsync(bool value)
         {
-            if (PValue is IPValue pValue)
+            if (PValue is not null)
             {
                 var valueInByte = Convert.ToByte(value);
-                return await pValue.SetValueAsync(valueInByte); ;
+                return await PValue.SetValueAsync(valueInByte); ;
             }
 
             throw new GenICamException(message: $"Unable to set the value, missing register reference", new MissingFieldException());
         }
 
-        private async void ExecuteSetValueCommand(bool value)
+        private async void ExecuteSetValueCommand(object value)
         {
-            await SetValueAsync(value);
+            try
+            {
+                await SetValueAsync((bool)value);
+                ExecuteGetValueCommand();
+            }
+            catch (Exception ex)
+            {
+                //ToDo: display exception.
+            }
         }
 
         private async void ExecuteGetValueCommand()
         {
-            Value = await GetValueAsync();
-            RaisePropertyChanged(nameof(Value));
+            try
+            {
+                Value = await GetValueAsync();
+                RaisePropertyChanged(nameof(Value));
+            }
+            catch (Exception ex)
+            {
+                //ToDo: display exception.
+            }
         }
     }
 }

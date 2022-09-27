@@ -131,6 +131,8 @@ namespace GenICam
                     {
                         return Convert.ToInt64(Math.Pow(2, bit));
                     }
+
+                    return 0;
                 }
 
                 throw new GenICamException(message: $"Unable to read the mask value", new InvalidOperationException());

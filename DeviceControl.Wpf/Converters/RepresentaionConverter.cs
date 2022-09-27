@@ -17,7 +17,7 @@ namespace DeviceControl.Wpf.Converters
                 var ip = new IPAddress((Int64)value);
                 return ip.ToString();
             }
-            catch
+            catch (ArgumentOutOfRangeException ex)
             {
                 return value;
             }

@@ -71,13 +71,19 @@ namespace GenICam.Models
                         return (long)(await pValue.GetValueAsync());
                     }
                 }
+
+                if (Address is not null)
+                {
+                    return Address;
+                }
+
+                throw new GenICamException(message: $"Failed to get the address value", new InvalidOperationException());
             }
             catch (InvalidCastException ex)
             {
                 throw new GenICamException(message: $"Failed to cast the value type", ex);
             }
 
-            return Address;
         }
 
         public virtual long GetLength()
@@ -94,8 +100,6 @@ namespace GenICam.Models
         {
             try
             {
-                if (AccessMode != GenAccessMode.RO)
-                {
                     var length = GetLength();
                     byte[] pBuffer = new byte[length];
 
@@ -115,9 +119,6 @@ namespace GenICam.Models
                     }
 
                     return await SetAsync(pBuffer, length);
-                }
-
-                throw new GenICamException(message: $"Unable to set the register value; it's read only", new AccessViolationException());
             }
             catch (Exception ex)
             {

@@ -23,7 +23,8 @@ namespace GenICam
                 : base(categoryProperties, pValue)
         {
             Entries = entries;
-            SetValueCommand = new DelegateCommand<long>(ExecuteSetValueCommand);
+
+            SetValueCommand = new DelegateCommand<object>(ExecuteSetValueCommand);
             GetValueCommand = new DelegateCommand(ExecuteGetValueCommand);
         }
 
@@ -36,34 +37,33 @@ namespace GenICam
         /// Gets or sets the enumeration value parameter.
         /// </summary>
         public long Value { get; set; }
+        public KeyValuePair<string, EnumEntry> CurrentEnumEntry { get; private set; }
 
         /// <inheritdoc/>
         public async Task<long> GetValueAsync()
         {
-            if (PValue is IPValue pValue)
+            if (PValue is not null)
             {
-                return (long)await pValue.GetValueAsync();
+                return (long)await PValue.GetValueAsync();
             }
 
-            return Value;
+            throw new GenICamException(message: $"Unable to get the value, missing register reference", new MissingFieldException());
         }
 
         /// <inheritdoc/>
         public async Task<IReplyPacket> SetValueAsync(long value)
         {
-            if (PValue is IPValue pValue)
+            if (PValue is not null)
             {
-                if (AccessMode != GenAccessMode.RO)
+                try
                 {
-                    if (Entries.Select(x => x.Value.Value == value).Count() == 0)
-                    {
-                        throw new GenICamException("Invalid Value been sent", new InvalidDataException());
-                    }
-
-                    return await pValue.SetValueAsync(value);
+                    GetEntry(value);
+                    return await PValue.SetValueAsync(value);
                 }
-
-                throw new GenICamException(message: $"Unable to set the register value; it's read only", new AccessViolationException());
+                catch (Exception ex)
+                {
+                    throw new GenICamException("Failed to set the value", ex);
+                }
             }
 
             throw new GenICamException(message: $"Unable to set the value, missing register reference", new MissingFieldException());
@@ -91,22 +91,45 @@ namespace GenICam
         }
 
         /// <inheritdoc/>
-        public EnumEntry GetEntry(long entryValue)
+        public KeyValuePair<string, EnumEntry> GetEntry(long entryValue)
         {
-            var entries = Entries.Where(x => x.Value.Value == entryValue);
-
-            if (entries.Any())
+            try
             {
-                return entries.First().Value;
+                var entries = Entries.Where(x => x.Value.Value == entryValue);
+
+                if (entries.Any())
+                {
+                    return entries.First();
+                }
+
+                throw new GenICamException("Invalid value", new InvalidDataException());
+            }
+            catch (ArgumentException ex)
+            {
+                throw new GenICamException(message: "Failed to get enumerator entry.", ex);
+            }
+            catch (Exception ex)
+            {
+                throw new GenICamException(message: "Failed to get enumerator entry.", ex);
             }
 
-            return null;
         }
 
         /// <inheritdoc/>
-        public EnumEntry GetCurrentEntry(long entryValue)
+        public KeyValuePair<string, EnumEntry> GetCurrentEntry()
         {
-            return Entries.Values.FirstOrDefault(x => x.Value == entryValue);
+            try
+            {
+                return CurrentEnumEntry;
+            }
+            catch (ArgumentException ex)
+            {
+                throw new GenICamException(message: "Failed to get enumerator current entry.", ex);
+            }
+            catch (Exception ex)
+            {
+                throw new GenICamException(message: "Failed to get enumerator current  entry.", ex);
+            }
         }
 
         /// <inheritdoc/>
@@ -117,13 +140,29 @@ namespace GenICam
 
         private async void ExecuteGetValueCommand()
         {
-            Value = await GetValueAsync();
-            RaisePropertyChanged(nameof(Value));
+            try
+            {
+                Value = await GetValueAsync();
+                CurrentEnumEntry = GetEntry(Value);
+                RaisePropertyChanged(nameof(CurrentEnumEntry));
+            }
+            catch (Exception ex)
+            {
+                //ToDo: display exception.
+            }
         }
 
-        private async void ExecuteSetValueCommand(long value)
+        private async void ExecuteSetValueCommand(object value)
         {
-            await SetValueAsync(value);
+            try
+            {
+                await SetValueAsync((long)value);
+                ExecuteGetValueCommand();
+            }
+            catch (Exception ex)
+            {
+                //ToDo: display exception.
+            }
         }
     }
 }

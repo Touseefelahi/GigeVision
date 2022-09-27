@@ -179,7 +179,7 @@
                 </Grid.ColumnDefinitions>
                 <TextBlock  Grid.Column="0" Text="{Binding CategoryProperties.Name}"  FontWeight="Regular" />
 
-                <TextBox Grid.Column="1" HorizontalAlignment="Stretch" Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding AccessMode, Converter={StaticResource AccessModeConverter }}">
+                <TextBox Grid.Column="1" HorizontalAlignment="Stretch" Text="{Binding Value}" IsEnabled="{Binding AccessMode, Converter={StaticResource AccessModeConverter }}">
                     <i:Interaction.Triggers>
                         <i:EventTrigger EventName="Loaded">
                             <i:InvokeCommandAction Command="{Binding GetValueCommand}" />
@@ -205,17 +205,17 @@
                     <Setter Property="ContentTemplate" TargetName="IntegerControl">
                         <Setter.Value>
                             <DataTemplate>
-                                <TextBox  HorizontalAlignment="Stretch" Text="{Binding ValueToWrite, Converter={StaticResource RepresentaionConverter}}"   IsEnabled="{Binding PValue, Converter={StaticResource AccessModeConverter}}">
+                                <TextBox  HorizontalAlignment="Stretch" Text="{Binding Value, Converter={StaticResource RepresentaionConverter}}"   IsEnabled="{Binding PValue, Converter={StaticResource AccessModeConverter}}" x:Name="textBox">
                                     <i:Interaction.Triggers>
                                         <i:EventTrigger EventName="Loaded">
                                             <i:InvokeCommandAction Command="{Binding GetValueCommand}" />
                                         </i:EventTrigger>
                                         <i:EventTrigger EventName="LostFocus">
-                                            <i:InvokeCommandAction Command="{Binding SetValueCommand}" />
+                                            <i:InvokeCommandAction Command="{Binding SetValueCommand}"/>
                                         </i:EventTrigger>
                                     </i:Interaction.Triggers>
                                     <TextBox.InputBindings>
-                                        <KeyBinding Key="Return" Command="{Binding SetValueCommand , Mode=OneWay}" />
+                                        <KeyBinding Key="Return" Command="{Binding SetValueCommand , Mode=OneWay}" CommandParameter="{Binding ElementName=textBox, Path=Text}"  />
                                     </TextBox.InputBindings>
                                 </TextBox>
                             </DataTemplate>
@@ -229,9 +229,9 @@
                         <Setter.Value>
                             <DataTemplate>
                                 <controls:NumericUpDown  x:Name="IntegerUpDown"
-                                    Minimum="{Binding Min}"
-                                    Maximum="{Binding Max}"
-                                    Value="{Binding ValueToWrite, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                    Minimum="{Binding Min, Mode=OneWay}"
+                                    Maximum="{Binding Max, Mode=OneWay}"
+                                    Value="{Binding Value}"
                                     IsEnabled="{Binding PValue, Converter={StaticResource AccessModeConverter}}"
                                     Increment="{Binding Inc}">
 
@@ -239,12 +239,12 @@
                                         <i:EventTrigger EventName="Loaded">
                                             <i:InvokeCommandAction Command="{Binding GetValueCommand}" />
                                         </i:EventTrigger>
-                                        <i:EventTrigger EventName="LostFocus" SourceName="IntegerUpDown">
-                                            <i:InvokeCommandAction Command="{Binding SetValueCommand }" />
+                                        <i:EventTrigger EventName="LostKeyboardFocus" SourceName="IntegerUpDown">
+                                            <i:InvokeCommandAction Command="{Binding SetValueCommand, Mode=OneWay }" CommandParameter="{Binding ElementName=IntegerUpDown, Path=Value}" />
                                         </i:EventTrigger>
                                     </i:Interaction.Triggers>
                                     <TextBox.InputBindings>
-                                        <KeyBinding Key="Return" Command="{Binding SetValueCommand , Mode=OneWay}" />
+                                        <KeyBinding Key="Return" Command="{Binding SetValueCommand , Mode=OneWay}" CommandParameter="{Binding ElementName=IntegerUpDown, Path=Value}"  />
                                     </TextBox.InputBindings>
                                 </controls:NumericUpDown>
                             </DataTemplate>
@@ -258,9 +258,9 @@
                         <Setter.Value>
                             <DataTemplate>
                                 <controls:NumericUpDown  x:Name="IntegerUpDown"
-                                    Minimum="{Binding Min}"
-                                    Maximum="{Binding Max}"
-                                    Value="{Binding ValueToWrite, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                    Minimum="{Binding Min, Mode=OneWay}"
+                                    Maximum="{Binding Max, Mode=OneWay}"
+                                    Value="{Binding Value}"
                                     IsEnabled="{Binding PValue, Converter={StaticResource AccessModeConverter}}"
                                     Increment="{Binding Inc}">
 
@@ -268,12 +268,12 @@
                                         <i:EventTrigger EventName="Loaded">
                                             <i:InvokeCommandAction Command="{Binding GetValueCommand}" />
                                         </i:EventTrigger>
-                                        <i:EventTrigger EventName="LostFocus" SourceName="IntegerUpDown">
-                                            <i:InvokeCommandAction Command="{Binding SetValueCommand }" />
+                                        <i:EventTrigger EventName="LostKeyboardFocus" SourceName="IntegerUpDown">
+                                            <i:InvokeCommandAction Command="{Binding SetValueCommand, Mode=OneWay }" CommandParameter="{Binding ElementName=IntegerUpDown, Path=Value}" />
                                         </i:EventTrigger>
                                     </i:Interaction.Triggers>
                                     <TextBox.InputBindings>
-                                        <KeyBinding Key="Return" Command="{Binding SetValueCommand , Mode=OneWay}" />
+                                        <KeyBinding Key="Return" Command="{Binding SetValueCommand , Mode=OneWay}" CommandParameter="{Binding ElementName=IntegerUpDown, Path=Value}"  />
                                     </TextBox.InputBindings>
                                 </controls:NumericUpDown>
                             </DataTemplate>
@@ -353,15 +353,14 @@
 
                 <TextBlock Grid.Column="0" Text="{Binding CategoryProperties.Name}"  FontWeight="Regular" />
                 <ComboBox  Grid.Column="1" ItemsSource="{Binding Entries}" DisplayMemberPath="Key"
-
-                           SelectedIndex="{Binding ValueToWrite, Mode=TwoWay}"
-                           IsEnabled="{Binding PValue, Converter={StaticResource AccessModeConverter}}">
+                           SelectedItem="{Binding CurrentEnumEntry, Mode=OneWay}" 
+                           IsEnabled="{Binding PValue, Converter={StaticResource AccessModeConverter}}" x:Name="combobox">
                     <i:Interaction.Triggers>
                         <i:EventTrigger EventName="Loaded">
                             <i:InvokeCommandAction Command="{Binding GetValueCommand}" />
                         </i:EventTrigger>
                         <i:EventTrigger EventName="SelectionChanged">
-                            <i:InvokeCommandAction Command="{Binding SetValueCommand}" />
+                            <i:InvokeCommandAction Command="{Binding SetValueCommand}"  CommandParameter="{Binding ElementName=combobox, Path=SelectedValue.Value.Value}" />
                         </i:EventTrigger>
                     </i:Interaction.Triggers>
                 </ComboBox>
@@ -416,9 +415,9 @@
                 </Grid.Style>
                 <TextBlock Grid.Column="0" Text="{Binding CategoryProperties.Name}" />
                 <CheckBox Grid.Column="1" Content="{Binding CategoryProperties.Name}"
-                          IsChecked="{Binding ValueToWrite}"
+                          IsChecked="{Binding Value}"
                           IsEnabled="{Binding PValue, Converter={StaticResource AccessModeConverter}}"
-                          Command="{Binding SetValueCommand}" >
+                          Command="{Binding SetValueCommand}" CommandParameter="{Binding RelativeSource={RelativeSource Mode=Self}, Path=IsChecked}"  >
                     <i:Interaction.Triggers>
                         <i:EventTrigger EventName="Loaded">
                             <i:InvokeCommandAction Command="{Binding GetValueCommand}" />

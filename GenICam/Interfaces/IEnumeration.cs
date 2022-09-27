@@ -50,7 +50,7 @@ namespace GenICam
         /// <param name="entryValue">The entry index value.</param>
         /// <returns>An enumeration entry.</returns>
         [Obsolete]
-        public EnumEntry GetEntry(long entryValue);
+        public KeyValuePair<string, EnumEntry> GetEntry(long entryValue);
 
         /// <summary>
         /// Get the current entry.
@@ -58,6 +58,6 @@ namespace GenICam
         /// <param name="entryValue">The entry index value.</param>
         /// <returns>An enumeration entry.</returns>
         [Obsolete]
-        public EnumEntry GetCurrentEntry(long entryValue);
+        public KeyValuePair<string, EnumEntry> GetCurrentEntry();
     }
 }

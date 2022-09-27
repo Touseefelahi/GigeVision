@@ -19,12 +19,12 @@ namespace GenICam
         /// <param name="length">The length.</param>
         /// <param name="accessMode">The access mode.</param>
         /// <param name="genPort">The GenICam port.</param>
-        public GenStringReg(CategoryProperties categoryProperties, long address, ushort length, GenAccessMode accessMode, IPort genPort)
+        public GenStringReg(CategoryProperties categoryProperties, long address, ushort length, GenAccessMode accessMode, IPort genPort, IPValue pValue)
+        : base(categoryProperties, pValue)
         {
             CategoryProperties = categoryProperties;
             Address = address;
             Length = length;
-            AccessMode = accessMode;
             GenPort = genPort;
             GetValueCommand = new DelegateCommand(ExecuteGetValueCommand);
             SetValueCommand = new DelegateCommand(ExecuteSetValueCommand);
@@ -49,11 +49,7 @@ namespace GenICam
         /// Gets or sets the value.
         /// </summary>
         public string Value { get; set; }
-
-        /// <summary>
-        /// Gets or sets the value to write.
-        /// </summary>
-        public string ValueToWrite { get; set; }
+        public GenAccessMode AccessMode { get; private set; }
 
         /// <inheritdoc/>
         public async Task<string> GetValueAsync()
@@ -61,7 +57,11 @@ namespace GenICam
             try
             {
                 var reply = await Get(Length);
-                Value = Encoding.ASCII.GetString(reply.MemoryValue);
+                //bad check; it has to be checked and handled from GenPort side.
+                if (string.IsNullOrEmpty(reply.Error) && reply.MemoryValue != null)
+                {
+                    Value = Encoding.ASCII.GetString(reply.MemoryValue);
+                }
             }
             catch (DecoderFallbackException ex)
             {
@@ -99,32 +99,23 @@ namespace GenICam
 
         private async Task<IReplyPacket> SetStringValue(string value, IRegister register)
         {
-            if (register.AccessMode != GenAccessMode.RO)
-            {
                 var length = register.GetLength();
                 var pBuffer = ASCIIEncoding.ASCII.GetBytes(value);
 
                 var reply = await register.SetAsync(pBuffer, length);
                 Value = Encoding.ASCII.GetString(reply.MemoryValue);
                 return reply;
-            }
-
-            throw new GenICamException(message: $"Unable to set the register value; it's read only", new AccessViolationException());
         }
 
         private async Task<IReplyPacket> SetStringValue(string value)
         {
-            if (AccessMode != GenAccessMode.RO)
-            {
+
                 var length = GetLength();
                 var pBuffer = ASCIIEncoding.ASCII.GetBytes(value);
 
                 var reply = await SetAsync(pBuffer, length);
                 Value = Encoding.ASCII.GetString(reply.MemoryValue);
                 return reply;
-            }
-
-            throw new GenICamException(message: $"Unable to set the register value; it's read only", new AccessViolationException());
         }
 
         /// <inheritdoc/>
@@ -186,17 +177,12 @@ namespace GenICam
         private async void ExecuteGetValueCommand()
         {
             Value = await GetValueAsync();
-            ValueToWrite = Value;
             RaisePropertyChanged(nameof(Value));
-            RaisePropertyChanged(nameof(ValueToWrite));
         }
 
         private async void ExecuteSetValueCommand()
         {
-            if (Value != ValueToWrite)
-            {
-                await SetValueAsync(ValueToWrite);
-            }
+            await SetValueAsync(Value);
         }
     }
 }

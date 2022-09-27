@@ -45,7 +45,7 @@ namespace GenICam
             {
                 return value;
                 // Why this commented code?
-                //Answer: the following code been commented  for implementation test purposes, it could be uncommented and used or removed later, it depends on the final implementation of GenICam Interface.
+                //Answer: the following code has been commented  for the implementation test purposes, it could be uncommented and used or removed later, it depends on the final implementation of GenICam Interface.
                 // return ExecuteFormulaFrom();
             }
 
@@ -53,7 +53,7 @@ namespace GenICam
             {
                 this.value = value;
                 // Why this commented code?
-                //Answer: the following code been commented  for implementation test purposes, it could be uncommented and used or removed later, it depends on the final implementation of GenICam Interface.
+                //Answer: the following code has been commented  for the implementation test purposes, it could be uncommented and used or removed later, it depends on the final implementation of GenICam Interface.
                 // Value = ExecuteFormulaTo();
             }
         }

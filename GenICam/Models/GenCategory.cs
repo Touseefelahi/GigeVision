@@ -41,9 +41,6 @@ namespace GenICam
         /// </summary>
         public System.Windows.Input.ICommand GetValueCommand { get; internal set; }
 
-        /// <inheritdoc/>
-        public GenAccessMode AccessMode { get; set; }
-
         /// <summary>
         /// Gets the list of features.
         /// </summary>
