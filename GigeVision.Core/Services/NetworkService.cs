@@ -11,6 +11,38 @@ namespace GigeVision.Core
     public class NetworkService
     {
         /// <summary>
+        /// This method requires admin rights
+        /// </summary>
+        /// <returns>Status</returns>
+        public static bool AllowAppThroughFirewall()
+        {
+            string appFullPath = Process.GetCurrentProcess().MainModule.FileName;
+            string appName = Path.GetFileNameWithoutExtension(appFullPath);
+
+            //Generating unique ID for this application
+            Crc16Ccitt checksum = new();
+            var crc = checksum.ComputeChecksum(appFullPath);
+            string ruleName = $"Gvsp-{appName}{crc:X4}".Replace(" ", "");
+            //Checking if we already have the access - only by checking the rule name is present or not
+            var command = $"/C netsh advfirewall firewall show rule name = all | findstr  /r /s /i /m /c:\"\\<{ruleName}\\>\"";
+            var reply = RunCommand(command);
+
+            if (string.IsNullOrEmpty(reply))
+            {
+                command = $"/C netsh advfirewall firewall add rule name =\"{ruleName}\" dir=in action=allow program=\"{appFullPath}\" enable=yes";
+                try
+                {
+                    RunCommandAdmin(command);
+                }
+                catch (Exception)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        /// <summary>
         /// Get the System IP (For multi-network Static IP will be prefered by default)
         /// </summary>
         /// <returns></returns>
@@ -87,30 +119,6 @@ namespace GigeVision.Core
             return mostSuitableIp != null
                 ? mostSuitableIp.Address.ToString()
                 : "";
-        }
-
-        /// <summary>
-        /// This method requires admin rights
-        /// </summary>
-        /// <returns></returns>
-        public static void AllowAppThroughFirewall()
-        {
-            string appFullPath = Process.GetCurrentProcess().MainModule.FileName;
-            string appName = Path.GetFileNameWithoutExtension(appFullPath);
-
-            //Generating unique ID for this application
-            Crc16Ccitt checksum = new();
-            var crc = checksum.ComputeChecksum(appFullPath);
-            string ruleName = $"Gvsp-{appName}{crc:X4}".Replace(" ", "");
-            //Checking if we already have the access
-            var command = $"/C netsh advfirewall firewall show rule name = all | findstr  /r /s /i /m /c:\"\\<{ruleName}\\>\"";
-            var reply = RunCommand(command);
-
-            if (string.IsNullOrEmpty(reply))
-            {
-                command = $"/C netsh advfirewall firewall add rule name =\"{ruleName}\" dir=in action=allow program=\"{appFullPath}\" enable=yes";
-                RunCommandAdmin(command);
-            }
         }
 
         private static string RunCommand(string command)
