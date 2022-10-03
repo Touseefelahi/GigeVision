@@ -2,11 +2,13 @@
 using GigeVision.Core.Interfaces;
 using Stira.WpfCore;
 using System;
+using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
+using GigeVision.Core.Models;
 
-namespace GigeVision.Core.Models
+namespace GigeVision.Core.Services
 {
     /// <summary>
     /// Camera class is responsible to initialize the stream and receive the stream
@@ -19,29 +21,21 @@ namespace GigeVision.Core.Models
         public Action<byte[]> frameReadyAction;
 
         /// <summary>
-        /// Raw bytes
-        /// </summary>
-        internal byte[] rawBytes;
-
-        /// <summary>
         /// External buffer it has to set from externally using <see cref="SetBuffer(byte[])"/>
         /// </summary>
         internal IntPtr externalBuffer;
 
-        private uint width, height, offsetX, offsetY, bytesPerPixel;
-
-        private bool isStreaming;
-
-        private StreamReceiver streamReceiver;
+        /// <summary>
+        /// Raw bytes
+        /// </summary>
+        internal byte[] rawBytes;
 
         private bool isMulticast;
+        private bool isStreaming;
         private uint payload = 0;
-        private string rxIP;
         private int portRx;
-
-        /// <summary>
-        /// Register dictionary of camera
-        /// </summary>
+        private string rxIP;
+        private uint width, height, offsetX, offsetY, bytesPerPixel;
 
         /// <summary>
         /// Camera constructor with initialized Gvcp Controller
@@ -55,6 +49,9 @@ namespace GigeVision.Core.Models
         }
 
         /// <summary>
+        /// Register dictionary of camera
+        /// </summary>
+        /// <summary>
         /// Default camera constructor initializes the controller
         /// </summary>
         public Camera()
@@ -64,80 +61,14 @@ namespace GigeVision.Core.Models
         }
 
         /// <summary>
-        /// Rx port
-        /// </summary>
-        public int PortRx
-        {
-            get => portRx;
-            set
-            {
-                if (portRx != value)
-                {
-                    portRx = value;
-                    OnPropertyChanged(nameof(PortRx));
-                }
-            }
-        }
-
-        /// <summary>
-        /// Camera stream status
-        /// </summary>
-        public bool IsStreaming
-        {
-            get => isStreaming;
-            set
-            {
-                isStreaming = value;
-                OnPropertyChanged(nameof(IsStreaming));
-            }
-        }
-
-        /// <summary>
-        /// GVCP controller
-        /// </summary>
-        public IGvcp Gvcp { get; private set; }
-
-        /// <summary>
         /// Event for frame ready
         /// </summary>
         public EventHandler<byte[]> FrameReady { get; set; }
 
         /// <summary>
-        /// Event for general updates
+        /// GVCP controller
         /// </summary>
-        public EventHandler<string> Updates { get; set; }
-
-        /// <summary>
-        /// Payload size, if not provided it will be automatically set to one row, depending on resolution
-        /// </summary>
-        public uint Payload
-        {
-            get => payload;
-            set
-            {
-                if (payload != value)
-                {
-                    payload = value;
-                    OnPropertyChanged(nameof(Payload));
-                }
-            }
-        }
-
-        /// <summary>
-        /// Camera width
-        /// </summary>
-        public uint Width
-        {
-            get => width;
-            set
-            {
-                if (value != width)
-                {
-                    width = value;
-                    OnPropertyChanged(nameof(Width));
-                }
-            }
-        }
+        public IGvcp Gvcp { get; private set; }
 
         /// <summary>
         /// Camera height
@@ -154,6 +85,72 @@ namespace GigeVision.Core.Models
                 }
             }
         }
+
+        /// <summary>
+        /// Camera IP
+        /// </summary>
+        public string IP
+        {
+            get => Gvcp.CameraIp;
+            set
+            {
+                Gvcp.CameraIp = value;
+                OnPropertyChanged(nameof(IP));
+            }
+        }
+
+        /// <summary>
+        /// Multi-Cast Option
+        /// </summary>
+        public bool IsMulticast
+        {
+            get => isMulticast;
+            set { isMulticast = value; OnPropertyChanged(nameof(IsMulticast)); }
+        }
+
+        /// <summary>
+        /// Gets the raw data from the camera. Set false to get RGB frame instead of BayerGR8
+        /// </summary>
+        public bool IsRawFrame { get; set; } = true;
+
+        /// <summary>
+        /// Camera stream status
+        /// </summary>
+        public bool IsStreaming
+        {
+            get => isStreaming;
+            set
+            {
+                isStreaming = value;
+                OnPropertyChanged(nameof(IsStreaming));
+            }
+        }
+
+        /// <summary>
+        /// If enabled library will use C++ native code for stream reception
+        /// </summary>
+        public bool IsUsingCppForRx { get; set; }
+
+        /// <summary>
+        /// If we set the external buffer using <see cref="SetBuffer(byte[])"/> this will be set
+        /// true and software will copy stream on this buffer
+        /// </summary>
+        public bool IsUsingExternalBuffer { get; set; }
+
+        /// <summary>
+        /// Tolernace for missing packet
+        /// </summary>
+        public int MissingPacketTolerance { get; set; } = 0;
+
+        /// <summary>
+        /// Motor Controller for camera, zoom/focus/iris control if any
+        /// </summary>
+        public MotorControl MotorController { get; set; }
+
+        /// <summary>
+        /// Multi-Cast IP: it will be applied only when IsMulticast Property is true
+        /// </summary>
+        public string MulticastIP { get; set; } = "239.192.11.12";
 
         /// <summary>
         /// Camera offset X
@@ -188,57 +185,41 @@ namespace GigeVision.Core.Models
         }
 
         /// <summary>
+        /// Payload size, if not provided it will be automatically set to one row, depending on resolution
+        /// </summary>
+        public uint Payload
+        {
+            get => payload;
+            set
+            {
+                if (payload != value)
+                {
+                    payload = value;
+                    OnPropertyChanged(nameof(Payload));
+                }
+            }
+        }
+
+        /// <summary>
         /// Camera Pixel Format
         /// </summary>
         public PixelFormat PixelFormat { get; set; }
 
         /// <summary>
-        /// Motor Controller for camera, zoom/focus/iris control if any
+        /// Rx port
         /// </summary>
-        public MotorControl MotorController { get; set; }
-
-        /// <summary>
-        /// Camera IP
-        /// </summary>
-        public string IP
+        public int PortRx
         {
-            get => Gvcp.CameraIp;
+            get => portRx;
             set
             {
-                Gvcp.CameraIp = value;
-                OnPropertyChanged(nameof(IP));
+                if (portRx != value)
+                {
+                    portRx = value;
+                    OnPropertyChanged(nameof(PortRx));
+                }
             }
         }
-
-        /// <summary>
-        /// Multi-Cast IP: it will be applied only when IsMulticast Property is true
-        /// </summary>
-        public string MulticastIP { get; set; } = "239.192.11.12";
-
-        /// <summary>
-        /// Multi-Cast Option
-        /// </summary>
-        public bool IsMulticast
-        {
-            get => isMulticast;
-            set { isMulticast = value; OnPropertyChanged(nameof(IsMulticast)); }
-        }
-
-        /// <summary>
-        /// Gets the raw data from the camera. Set false to get RGB frame instead of BayerGR8
-        /// </summary>
-        public bool IsRawFrame { get; set; } = true;
-
-        /// <summary>
-        /// If enabled library will use C++ native code for stream reception
-        /// </summary>
-        public bool IsUsingCppForRx { get; set; }
-
-        /// <summary>
-        /// If we set the external buffer using <see cref="SetBuffer(byte[])"/> this will be set
-        /// true and software will copy stream on this buffer
-        /// </summary>
-        public bool IsUsingExternalBuffer { get; set; }
 
         public string RxIP
         {
@@ -254,120 +235,126 @@ namespace GigeVision.Core.Models
         }
 
         /// <summary>
-        /// Tolernace for missing packet
+        /// Stream Receiver, replace this receiver with your own if want to receive the packets in application
         /// </summary>
-        public int MissingPacketTolerance { get; set; } = 0;
+        public IStreamReceiver StreamReceiver { get; set; }
 
         /// <summary>
-        /// This method will get current PC IP and Gets the Camera ip from Gvcp
+        /// Event for general updates
         /// </summary>
-        /// <param name="rxIP">If rxIP is not provided, method will detect system IP and use it</param>
-        /// <param name="rxPort">It will set randomly when not provided</param>
-        /// <param name="frameReady">If not null this event will be raised</param>
-        /// <returns></returns>
-        public async Task<bool> StartStreamAsync(string rxIP = null, int rxPort = 0)
+        public EventHandler<string> Updates { get; set; }
+
+        /// <summary>
+        /// Camera width
+        /// </summary>
+        public uint Width
         {
-            string ip2Send;
-            if (string.IsNullOrEmpty(rxIP))
+            get => width;
+            set
             {
-                if (string.IsNullOrEmpty(RxIP) && !SetRxIP())
+                if (value != width)
                 {
-                    return false;
+                    width = value;
+                    OnPropertyChanged(nameof(Width));
                 }
             }
-            else
-            {
-                RxIP = rxIP;
-            }
-            ip2Send = RxIP;
-            if (IsMulticast)
-            {
-                ip2Send = MulticastIP;
-            }
-            try
-            {
-                var status = await SyncParameters().ConfigureAwait(false);
-                if (!status)
-                    return status;
-            }
-            catch
-            {
-                return false;
-            }
-            if (rxPort == 0)
-            {
-                if (PortRx == 0)
-                {
-                    UdpClient udpClient = new(0);
-                    PortRx = ((IPEndPoint)(udpClient.Client.LocalEndPoint)).Port;
-                    udpClient.Dispose();
-                }
-            }
-            else
-            {
-                PortRx = rxPort;
-            }
-            if (Payload == 0)
-            {
-                CalculateSingleRowPayload();
-            }
+        }
 
-            if (!IsUsingExternalBuffer)
-            {
-                SetRxBuffer();
-            }
-            var acquisitionStart = (await Gvcp.GetRegister(nameof(RegisterName.AcquisitionStart))).pValue;
-            if (acquisitionStart != null)
-            {
-                if (await Gvcp.TakeControl(true).ConfigureAwait(false))
-                {
-                    SetupRxThread();
-                    var gevSCPHostPort = (await Gvcp.GetRegister(nameof(GvcpRegister.GevSCPHostPort))).pValue;
-                    if ((await gevSCPHostPort.SetValueAsync((uint)PortRx).ConfigureAwait(false) as GvcpReply).Status == GvcpStatus.GEV_STATUS_SUCCESS)
-                    {
-                        var gevSCDA = (await Gvcp.GetRegister(nameof(GvcpRegister.GevSCDA))).pValue;
-                        await gevSCDA.SetValueAsync(Converter.IpToNumber(ip2Send)).ConfigureAwait(false);
-
-                        var gevSCPSPacketSize = (await Gvcp.GetRegister(nameof(GvcpRegister.GevSCPSPacketSize))).pValue;
-                        await gevSCPSPacketSize.SetValueAsync(Payload).ConfigureAwait(false);
-                        if (((await acquisitionStart.SetValueAsync(1).ConfigureAwait(false)) as GvcpReply).Status == GvcpStatus.GEV_STATUS_SUCCESS)
-                        {
-                            IsStreaming = true;
-                        }
-                        else
-                        {
-                            await StopStream().ConfigureAwait(false);
-                        }
-                    }
-                }
-                else
-                {
-                    if (IsMulticast)
-                    {
-                        SetupRxThread();
-                        IsStreaming = true;
-                    }
-                }
-            }
-            else
-            {
-                Updates?.Invoke(this, "Fatal Error: Acquisition Start Register Not Found");
-            }
-            return IsStreaming;
+        public bool IsBitSet<T>(T t, int pos) where T : struct, IConvertible
+        {
+            var value = t.ToInt64(CultureInfo.CurrentCulture);
+            return (value & (1 << pos)) != 0;
         }
 
         /// <summary>
-        /// Stops the camera stream and leave camera control
+        /// Bridge Command for motor controller, controls focus/zoom/iris operation
         /// </summary>
-        /// <returns>Is streaming status</returns>
-        public async Task<bool> StopStream()
+        /// <param name="command">Command to set</param>
+        /// <param name="value">Value to set (Applicable for ZoomValue/FocusValue)</param>
+        /// <returns>Command Status</returns>
+        public async Task<bool> MotorControl(LensCommand command, uint value = 1)
         {
-            await Gvcp.WriteRegisterAsync(GvcpRegister.GevSCDA, 0).ConfigureAwait(false);
-            if (await Gvcp.LeaveControl().ConfigureAwait(false))
+            return await MotorController.SendMotorCommand(Gvcp, command, value).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Read register for camera
+        /// </summary>
+        /// <returns>Command Status</returns>
+        public async Task<bool> ReadRegisters()
+        {
+            return await SyncParameters().ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Sets the buffer from external source
+        /// </summary>
+        /// <param name="externalRawBytes"></param>
+        public void SetBuffer(byte[] externalRawBytes)
+        {
+            if (!IsStreaming && externalRawBytes != default)
             {
-                IsStreaming = false;
+                if (rawBytes != null)
+                {
+                    Array.Clear(rawBytes, 0, rawBytes.Length);
+                }
+
+                rawBytes = externalRawBytes;
+                IsUsingExternalBuffer = true;
             }
-            return IsStreaming;
+        }
+
+        /// <summary>
+        /// Sets the offset of camera
+        /// </summary>
+        /// <param name="offsetX">Offset X to set</param>
+        /// <param name="offsetY">Offset Y to set</param>
+        /// <returns>Command Status</returns>
+        public async Task<bool> SetOffsetAsync(int offsetX, int offsetY)
+        {
+            return await SetOffsetAsync((uint)offsetX, (uint)offsetY).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Sets the offset of camera
+        /// </summary>
+        /// <returns>Command Status</returns>
+        public async Task<bool> SetOffsetAsync()
+        {
+            return await SetOffsetAsync(OffsetX, OffsetY).ConfigureAwait(false);
+        }
+
+        //ToDo: Error handle the following method.
+        /// <summary>
+        /// Sets the offset of camera
+        /// </summary>
+        /// <param name="offsetX">Offset X to set</param>
+        /// <param name="offsetY">Offset Y to set</param>
+        /// <returns>Command Status</returns>
+        public async Task<bool> SetOffsetAsync(uint offsetX, uint offsetY)
+        {
+            if (!IsStreaming)
+            {
+                await Gvcp.TakeControl().ConfigureAwait(false);
+            }
+            var offsetXRegister = (await Gvcp.GetRegister(nameof(RegisterName.OffsetX))).register;
+            var offsetYRegister = (await Gvcp.GetRegister(nameof(RegisterName.OffsetY))).register;
+            string[] registers = new string[2];
+            registers[0] = string.Format("0x{0:X8}", (await offsetXRegister.GetAddressAsync()));
+            registers[1] = string.Format("0x{0:X8}", (await offsetYRegister.GetAddressAsync()));
+            uint[] valueToWrite = new uint[] { offsetX, offsetY };
+            bool status = (await Gvcp.WriteRegisterAsync(registers, valueToWrite).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS;
+            GvcpReply reply = await Gvcp.ReadRegisterAsync(registers).ConfigureAwait(false);
+            if (reply.Status == GvcpStatus.GEV_STATUS_SUCCESS)
+            {
+                OffsetX = reply.RegisterValues[0];
+                OffsetY = reply.RegisterValues[1];
+            }
+            if (!IsStreaming)
+            {
+                await Gvcp.LeaveControl().ConfigureAwait(false);
+            }
+            return status;
         }
 
         /// <summary>
@@ -416,26 +403,6 @@ namespace GigeVision.Core.Models
         }
 
         /// <summary>
-        /// Sets the offset of camera
-        /// </summary>
-        /// <param name="offsetX">Offset X to set</param>
-        /// <param name="offsetY">Offset Y to set</param>
-        /// <returns>Command Status</returns>
-        public async Task<bool> SetOffsetAsync(int offsetX, int offsetY)
-        {
-            return await SetOffsetAsync((uint)offsetX, (uint)offsetY).ConfigureAwait(false);
-        }
-
-        /// <summary>
-        /// Sets the offset of camera
-        /// </summary>
-        /// <returns>Command Status</returns>
-        public async Task<bool> SetOffsetAsync()
-        {
-            return await SetOffsetAsync(OffsetX, OffsetY).ConfigureAwait(false);
-        }
-
-        /// <summary>
         /// Sets the Resolution of camera
         /// </summary>
         /// <returns>Command Status</returns>
@@ -444,75 +411,123 @@ namespace GigeVision.Core.Models
             return await SetResolutionAsync(Width, Height).ConfigureAwait(false);
         }
 
-        //ToDo: Error handle the following method.
         /// <summary>
-        /// Sets the offset of camera
+        /// This method will get current PC IP and Gets the Camera ip from Gvcp
         /// </summary>
-        /// <param name="offsetX">Offset X to set</param>
-        /// <param name="offsetY">Offset Y to set</param>
-        /// <returns>Command Status</returns>
-        public async Task<bool> SetOffsetAsync(uint offsetX, uint offsetY)
+        /// <param name="rxIP">If rxIP is not provided, method will detect system IP and use it</param>
+        /// <param name="rxPort">It will set randomly when not provided</param>
+        /// <param name="frameReady">If not null this event will be raised</param>
+        /// <returns></returns>
+        public async Task<bool> StartStreamAsync(string rxIP = null, int rxPort = 0)
         {
-            if (!IsStreaming)
-            {
-                await Gvcp.TakeControl().ConfigureAwait(false);
-            }
-            var offsetXRegister = (await Gvcp.GetRegister(nameof(RegisterName.OffsetX))).register;
-            var offsetYRegister = (await Gvcp.GetRegister(nameof(RegisterName.OffsetY))).register;
-            string[] registers = new string[2];
-            registers[0] = string.Format("0x{0:X8}", (await offsetXRegister.GetAddressAsync()));
-            registers[1] = string.Format("0x{0:X8}", (await offsetYRegister.GetAddressAsync()));
-            uint[] valueToWrite = new uint[] { offsetX, offsetY };
-            bool status = (await Gvcp.WriteRegisterAsync(registers, valueToWrite).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS;
-            GvcpReply reply = await Gvcp.ReadRegisterAsync(registers).ConfigureAwait(false);
-            if (reply.Status == GvcpStatus.GEV_STATUS_SUCCESS)
-            {
-                OffsetX = reply.RegisterValues[0];
-                OffsetY = reply.RegisterValues[1];
-            }
-            if (!IsStreaming)
-            {
-                await Gvcp.LeaveControl().ConfigureAwait(false);
-            }
-            return status;
-        }
+            string ip2Send;
+            // If the custom stream receiver is not set then it will set the default one
 
-        /// <summary>
-        /// Bridge Command for motor controller, controls focus/zoom/iris operation
-        /// </summary>
-        /// <param name="command">Command to set</param>
-        /// <param name="value">Value to set (Applicable for ZoomValue/FocusValue)</param>
-        /// <returns>Command Status</returns>
-        public async Task<bool> MotorControl(LensCommand command, uint value = 1)
-        {
-            return await MotorController.SendMotorCommand(Gvcp, command, value).ConfigureAwait(false);
-        }
-
-        /// <summary>
-        /// Read register for camera
-        /// </summary>
-        /// <returns>Command Status</returns>
-        public async Task<bool> ReadRegisters()
-        {
-            return await SyncParameters().ConfigureAwait(false);
-        }
-
-        /// <summary>
-        /// Sets the buffer from external source
-        /// </summary>
-        /// <param name="externalRawBytes"></param>
-        public void SetBuffer(byte[] externalRawBytes)
-        {
-            if (!IsStreaming && externalRawBytes != default)
+            if (string.IsNullOrEmpty(rxIP))
             {
-                if (rawBytes != null)
+                if (string.IsNullOrEmpty(RxIP) && !SetRxIP())
                 {
-                    Array.Clear(rawBytes, 0, rawBytes.Length);
+                    return false;
                 }
-
-                rawBytes = externalRawBytes;
-                IsUsingExternalBuffer = true;
             }
+            else
+            {
+                RxIP = rxIP;
+            }
+            ip2Send = RxIP;
+
+            if (IsMulticast)
+            {
+                ip2Send = MulticastIP;
+            }
+            try
+            {
+                var status = await SyncParameters().ConfigureAwait(false);
+                if (!status)
+                    return status;
+            }
+            catch
+            {
+                return false;
+            }
+            if (rxPort == 0)
+            {
+                if (PortRx == 0)
+                {
+                    UdpClient udpClient = new(0);
+                    PortRx = ((IPEndPoint)(udpClient.Client.LocalEndPoint)).Port;
+                    udpClient.Dispose();
+                }
+            }
+            else
+            {
+                PortRx = rxPort;
+            }
+            if (Payload == 0)
+            {
+                CalculateSingleRowPayload();
+            }
+
+            if (!IsUsingExternalBuffer)
+            {
+                SetRxBuffer();
+            }
+
+            SetupReceiver();
+
+            var acquisitionStart = (await Gvcp.GetRegister(nameof(RegisterName.AcquisitionStart))).pValue;
+            if (acquisitionStart != null)
+            {
+                if (await Gvcp.TakeControl(true).ConfigureAwait(false))
+                {
+                    SetupRxThread();
+                    var gevSCPHostPort = (await Gvcp.GetRegister(nameof(GvcpRegister.GevSCPHostPort))).pValue;
+                    if ((await gevSCPHostPort.SetValueAsync((uint)PortRx).ConfigureAwait(false) as GvcpReply).Status == GvcpStatus.GEV_STATUS_SUCCESS)
+                    {
+                        var gevSCDA = (await Gvcp.GetRegister(nameof(GvcpRegister.GevSCDA))).pValue;
+                        await gevSCDA.SetValueAsync(Converter.IpToNumber(ip2Send)).ConfigureAwait(false);
+
+                        var gevSCPSPacketSize = (await Gvcp.GetRegister(nameof(GvcpRegister.GevSCPSPacketSize))).pValue;
+                        await gevSCPSPacketSize.SetValueAsync(Payload).ConfigureAwait(false);
+                        if (((await acquisitionStart.SetValueAsync(1).ConfigureAwait(false)) as GvcpReply).Status == GvcpStatus.GEV_STATUS_SUCCESS)
+                        {
+                            IsStreaming = true;
+                        }
+                        else
+                        {
+                            await StopStream().ConfigureAwait(false);
+                        }
+                    }
+                }
+                else
+                {
+                    if (IsMulticast)
+                    {
+                        SetupRxThread();
+                        IsStreaming = true;
+                    }
+                }
+            }
+            else
+            {
+                Updates?.Invoke(this, "Fatal Error: Acquisition Start Register Not Found");
+            }
+            return IsStreaming;
+        }
+
+        /// <summary>
+        /// Stops the camera stream and leave camera control
+        /// </summary>
+        /// <returns>Is streaming status</returns>
+        public async Task<bool> StopStream()
+        {
+            await Gvcp.WriteRegisterAsync(GvcpRegister.GevSCDA, 0).ConfigureAwait(false);
+            StreamReceiver?.StopReception();
+            if (await Gvcp.LeaveControl().ConfigureAwait(false))
+            {
+                IsStreaming = false;
+            }
+            return IsStreaming;
         }
 
         /// <summary>
@@ -536,13 +551,54 @@ namespace GigeVision.Core.Models
                 OffsetX = (uint)await offsetXPValue.GetValueAsync().ConfigureAwait(false);
                 OffsetY = (uint)await offsetYPValue.GetValueAsync().ConfigureAwait(false);
                 PixelFormat = (PixelFormat)(uint)await pixelFormatPValue.GetValueAsync().ConfigureAwait(false);
-                bytesPerPixel = 3;
+                bytesPerPixel = (uint)PixelFormatToBytesPerPixel(PixelFormat);
             }
             catch (Exception ex)
             {
                 Updates?.Invoke(this, ex.Message);
             }
             return true;
+        }
+
+        private void CalculateSingleRowPayload()
+        {
+            Payload = 8 + 28 + (Width * bytesPerPixel);
+        }
+
+        private async void CameraIpChanged(object sender, EventArgs e)
+        {
+            await SyncParameters().ConfigureAwait(false);
+        }
+
+        private void Init()
+        {
+            MotorController = new MotorControl();
+            SetRxIP();
+            Gvcp.CameraIpChanged += CameraIpChanged;
+        }
+
+        private int PixelFormatToBytesPerPixel(PixelFormat pixelFormat)
+        {
+            var rawValue = (int)pixelFormat;
+            var isBitHigh = IsBitSet(rawValue, 20);
+            return isBitHigh ? 2 : 1;
+        }
+
+        private void SetRxBuffer()
+        {
+            if (rawBytes != null)
+            {
+                Array.Clear(rawBytes, 0, rawBytes.Length);
+            }
+
+            if (!IsRawFrame && PixelFormat.ToString().Contains("Bayer"))
+            {
+                rawBytes = new byte[Width * Height * 3];
+            }
+            else
+            {
+                rawBytes = new byte[Width * Height * bytesPerPixel];
+            }
         }
 
         private bool SetRxIP()
@@ -564,44 +620,21 @@ namespace GigeVision.Core.Models
             }
         }
 
+        private void SetupReceiver()
+        {
+            StreamReceiver ??= new StreamReceiverBufferswap();
+            StreamReceiver.RxIP = RxIP;
+            StreamReceiver.IsMulticast = IsMulticast;
+            StreamReceiver.MulticastIP = MulticastIP;
+            StreamReceiver.PortRx = PortRx;
+            StreamReceiver.MissingPacketTolerance = MissingPacketTolerance;
+            StreamReceiver.Updates = Updates;
+            StreamReceiver.FrameReady = FrameReady;
+        }
+
         private void SetupRxThread()
         {
-            streamReceiver.StartRxThread();
-        }
-
-        private void SetRxBuffer()
-        {
-            if (rawBytes != null)
-            {
-                Array.Clear(rawBytes, 0, rawBytes.Length);
-            }
-
-            if (!IsRawFrame && PixelFormat.ToString().Contains("Bayer"))
-            {
-                rawBytes = new byte[Width * Height * 3];
-            }
-            else
-            {
-                rawBytes = new byte[Width * Height * bytesPerPixel];
-            }
-        }
-
-        private void Init()
-        {
-            MotorController = new MotorControl();
-            streamReceiver = new StreamReceiver(this);
-            SetRxIP();
-            Gvcp.CameraIpChanged += CameraIpChanged;
-        }
-
-        private void CalculateSingleRowPayload()
-        {
-            Payload = 8 + 28 + (Width * bytesPerPixel);
-        }
-
-        private async void CameraIpChanged(object sender, EventArgs e)
-        {
-            await SyncParameters().ConfigureAwait(false);
+            StreamReceiver.StartRxThread();
         }
     }
 }
