@@ -1,4 +1,4 @@
-﻿using GigeVision.Core.Models;
+﻿using GigeVision.Core.Services;
 using System;
 using System.Linq;
 using System.Windows;
