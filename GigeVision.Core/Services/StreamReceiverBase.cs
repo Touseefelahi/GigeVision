@@ -5,8 +5,10 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using GigeVision.Core.Models;
+using GigeVision.Core.Interfaces;
 
-namespace GigeVision.Core.Models
+namespace GigeVision.Core.Services
 {
     /// <summary>
     /// Receives the stream
@@ -21,6 +23,7 @@ namespace GigeVision.Core.Models
         public StreamReceiverBase()
         {
             GvspInfo = new GvspInfo();
+            MissingPacketTolerance = 2;
         }
 
         /// <summary>
@@ -92,6 +95,51 @@ namespace GigeVision.Core.Models
             IsReceiving = false;
             socketRxRaw?.Close();
             socketRxRaw.Dispose();
+        }
+
+        /// <summary>
+        /// GVSP leader parser- required only one time
+        /// </summary>
+        protected void DetectGvspType()
+        {
+            Span<byte> singlePacket = new byte[9000];
+            socketRxRaw.Receive(singlePacket);
+            GvspInfo.IsDecodingAsVersion2 = ((singlePacket[4] & 0xF0) >> 4) == 8;
+            GvspInfo.SetDecodingTypeParameter();
+
+            var packetID = (singlePacket[GvspInfo.PacketIDIndex] << 8) | singlePacket[GvspInfo.PacketIDIndex + 1];
+            if (packetID == 0)
+            {
+                GvspInfo.IsImageData = ((singlePacket[10] << 8) | singlePacket[11]) == 1;
+                if (GvspInfo.IsImageData)
+                {
+                    GvspInfo.BytesPerPixel = (int)Math.Ceiling((double)(singlePacket[21] / 8));
+                    GvspInfo.Width = (singlePacket[24] << 24) | (singlePacket[25] << 16) | (singlePacket[26] << 8) | (singlePacket[27]);
+                    GvspInfo.Height = (singlePacket[28] << 24) | (singlePacket[29] << 16) | (singlePacket[30] << 8) | (singlePacket[31]);
+                }
+            }
+
+            //Optimizing the array length for receive buffer
+            int length = socketRxRaw.Receive(singlePacket);
+            packetID = (singlePacket[GvspInfo.PacketIDIndex] << 8) | singlePacket[GvspInfo.PacketIDIndex + 1];
+            if (packetID > 0)
+            {
+                GvspInfo.PacketLength = length;
+            }
+            IsReceiving = length > 10;
+            GvspInfo.PayloadSize = GvspInfo.PacketLength - GvspInfo.PayloadOffset;
+
+            if (GvspInfo.Width > 0 && GvspInfo.Height > 0) //Now we can calculate the final packet ID
+            {
+                var totalBytesExpectedForOneFrame = GvspInfo.Width * GvspInfo.Height;
+                GvspInfo.FinalPacketID = totalBytesExpectedForOneFrame / GvspInfo.PayloadSize;
+                if (totalBytesExpectedForOneFrame % GvspInfo.PayloadSize != 0)
+                {
+                    GvspInfo.FinalPacketID++;
+                }
+                socketRxRaw.ReceiveBufferSize = (GvspInfo.PacketLength * GvspInfo.FinalPacketID); //Single frame with GVSP header
+                GvspInfo.RawImageSize = GvspInfo.Width * GvspInfo.Height * GvspInfo.BytesPerPixel;
+            }
         }
 
         /// <summary>
@@ -172,51 +220,6 @@ namespace GigeVision.Core.Models
                     Updates?.Invoke(UpdateType.StreamStopped, ex.Message);
                 }
                 IsReceiving = false;
-            }
-        }
-
-        /// <summary>
-        /// GVSP leader parser- required only one time
-        /// </summary>
-        private void DetectGvspType()
-        {
-            Span<byte> singlePacket = new byte[9000];
-            socketRxRaw.Receive(singlePacket);
-            GvspInfo.IsDecodingAsVersion2 = ((singlePacket[4] & 0xF0) >> 4) == 8;
-            GvspInfo.SetDecodingTypeParameter();
-
-            var packetID = (singlePacket[GvspInfo.PacketIDIndex] << 8) | singlePacket[GvspInfo.PacketIDIndex + 1];
-            if (packetID == 0)
-            {
-                GvspInfo.IsImageData = ((singlePacket[10] << 8) | singlePacket[11]) == 1;
-                if (GvspInfo.IsImageData)
-                {
-                    GvspInfo.BytesPerPixel = (int)Math.Ceiling((double)(singlePacket[21] / 8));
-                    GvspInfo.Width = (singlePacket[24] << 24) | (singlePacket[25] << 16) | (singlePacket[26] << 8) | (singlePacket[27]);
-                    GvspInfo.Height = (singlePacket[28] << 24) | (singlePacket[29] << 16) | (singlePacket[30] << 8) | (singlePacket[31]);
-                }
-            }
-
-            //Optimizing the array length for receive buffer
-            int length = socketRxRaw.Receive(singlePacket);
-            packetID = (singlePacket[GvspInfo.PacketIDIndex] << 8) | singlePacket[GvspInfo.PacketIDIndex + 1];
-            if (packetID > 0)
-            {
-                GvspInfo.PacketLength = length;
-            }
-            IsReceiving = length > 10;
-            GvspInfo.PayloadSize = GvspInfo.PacketLength - GvspInfo.PayloadOffset;
-
-            if (GvspInfo.Width > 0 && GvspInfo.Height > 0) //Now we can calculate the final packet ID
-            {
-                var totalBytesExpectedForOneFrame = GvspInfo.Width * GvspInfo.Height;
-                GvspInfo.FinalPacketID = totalBytesExpectedForOneFrame / GvspInfo.PayloadSize;
-                if (totalBytesExpectedForOneFrame % GvspInfo.PayloadSize != 0)
-                {
-                    GvspInfo.FinalPacketID++;
-                }
-                socketRxRaw.ReceiveBufferSize = (GvspInfo.PacketLength * GvspInfo.FinalPacketID); //Single frame with GVSP header
-                GvspInfo.RawImageSize = GvspInfo.Width * GvspInfo.Height * GvspInfo.BytesPerPixel;
             }
         }
 

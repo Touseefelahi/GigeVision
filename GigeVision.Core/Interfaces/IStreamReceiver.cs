@@ -1,6 +1,7 @@
-﻿using System;
+﻿using GigeVision.Core.Models;
+using System;
 
-namespace GigeVision.Core.Models
+namespace GigeVision.Core.Interfaces
 {
     /// <summary>
     /// General interface for stream reception

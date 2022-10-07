@@ -50,7 +50,6 @@ namespace GigeVisionLibrary.Test.Wpf
                     lightControl.HeightImage = height;
                     lightControl.IsColored = !camera.IsRawFrame;
                 });
-
                 await camera.StartStreamAsync().ConfigureAwait(false);
 
                 //camera.OffsetX = 264;
@@ -69,17 +68,19 @@ namespace GigeVisionLibrary.Test.Wpf
         private async void Setup()
         {
             camera = new Camera();
+            //camera.StreamReceiver = new StreamReceiverParallel();
             GigeVision.Core.NetworkService.AllowAppThroughFirewall();
             var listOfDevices = await camera.Gvcp.GetAllGigeDevicesInNetworkAsnyc().ConfigureAwait(true);
             cameraCount.Text = "Cam count: " + listOfDevices.Count.ToString();
             if (listOfDevices.Count > 0)
             {
                 Camera.IP = listOfDevices.FirstOrDefault()?.IP;
+                Camera.RxIP = listOfDevices.FirstOrDefault()?.NetworkIP;
             }
             //camera.Gvcp.ForceIPAsync(listOfDevices[0].MacAddress, "192.168.10.243");
-            //camera.Payload = 1400;
-            //camera.IsMulticast = true;
-            //camera.MulticastIP = "239.168.10.21";
+            camera.Payload = 5000;
+
+            camera.IsMulticast = true;
             camera.FrameReady += FrameReady;
             camera.Gvcp.ElapsedOneSecond += UpdateFps;
         }
