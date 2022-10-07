@@ -140,7 +140,7 @@ namespace GigeVision.Core.Services
         /// <summary>
         /// Tolernace for missing packet
         /// </summary>
-        public int MissingPacketTolerance { get; set; } = 0;
+        public int MissingPacketTolerance { get; set; } = 2;
 
         /// <summary>
         /// Motor Controller for camera, zoom/focus/iris control if any
@@ -488,7 +488,7 @@ namespace GigeVision.Core.Services
                         await gevSCDA.SetValueAsync(Converter.IpToNumber(ip2Send)).ConfigureAwait(false);
 
                         var gevSCPSPacketSize = (await Gvcp.GetRegister(nameof(GvcpRegister.GevSCPSPacketSize))).pValue;
-                        await gevSCPSPacketSize.SetValueAsync(Payload).ConfigureAwait(false);
+                        var reply = await gevSCPSPacketSize.SetValueAsync(Payload).ConfigureAwait(false);
                         if (((await acquisitionStart.SetValueAsync(1).ConfigureAwait(false)) as GvcpReply).Status == GvcpStatus.GEV_STATUS_SUCCESS)
                         {
                             IsStreaming = true;

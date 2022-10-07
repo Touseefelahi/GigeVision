@@ -1,5 +1,6 @@
 ﻿using Crc;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
@@ -40,6 +41,71 @@ namespace GigeVision.Core
                 }
             }
             return true;
+        }
+
+        /// <summary>
+        /// Get all ethernet interfaces for the device
+        /// </summary>
+        /// <param name="ipVersion4Only"></param>
+        /// <param name="skipWireless"></param>
+        /// <param name="allowedMask"></param>
+        /// <returns></returns>
+        public static List<string> GetAllInterfaces(bool ipVersion4Only = true, bool skipWireless = false, string allowedMask = "255.255.255.0")
+        {
+            List<string> interfaces = new();
+            foreach (var network in NetworkInterface.GetAllNetworkInterfaces())
+            {
+                if (network.OperationalStatus != OperationalStatus.Up)
+                {
+                    continue;
+                }
+
+                if (network.NetworkInterfaceType == NetworkInterfaceType.Loopback)
+                {
+                    continue;
+                }
+
+                if (skipWireless)
+                {
+                    if (network.NetworkInterfaceType == NetworkInterfaceType.Wireless80211)
+                    {
+                        continue;
+                    }
+                }
+                IPInterfaceProperties properties = network.GetIPProperties();
+                var ipProperties = properties.GetIPv4Properties();
+                foreach (UnicastIPAddressInformation address in properties.UnicastAddresses)
+                {
+                    if (IPAddress.IsLoopback(address.Address))
+                    {
+                        continue;
+                    }
+                    var addresses = properties.GatewayAddresses;
+                    if ((addresses == null) || (addresses.Count == 0))
+                    {
+                        var isValid = IPAddress.TryParse(allowedMask, out IPAddress validMask);
+                        if (isValid is false)
+                        {
+                            continue;
+                        }
+
+                        if (address.IPv4Mask.Equals(validMask) is false)
+                        {
+                            continue;
+                        }
+                    }
+                    if (ipVersion4Only)
+                    {
+                        if (address.Address.AddressFamily == AddressFamily.InterNetwork)
+                            interfaces.Add(address.Address.ToString());
+                    }
+                    else
+                    {
+                        interfaces.Add(address.Address.ToString());
+                    }
+                }
+            }
+            return interfaces;
         }
 
         /// <summary>

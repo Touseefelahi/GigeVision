@@ -220,7 +220,7 @@ namespace GigeVision.Core.Services
         {
             cameraInfoList = new List<CameraInformation>();
             GvcpCommand discovery = new(GvcpCommandType.Discovery);
-            var data = SendBroadCastPacket(discovery.CommandBytes, DiscoveryReception);
+            var data = SendBroadCastPacket(discovery.CommandBytes, DiscoveryReception, networkIP);
             await data;
             return cameraInfoList;
         }
@@ -764,11 +764,12 @@ namespace GigeVision.Core.Services
         /// <summary>
         /// Deconds and Add camera in camera list
         /// </summary>
-        /// <param name="senderEndpoint">Sender End point</param>
+        /// <param name="localEndpoint">Sender End point</param>
         /// <param name="data">Data</param>
-        private void DiscoveryReception(IPEndPoint senderEndpoint, byte[] data)
+        private void DiscoveryReception(IPEndPoint localEndpoint, byte[] data)
         {
             var camera = DecodeDiscoveryPacket(data);
+            camera.NetworkIP = localEndpoint.Address.ToString();
             cameraInfoList.Add(camera);
         }
 
@@ -1027,46 +1028,54 @@ namespace GigeVision.Core.Services
         /// <param name="packet"></param>
         /// <param name="receptionEvent"></param>
         /// <param name="ipNetwork"></param>
-        private async Task SendBroadCastPacket(byte[] packet, Action<IPEndPoint, byte[]> receptionEvent, string ipNetwork = "")
+        private async Task SendBroadCastPacket(byte[] packet, Action<IPEndPoint, byte[]> receptionEvent, string ipNetworkFixed = "")
         {
             var reply = Array.Empty<byte>();
-            IPAddress ip = null;
-            if (IPAddress.TryParse(ipNetwork, out ip) is false)
+            List<IPAddress> ips = new();
+            if (IPAddress.TryParse(ipNetworkFixed, out IPAddress ip))
             {
-                using var socketIP = new UdpClient();
-                socketIP.Connect(IPAddress.Parse("8.8.8.8"), 0);
-                var ipBytes = (socketIP.Client.LocalEndPoint as IPEndPoint)?.Address.GetAddressBytes();
-                ip = new IPAddress(ipBytes);
-                socketIP.Close();
-                socketIP.Dispose();
+                ips.Add(ip);
             }
-
-            var broadcastClientLocal = new UdpClient()
+            else
             {
-                EnableBroadcast = true,
-            };
-            broadcastClientLocal.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-            var endPoint2 = new IPEndPoint(ip, 0);
-            broadcastClientLocal.Client.Bind(endPoint2);
-            var endPoint = new IPEndPoint(IPAddress.Broadcast, PortGvcp);
-            broadcastClientLocal.Send(packet, packet.Length, endPoint);
-            broadcastClientLocal.Client.ReceiveTimeout = 500;
-            await Task.Run(() =>
-            {
-                while (true)
+                var ipsString = NetworkService.GetAllInterfaces();
+                foreach (var ipString in ipsString)
                 {
-                    try
+                    if (IPAddress.TryParse(ipString, out IPAddress ipToAdd))
                     {
-                        IPEndPoint endPointRx = null;
-                        var data = broadcastClientLocal.Receive(ref endPointRx);
-                        receptionEvent?.Invoke(endPointRx, data);
-                    }
-                    catch (Exception ex)
-                    {
-                        break;
+                        ips.Add(ipToAdd);
                     }
                 }
-            });
+            }
+            foreach (var ipNetwork in ips)
+            {
+                var broadcastClientLocal = new UdpClient()
+                {
+                    EnableBroadcast = true,
+                };
+                broadcastClientLocal.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+                var endPoint2 = new IPEndPoint(ipNetwork, 0);
+                broadcastClientLocal.Client.Bind(endPoint2);
+                var endPoint = new IPEndPoint(IPAddress.Broadcast, PortGvcp);
+                broadcastClientLocal.Send(packet, packet.Length, endPoint);
+                broadcastClientLocal.Client.ReceiveTimeout = 500;
+                await Task.Run(() =>
+                {
+                    while (true)
+                    {
+                        try
+                        {
+                            IPEndPoint endPointRx = null;
+                            var data = broadcastClientLocal.Receive(ref endPointRx);
+                            receptionEvent?.Invoke((IPEndPoint)(broadcastClientLocal.Client.LocalEndPoint), data);
+                        }
+                        catch (Exception)
+                        {
+                            break;
+                        }
+                    }
+                });
+            }
         }
 
         private bool ValidateIp(string ipString)
