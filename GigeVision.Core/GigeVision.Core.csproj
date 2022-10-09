@@ -42,8 +42,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="GenICam" Version="2.1.5.1" />
     <PackageReference Include="Stira.WpfCore" Version="1.2.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GenICam\GenICam.csproj" />
   </ItemGroup>
 
   <!--<ItemGroup>
