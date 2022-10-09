@@ -552,12 +552,13 @@ namespace GigeVision.Core.Services
                 OffsetY = (uint)await offsetYPValue.GetValueAsync().ConfigureAwait(false);
                 PixelFormat = (PixelFormat)(uint)await pixelFormatPValue.GetValueAsync().ConfigureAwait(false);
                 bytesPerPixel = (uint)PixelFormatToBytesPerPixel(PixelFormat);
+                return true;
             }
             catch (Exception ex)
             {
                 Updates?.Invoke(this, ex.Message);
             }
-            return true;
+            return false;
         }
 
         private void CalculateSingleRowPayload()
