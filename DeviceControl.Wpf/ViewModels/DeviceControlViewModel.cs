@@ -58,8 +58,16 @@ namespace DeviceControl.Wpf.ViewModels
 
             Task.Run(async () =>
             {
-                await Gvcp.ReadAllRegisterAddressFromCameraAsync().ConfigureAwait(false);
-                Categories = Gvcp.CategoryDictionary;
+                try
+                {
+                    await Gvcp.ReadAllRegisterAddressFromCameraAsync().ConfigureAwait(false);
+                    Categories = Gvcp.CategoryDictionary;
+                }
+                catch (System.Exception ex)
+                {
+
+                    throw ex;
+                }
             });
             CheckControl();
         }

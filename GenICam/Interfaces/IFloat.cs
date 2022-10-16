@@ -12,7 +12,7 @@ namespace GenICam
         /// Gets the value async.
         /// </summary>
         /// <returns>The value as a double.</returns>
-        public Task<double> GetValueAsync();
+        public Task<double?> GetValueAsync();
 
         /// <summary>
         /// Sets the value async.

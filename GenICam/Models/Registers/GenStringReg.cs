@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using Prism.Commands;
@@ -18,12 +19,12 @@ namespace GenICam
         /// <param name="length">The length.</param>
         /// <param name="accessMode">The access mode.</param>
         /// <param name="genPort">The GenICam port.</param>
-        public GenStringReg(CategoryProperties categoryProperties, long address, ushort length, GenAccessMode accessMode, IPort genPort)
+        public GenStringReg(CategoryProperties categoryProperties, long address, ushort length, GenAccessMode accessMode, IPort genPort, IPValue pValue)
+        : base(categoryProperties, pValue)
         {
             CategoryProperties = categoryProperties;
             Address = address;
             Length = length;
-            AccessMode = accessMode;
             GenPort = genPort;
             GetValueCommand = new DelegateCommand(ExecuteGetValueCommand);
             SetValueCommand = new DelegateCommand(ExecuteSetValueCommand);
@@ -48,26 +49,31 @@ namespace GenICam
         /// Gets or sets the value.
         /// </summary>
         public string Value { get; set; }
-
-        /// <summary>
-        /// Gets or sets the value to write.
-        /// </summary>
-        public string ValueToWrite { get; set; }
+        public GenAccessMode AccessMode { get; private set; }
 
         /// <inheritdoc/>
         public async Task<string> GetValueAsync()
         {
-            var reply = await Get(Length);
             try
             {
-                if (!(reply.MemoryValue is null))
+                var reply = await Get(Length);
+                //bad check; it has to be checked and handled from GenPort side.
+                if (string.IsNullOrEmpty(reply.Error) && reply.MemoryValue != null)
                 {
                     Value = Encoding.ASCII.GetString(reply.MemoryValue);
                 }
             }
-            catch (Exception)
+            catch (DecoderFallbackException ex)
             {
-                throw;
+                throw new GenICamException(message: "Failed to get the register value", ex);
+            }
+            catch (ArgumentNullException ex)
+            {
+                throw new GenICamException(message: "Failed to get the register value", ex);
+            }
+            catch (ArgumentException ex)
+            {
+                throw new GenICamException(message: "Failed to get the register value", ex);
             }
 
             return Value;
@@ -76,27 +82,40 @@ namespace GenICam
         /// <inheritdoc/>
         public async Task<IReplyPacket> SetValueAsync(string value)
         {
-            IReplyPacket reply = null;
-            if (PValue is IRegister register)
+            try
             {
-                if (register.AccessMode != GenAccessMode.RO)
+                if (PValue is IRegister register)
                 {
-                    var length = register.GetLength();
-                    byte[] pBuffer = new byte[length];
-                    pBuffer = ASCIIEncoding.ASCII.GetBytes(value);
-
-                    reply = await register.SetAsync(pBuffer, length);
-                    if (reply.IsSentAndReplyReceived && reply.Reply[0] == 0)
-                    {
-                        if (reply.MemoryValue != null)
-                        {
-                            Value = Encoding.ASCII.GetString(reply.MemoryValue);
-                        }
-                    }
+                    return await SetStringValue(value, register);
                 }
-            }
 
-            return reply;
+                return await SetStringValue(value);
+            }
+            catch (Exception ex)
+            {
+                throw new GenICamException(message: "Failed to set  the string register value", ex);
+            }
+        }
+
+        private async Task<IReplyPacket> SetStringValue(string value, IRegister register)
+        {
+                var length = register.GetLength();
+                var pBuffer = ASCIIEncoding.ASCII.GetBytes(value);
+
+                var reply = await register.SetAsync(pBuffer, length);
+                Value = Encoding.ASCII.GetString(reply.MemoryValue);
+                return reply;
+        }
+
+        private async Task<IReplyPacket> SetStringValue(string value)
+        {
+
+                var length = GetLength();
+                var pBuffer = ASCIIEncoding.ASCII.GetBytes(value);
+
+                var reply = await SetAsync(pBuffer, length);
+                Value = Encoding.ASCII.GetString(reply.MemoryValue);
+                return reply;
         }
 
         /// <inheritdoc/>
@@ -107,7 +126,7 @@ namespace GenICam
         /// </summary>
         /// <param name="length">The length of bytes to read.</param>
         /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation.</returns>
-        public async Task<IReplyPacket> Get(long length) => await GenPort.ReadAsync(Address, Length);
+        public async Task<IReplyPacket> Get(long length) => await GenPort.ReadAsync(Address, length);
 
         /// <summary>
         /// Sets the bytes for a specific length.
@@ -138,30 +157,32 @@ namespace GenICam
         /// <returns>The byte array.</returns>
         public async Task<byte[]> GetAsync()
         {
-            byte[] addressBytes = Array.Empty<byte>();
-            if (await GetAddressAsync() is long address)
+            try
             {
-                addressBytes = BitConverter.GetBytes(address);
-                Array.Reverse(addressBytes);
-            }
+                if (await GetAddressAsync() is long address)
+                {
+                    var addressBytes = BitConverter.GetBytes(address);
+                    Array.Reverse(addressBytes);
+                    return addressBytes;
+                }
 
-            return addressBytes;
+                throw new GenICamException(message: "Failed to get the register address", new InvalidDataException());
+            }
+            catch (Exception ex)
+            {
+                throw new GenICamException(message: "Failed to get the register address", ex);
+            }
         }
 
         private async void ExecuteGetValueCommand()
         {
             Value = await GetValueAsync();
-            ValueToWrite = Value;
             RaisePropertyChanged(nameof(Value));
-            RaisePropertyChanged(nameof(ValueToWrite));
         }
 
         private async void ExecuteSetValueCommand()
         {
-            if (Value != ValueToWrite)
-            {
-                await SetValueAsync(ValueToWrite);
-            }
+            await SetValueAsync(Value);
         }
     }
 }

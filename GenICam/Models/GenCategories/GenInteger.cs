@@ -25,9 +25,11 @@ namespace GenICam
         /// <param name="value">The value.</param>
         /// <param name="unit">The unit.</param>
         /// <param name="pValue">The PValue.</param>
-        public GenInteger(CategoryProperties categoryProperties, long? min, long? max, long? inc, IMathematical pMax, IMathematical pMin, IMathematical pInc, IncrementMode? incMode, Representation representation, long? value, string unit, IPValue pValue)
+        public GenInteger(CategoryProperties categoryProperties, long? min, long? max, long? inc, IPValue pMax, IPValue pMin, IPValue pInc, IncrementMode? incMode, Representation representation, long? value, string unit, IPValue pValue)
+                : base(categoryProperties, pValue)
         {
-            CategoryProperties = categoryProperties;
+            PMax = pMax;
+            PMin = pMin;
 
             if (min is not null)
             {
@@ -36,7 +38,10 @@ namespace GenICam
 
             if (max is not null)
             {
-                Max = (long)max;
+                if (max != 0)
+                {
+                    Max = (long)max;
+                }
             }
 
             if (inc is not null)
@@ -54,13 +59,9 @@ namespace GenICam
 
             Unit = unit;
 
-            PValue = pValue;
-            PMax = pMax;
-            PMin = pMin;
-
             // Control Commands
             GetValueCommand = new DelegateCommand(ExecuteGetValueCommand);
-            SetValueCommand = new DelegateCommand(ExecuteSetValueCommand);
+            SetValueCommand = new DelegateCommand<object>(ExecuteSetValueCommand);
         }
 
         /// <summary>
@@ -76,12 +77,12 @@ namespace GenICam
         /// <summary>
         /// Gets the minimum value.
         /// </summary>
-        public long Min { get; private set; }
+        public long Min { get; private set; } = 0;
 
         /// <summary>
         /// Gets the maximum value.
         /// </summary>
-        public long Max { get; private set; }
+        public long Max { get; private set; } = Int64.MaxValue;
 
         /// <summary>
         /// Gets the increment.
@@ -114,74 +115,43 @@ namespace GenICam
         public string Unit { get; private set; } = string.Empty;
 
         /// <summary>
-        /// Gets or sets the value to write.
-        /// </summary>
-        public long ValueToWrite { get; set; }
-
-        /// <summary>
         /// Gets the pointer on the mathematical maximum value.
         /// </summary>
-        public IMathematical PMax { get; }
+        public IPValue PMax { get; }
 
         /// <summary>
         /// Gets the pointer on the mathematical minimum value.
         /// </summary>
-        public IMathematical PMin { get; }
+        public IPValue PMin { get; }
 
         /// <inheritdoc/>
         public async Task<long?> GetValueAsync()
         {
-            if (PValue is IRegister register)
+            if (PValue is not null)
             {
-                if (register.AccessMode != GenAccessMode.WO)
-                {
-                    return (long)(await PValue.GetValueAsync());
-                }
+                Value = (long)(await PValue.GetValueAsync());
+                return Value;
+            }
+            else if (Value is not null)
+            {
+                return Value;
             }
 
-            return Value;
+            throw new GenICamException(message: $"Unable to get the value, missing register reference", new MissingFieldException());
         }
 
         /// <inheritdoc/>
         public async Task<IReplyPacket> SetValueAsync(long value)
         {
-            IReplyPacket reply = null;
-            if (PValue is IRegister Register)
+            RaisePropertyChanged(nameof(Max));
+            RaisePropertyChanged(nameof(Min));
+
+            if (PValue is not null)
             {
-                if (Register.AccessMode != GenAccessMode.RO)
-                {
-                    if ((value % Inc) == 0 && (value <= await GetMaxAsync() && value >= await GetMinAsync()))
-                    {
-                        var length = Register.GetLength();
-                        byte[] pBuffer = new byte[length];
-
-                        switch (length)
-                        {
-                            case 2:
-                                pBuffer = BitConverter.GetBytes((ushort)value);
-                                break;
-
-                            case 4:
-                                pBuffer = BitConverter.GetBytes((int)value);
-                                break;
-
-                            case 8:
-                                pBuffer = BitConverter.GetBytes(value);
-                                break;
-                        }
-
-                        reply = await Register.SetAsync(pBuffer, length);
-                        if (reply.IsSentAndReplyReceived && reply.Reply[0] == 0)
-                        {
-                            Value = value;
-                        }
-                    }
-                }
+                return await PValue.SetValueAsync(value);
             }
 
-            ValueToWrite = (long)Value;
-            RaisePropertyChanged(nameof(ValueToWrite));
-            return reply;
+            throw new GenICamException(message: $"Unable to set the value, missing register reference", new MissingFieldException());
         }
 
         /// <summary>
@@ -190,15 +160,12 @@ namespace GenICam
         /// <returns>The minimum value or 0 if not set.</returns>
         public async Task<long> GetMinAsync()
         {
-            if (PMin is IRegister register)
+            if (PMin is not null)
             {
-                if (register.AccessMode != GenAccessMode.WO)
-                {
-                    return (long)(await PValue.GetValueAsync());
-                }
+                return (long)(await PMin.GetValueAsync());
             }
 
-            return 0;
+            return Min;
         }
 
         /// <summary>
@@ -207,15 +174,12 @@ namespace GenICam
         /// <returns>The maximum value or 0 if not set.</returns>
         public async Task<long> GetMaxAsync()
         {
-            if (PMax is IRegister register)
+            if (PMax is not null)
             {
-                if (register.AccessMode != GenAccessMode.WO)
-                {
-                    return (long)(await PValue.GetValueAsync());
-                }
+                return (long)(await PMax.GetValueAsync());
             }
 
-            return 0;
+            return Max;
         }
 
         /// <inheritdoc/>
@@ -225,10 +189,13 @@ namespace GenICam
             {
                 return Inc;
             }
-            else
+
+            if (IncMode != null)
             {
-                return null;
+                throw new GenICamException(message: $"Unable to get the increment value, Increment mode is {Enum.GetName((IncrementMode)IncMode)}", new InvalidOperationException());
             }
+
+            throw new GenICamException(message: $"Unable to get the increment value, Increment mode is missing", new NullReferenceException());
         }
 
         /// <inheritdoc/>
@@ -238,15 +205,23 @@ namespace GenICam
             {
                 return ListOfValidValue;
             }
-            else
+
+            if (IncMode != null)
             {
-                return null;
+                throw new GenICamException(message: $"Unable to get the valid values list, Increment mode is {Enum.GetName((IncrementMode)IncMode)}", new InvalidOperationException());
             }
+
+            throw new GenICamException(message: $"Unable to get the increment value, Increment mode is missing", new NullReferenceException());
         }
 
         /// <inheritdoc/>
         public IncrementMode GetIncrementMode()
         {
+            if (IncMode is null)
+            {
+                throw new GenICamException(message: $"Unable to get the increment mode value, Increment mode is missing", new NullReferenceException());
+            }
+
             return (IncrementMode)IncMode;
         }
 
@@ -319,19 +294,28 @@ namespace GenICam
 
         private async void ExecuteGetValueCommand()
         {
-            Value = await GetValueAsync();
-            ValueToWrite = (long)Value;
-            RaisePropertyChanged(nameof(Value));
-            RaisePropertyChanged(nameof(ValueToWrite));
-        }
-
-        private async void ExecuteSetValueCommand()
-        {
-            if (Value != ValueToWrite)
+            try
             {
-                await SetValueAsync(ValueToWrite);
+                Value = await GetValueAsync();
+                RaisePropertyChanged(nameof(Value));
+            }
+            catch (Exception ex)
+            {
+                //ToDo: display exception.
             }
         }
 
+        private async void ExecuteSetValueCommand(object value)
+        {
+            try
+            {
+                await SetValueAsync((long)value);
+                RaisePropertyChanged(nameof(Value)); 
+            }
+            catch (Exception ex)
+            {
+                //ToDo: display exception.
+            }
+        }
     }
 }

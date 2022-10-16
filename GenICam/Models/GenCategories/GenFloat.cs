@@ -23,9 +23,9 @@ namespace GenICam
         /// <param name="unit">The unit.</param>
         /// <param name="pValue">The PValue.</param>
         /// <param name="expressions">The expressions.</param>
-        public GenFloat(CategoryProperties categoryProperties, double min, double max, long inc, IncrementMode incMode, Representation representation, double value, string unit, IPValue pValue, Dictionary<string, IMathematical> expressions)
+        public GenFloat(CategoryProperties categoryProperties, double min, double max, long inc, IncrementMode incMode, Representation representation, double value, string unit, IPValue pValue)
+                : base(categoryProperties, pValue)
         {
-            CategoryProperties = categoryProperties;
             Min = min;
             Max = max;
             Inc = inc;
@@ -33,8 +33,7 @@ namespace GenICam
             Representation = representation;
             Value = value;
             Unit = unit;
-            PValue = pValue;
-            SetValueCommand = new DelegateCommand(ExecuteSetValueCommand);
+            SetValueCommand = new DelegateCommand<object>(ExecuteSetValueCommand);
             GetValueCommand = new DelegateCommand(ExecuteGetValueCommand);
         }
 
@@ -56,7 +55,7 @@ namespace GenICam
         /// <summary>
         /// Gets the increment mode.
         /// </summary>
-        public IncrementMode IncMode { get; private set; }
+        public IncrementMode? IncMode { get; private set; }
 
         /// <summary>
         /// Gets the representation.
@@ -87,11 +86,6 @@ namespace GenICam
         /// Gets the display precision.
         /// </summary>
         public uint DisplayPrecision { get; private set; }
-
-        /// <summary>
-        /// Gets or sets the value to write.
-        /// </summary>
-        public double ValueToWrite { get; set; }
 
         /// <summary>
         /// Gets the display alias.
@@ -132,16 +126,24 @@ namespace GenICam
             {
                 return Inc;
             }
-            else
+
+            if (IncMode != null)
             {
-                return null;
+                throw new GenICamException(message: $"Unable to get the increment value, Increment mode is {Enum.GetName((IncrementMode)IncMode)}", new InvalidOperationException());
             }
+
+            throw new GenICamException(message: $"Unable to get the increment value, Increment mode is missing", new NullReferenceException());
         }
 
         /// <inheritdoc/>
         public IncrementMode GetIncrementMode()
         {
-            return IncMode;
+            if (IncMode is null)
+            {
+                throw new GenICamException(message: $"Unable to get the increment mode value, Increment mode is missing", new NullReferenceException());
+            }
+
+            return (IncrementMode)IncMode;
         }
 
         /// <inheritdoc/>
@@ -157,10 +159,13 @@ namespace GenICam
             {
                 return ListOfValidValue;
             }
-            else
+
+            if (IncMode != null)
             {
-                return null;
+                throw new GenICamException(message: $"Unable to get the valid values list, Increment mode is {Enum.GetName((IncrementMode)IncMode)}", new InvalidOperationException());
             }
+
+            throw new GenICamException(message: $"Unable to get the increment value, Increment mode is missing", new NullReferenceException());
         }
 
         /// <inheritdoc/>
@@ -193,81 +198,24 @@ namespace GenICam
         /// <inheritdoc/>
         public async Task<long?> GetValueAsync()
         {
-            if (PValue is IRegister register)
+            if (PValue is not null)
             {
-                // TODO: check this dead code.
-                ////if (register.AccessMode != GenAccessMode.WO)
-                ////{
-                ////    byte[] pBuffer = BitConverter.GetBytes(await register.GetValueAsync());
-
-                ////    if (Representation == Representation.HexNumber)
-                ////        Array.Reverse(pBuffer);
-
-                ////    switch (pBuffer.Length)
-                ////    {
-                ////        case 2:
-                ////            return BitConverter.ToUInt16(pBuffer); ;
-
-                ////        case 4:
-                ////            return BitConverter.ToUInt32(pBuffer);
-
-                ////        case 8:
-                ////            return BitConverter.ToInt64(pBuffer);
-
-                ////    }
-                ////}
-            }
-            else if (PValue is IPValue pValue)
-            {
-                return await pValue.GetValueAsync();
+                    Value = (long)(await PValue.GetValueAsync());
+                    return (long)Value;
             }
 
-            return (long)Value;
+            throw new GenICamException(message: $"Unable to set the value, missing register reference", new MissingFieldException());
         }
 
         /// <inheritdoc/>
         public async Task<IReplyPacket> SetValueAsync(long value)
         {
-            IReplyPacket reply = null;
-
-            if (PValue is IRegister register)
+            if (PValue is IPValue pValue)
             {
-                if (register.AccessMode != GenAccessMode.RO)
-                {
-                    if ((value % Inc) != 0)
-                    {
-                        return null;
-                    }
-
-                    var length = register.GetLength();
-                    byte[] pBuffer = new byte[length];
-
-                    switch (length)
-                    {
-                        case 2:
-                            pBuffer = BitConverter.GetBytes((ushort)value);
-                            break;
-
-                        case 4:
-                            pBuffer = BitConverter.GetBytes((int)value);
-                            break;
-
-                        case 8:
-                            pBuffer = BitConverter.GetBytes(value);
-                            break;
-                    }
-
-                    reply = await register.SetAsync(pBuffer, length);
-                    if (reply.IsSentAndReplyReceived && reply.Reply[0] == 0)
-                    {
-                        Value = value;
-                    }
-                }
+                return await pValue.SetValueAsync(value);
             }
 
-            ValueToWrite = Value;
-            RaisePropertyChanged(nameof(ValueToWrite));
-            return reply;
+            throw new GenICamException(message: $"Unable to set the value, missing register reference", new MissingFieldException());
         }
 
         /// <summary>
@@ -290,7 +238,7 @@ namespace GenICam
 
         /// <inheritdoc/>
         /// <exception cref="NotImplementedException">Not yet implemented.</exception>
-        Task<double> IFloat.GetValueAsync()
+        Task<double?> IFloat.GetValueAsync()
         {
             throw new NotImplementedException();
         }
@@ -323,20 +271,30 @@ namespace GenICam
             throw new NotImplementedException();
         }
 
-        private async void ExecuteSetValueCommand()
+        private async void ExecuteSetValueCommand(object value)
         {
-            if (Value != ValueToWrite)
+            try
             {
-                await SetValueAsync(ValueToWrite);
+                await SetValueAsync((double)value);
+                ExecuteGetValueCommand();
+            }
+            catch (Exception ex)
+            {
+                //ToDo: display exception.
             }
         }
 
         private async void ExecuteGetValueCommand()
         {
-            Value = (long)await GetValueAsync();
-            ValueToWrite = Value;
-            RaisePropertyChanged(nameof(Value));
-            RaisePropertyChanged(nameof(ValueToWrite));
+            try
+            {
+                Value = (long)await GetValueAsync();
+                RaisePropertyChanged(nameof(Value));
+            }
+            catch (Exception ex)
+            {
+                //ToDo: display exception.
+            }
         }
     }
 }

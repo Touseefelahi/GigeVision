@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Prism.Commands;
@@ -19,11 +20,11 @@ namespace GenICam
         /// <param name="pValue">The pValue.</param>
         /// <param name="expressions">The expressions.</param>
         public GenEnumeration(CategoryProperties categoryProperties, Dictionary<string, EnumEntry> entries, IPValue pValue, Dictionary<string, IMathematical> expressions = null)
+                : base(categoryProperties, pValue)
         {
-            CategoryProperties = categoryProperties;
             Entries = entries;
-            PValue = pValue;
-            SetValueCommand = new DelegateCommand(ExecuteSetValueCommand);
+
+            SetValueCommand = new DelegateCommand<object>(ExecuteSetValueCommand);
             GetValueCommand = new DelegateCommand(ExecuteGetValueCommand);
         }
 
@@ -36,64 +37,36 @@ namespace GenICam
         /// Gets or sets the enumeration value parameter.
         /// </summary>
         public long Value { get; set; }
-
-        /// <summary>
-        /// Gets or sets the value to write.
-        /// </summary>
-        public long ValueToWrite { get; set; }
+        public KeyValuePair<string, EnumEntry> CurrentEnumEntry { get; private set; }
 
         /// <inheritdoc/>
-        public async Task<long> GetIntValueAsync()
+        public async Task<long> GetValueAsync()
         {
-            if (PValue is IPValue pValue)
+            if (PValue is not null)
             {
-                return (long)await pValue.GetValueAsync();
+                return (long)await PValue.GetValueAsync();
             }
 
-            return Value;
+            throw new GenICamException(message: $"Unable to get the value, missing register reference", new MissingFieldException());
         }
 
         /// <inheritdoc/>
-        public async Task SetIntValueAsync(long value)
+        public async Task<IReplyPacket> SetValueAsync(long value)
         {
-            if (PValue is IRegister Register)
+            if (PValue is not null)
             {
-                if (Register.AccessMode != GenAccessMode.RO)
+                try
                 {
-                    if (Entries.Select(x => x.Value.Value == value).Count() == 0)
-                    {
-                        return;
-                    }
-
-                    var length = Register.GetLength();
-                    byte[] pBuffer = new byte[length];
-
-                    switch (length)
-                    {
-                        case 2:
-                            pBuffer = BitConverter.GetBytes((ushort)value);
-                            break;
-
-                        case 4:
-                            pBuffer = BitConverter.GetBytes((int)value);
-                            break;
-
-                        case 8:
-                            pBuffer = BitConverter.GetBytes(value);
-                            break;
-                    }
-
-                    var reply = await Register.SetAsync(pBuffer, length);
-
-                    if (reply.IsSentAndReplyReceived && reply.Reply[0] == 0)
-                    {
-                        Value = value;
-                    }
+                    GetEntry(value);
+                    return await PValue.SetValueAsync(value);
+                }
+                catch (Exception ex)
+                {
+                    throw new GenICamException("Failed to set the value", ex);
                 }
             }
 
-            ValueToWrite = Entries.Values.ToList().IndexOf(GetCurrentEntry(Value));
-            RaisePropertyChanged(nameof(ValueToWrite));
+            throw new GenICamException(message: $"Unable to set the value, missing register reference", new MissingFieldException());
         }
 
         /// <inheritdoc/>
@@ -118,22 +91,45 @@ namespace GenICam
         }
 
         /// <inheritdoc/>
-        public EnumEntry GetEntry(long entryValue)
+        public KeyValuePair<string, EnumEntry> GetEntry(long entryValue)
         {
-            var entries = Entries.Where(x => x.Value.Value == entryValue);
-
-            if (entries.Any())
+            try
             {
-                return entries.First().Value;
+                var entries = Entries.Where(x => x.Value.Value == entryValue);
+
+                if (entries.Any())
+                {
+                    return entries.First();
+                }
+
+                throw new GenICamException("Invalid value", new InvalidDataException());
+            }
+            catch (ArgumentException ex)
+            {
+                throw new GenICamException(message: "Failed to get enumerator entry.", ex);
+            }
+            catch (Exception ex)
+            {
+                throw new GenICamException(message: "Failed to get enumerator entry.", ex);
             }
 
-            return null;
         }
 
         /// <inheritdoc/>
-        public EnumEntry GetCurrentEntry(long entryValue)
+        public KeyValuePair<string, EnumEntry> GetCurrentEntry()
         {
-            return Entries.Values.FirstOrDefault(x => x.Value == entryValue);
+            try
+            {
+                return CurrentEnumEntry;
+            }
+            catch (ArgumentException ex)
+            {
+                throw new GenICamException(message: "Failed to get enumerator current entry.", ex);
+            }
+            catch (Exception ex)
+            {
+                throw new GenICamException(message: "Failed to get enumerator current  entry.", ex);
+            }
         }
 
         /// <inheritdoc/>
@@ -144,15 +140,29 @@ namespace GenICam
 
         private async void ExecuteGetValueCommand()
         {
-            Value = await GetIntValueAsync();
-            ValueToWrite = Value;
-            RaisePropertyChanged(nameof(Value));
-            RaisePropertyChanged(nameof(ValueToWrite));
+            try
+            {
+                Value = await GetValueAsync();
+                CurrentEnumEntry = GetEntry(Value);
+                RaisePropertyChanged(nameof(CurrentEnumEntry));
+            }
+            catch (Exception ex)
+            {
+                //ToDo: display exception.
+            }
         }
 
-        private async void ExecuteSetValueCommand()
+        private async void ExecuteSetValueCommand(object value)
         {
-            await SetIntValueAsync(ValueToWrite);
+            try
+            {
+                await SetValueAsync((long)value);
+                ExecuteGetValueCommand();
+            }
+            catch (Exception ex)
+            {
+                //ToDo: display exception.
+            }
         }
     }
 }

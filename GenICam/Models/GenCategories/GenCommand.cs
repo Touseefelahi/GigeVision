@@ -16,15 +16,18 @@ namespace GenICam
         /// <param name="categoryProperties">The category properties.</param>
         /// <param name="commandValue">The command value.</param>
         /// <param name="pValue">The PValue.</param>
-        /// <param name="expressions">The expressions.</param>
-        public GenCommand(CategoryProperties categoryProperties, long commandValue, IPValue pValue, Dictionary<string, IMathematical> expressions)
+        public GenCommand(CategoryProperties categoryProperties, long commandValue, IPValue pValue)
+                : base(categoryProperties, pValue)
         {
-            CategoryProperties = categoryProperties;
             CommandValue = commandValue;
-            PValue = pValue;
 
             // As the Execute method is async and the CommandValue is not, we should wait for the execution.
-            SetValueCommand = new DelegateCommand(() => Execute().GetAwaiter().GetResult());
+            SetValueCommand = new DelegateCommand(ExecuteCommand);
+        }
+
+        private async void ExecuteCommand()
+        {
+            await Execute();
         }
 
         /// <summary>
@@ -38,30 +41,21 @@ namespace GenICam
         public long CommandValue { get; private set; }
 
         /// <inheritdoc/>
-        public async Task Execute()
+        public async Task<IReplyPacket> Execute()
         {
-            if (PValue is IRegister register)
+            try
             {
-                var length = register.GetLength();
-                byte[] pBuffer = new byte[length];
-
-                switch (length)
+                if (PValue is not null)
                 {
-                    case 2:
-                        pBuffer = BitConverter.GetBytes((ushort)CommandValue);
-                        break;
-
-                    case 4:
-                        pBuffer = BitConverter.GetBytes((int)CommandValue);
-                        break;
-
-                    case 8:
-                        pBuffer = BitConverter.GetBytes(CommandValue);
-                        break;
+                    return await PValue.SetValueAsync(CommandValue);
                 }
-
-                await register.SetAsync(pBuffer, length);
             }
+            catch (Exception ex)
+            {
+                //ToDo: display exception.
+            }
+
+            throw new GenICamException(message: $"Unable to set the value, missing register reference", new MissingFieldException());
         }
 
         /// <inheritdoc/>
