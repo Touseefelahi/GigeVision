@@ -431,7 +431,15 @@ namespace GigeVision.Core.Services
             XmlDocument xml = new XmlDocument();
             xml.Load(await GetXmlFileFromCamera(ip).ConfigureAwait(false));
             xmlHelper = new XmlHelper(xml, new GenPort(this));
-            IsXmlFileLoaded = await xmlHelper.LoadUp();
+            try
+            {
+                await xmlHelper.LoadUp();
+                IsXmlFileLoaded = true;
+            }
+            catch (Exception)
+            {
+                IsXmlFileLoaded = false;
+            }
 
             return IsXmlFileLoaded;
         }
@@ -1110,20 +1118,6 @@ namespace GigeVision.Core.Services
             {
                 return new GvcpReply() { Error = "Couldn't Get Reply" };
             }
-            XmlDocument xml = new XmlDocument();
-            xml.Load(await GetXmlFileFromCamera(ip).ConfigureAwait(false));
-            xmlHelper = new XmlHelper(xml, new GenPort(this));
-            try
-            {
-                await xmlHelper.LoadUp();
-                IsXmlFileLoaded = true;
-            }
-            catch
-            {
-                IsXmlFileLoaded = false;
-            }
-
-            return IsXmlFileLoaded;
         }
 
         /// <summary>
