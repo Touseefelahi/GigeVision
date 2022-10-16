@@ -12,6 +12,7 @@
     <Company>Stira.sa</Company>
     <Product>Gige.DeviceControl.Wpf</Product>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 
   <ItemGroup>

@@ -6,7 +6,7 @@ namespace GenICam
     /// <summary>
     /// Maps to an edit box showing a hex string.
     /// </summary>
-    public interface IRegister : INode, IPValue
+    public interface IRegister : IPValue
     {
         /// <summary>
         /// Set the register bytes async.
@@ -33,5 +33,10 @@ namespace GenICam
         /// </summary>
         /// <returns>The length in byte.</returns>
         public long GetLength();
+        /// <summary>
+        /// Gets the access mode.
+        /// </summary>
+        public GenAccessMode AccessMode { get; }
+
     }
 }
