@@ -82,13 +82,8 @@ namespace GenICam
         /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation..</returns>
         public async Task<IReplyPacket> SetValueAsync(long value)
         {
-            return await SetValueAsync();
-        }
-
-        private async Task<IReplyPacket> SetValueAsync()
-        {
-            var value = await ExecuteFormulaTo();
-            return await PValue.SetValueAsync(value);
+            var toValue = await ExecuteFormulaTo(value);
+            return await PValue.SetValueAsync(toValue);
         }
 
         private async Task<double> ExecuteFormulaFrom()
@@ -99,9 +94,7 @@ namespace GenICam
                 {
                     if (word.Equals("TO"))
                     {
-                        long? value = null;
-
-                        value = await ExecuteFormulaTo();
+                        long? value = await PValue.GetValueAsync();
 
                         if (value is null)
                         {
@@ -126,6 +119,7 @@ namespace GenICam
                     }
                 }
 
+                FormulaFrom = MathParserHelper.FormatExpression(FormulaFrom);
                 return MathParserHelper.CalculateExpression(FormulaFrom);
             }
             catch (Exception ex)
@@ -134,7 +128,7 @@ namespace GenICam
             }
         }
 
-        private async Task<long> ExecuteFormulaTo()
+        private async Task<long> ExecuteFormulaTo(long value)
         {
             try
             {
@@ -142,31 +136,24 @@ namespace GenICam
                 {
                     if (word.Equals("FROM"))
                     {
-                        long? value = await PValue.GetValueAsync();
-
-                        if (value is null)
-                        {
-                            throw new GenICamException("Failed to read formula register value", new NullReferenceException());
-                        }
-
                         FormulaTo = FormulaTo.Replace(word, string.Format("0x{0:X8}", value));
                     }
 
                     if (PVariables.ContainsKey(word))
                     {
-                        long? value = null;
+                        long? variableValue = null;
+                        variableValue = await PVariables[word].GetValueAsync();
 
-                        value = await PVariables[word].GetValueAsync();
-
-                        if (value is null)
+                        if (variableValue is null)
                         {
                             throw new GenICamException("Failed to read formula register value", new NullReferenceException());
                         }
 
-                        FormulaTo = FormulaTo.Replace(word, string.Format("0x{0:X8}", value));
+                        FormulaTo = FormulaTo.Replace(word, string.Format("0x{0:X8}", variableValue));
                     }
                 }
 
+                FormulaTo = MathParserHelper.FormatExpression(FormulaTo);
                 return (long)MathParserHelper.CalculateExpression(FormulaTo);
             }
             catch (Exception ex)
