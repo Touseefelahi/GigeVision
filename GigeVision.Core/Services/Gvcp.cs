@@ -301,7 +301,7 @@ namespace GigeVision.Core.Models
                 XmlDocument xml = new XmlDocument();
                 xml.Load(await GetXmlFileFromCamera(cameraIp).ConfigureAwait(false));
                 var xmlHelper = new XmlHelper(xml, new GenPort(this));
-                await xmlHelper.LoadUp(true);
+                await xmlHelper.LoadUp();
                 CategoryDictionary = xmlHelper.CategoryDictionary;
 
                 if (xmlHelper.CategoryDictionary != null)
@@ -880,7 +880,7 @@ namespace GigeVision.Core.Models
         public async Task<bool> TakeControl(bool KeepAlive = true)
         {
             bool controlStatus = false;
-            //Reconnect();
+            Reconnect();
             if (await GetControlAsync(ControlSocket).ConfigureAwait(false))
             {
                 controlStatus = true;
@@ -1117,7 +1117,7 @@ namespace GigeVision.Core.Models
             XmlDocument xml = new XmlDocument();
             xml.Load(await GetXmlFileFromCamera(ip).ConfigureAwait(false));
             xmlHelper = new XmlHelper(xml, new GenPort(this));
-            await xmlHelper.LoadUp();
+            IsXmlFileLoaded = await xmlHelper.LoadUp();
 
             return IsXmlFileLoaded;
         }

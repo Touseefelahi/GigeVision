@@ -109,7 +109,7 @@ namespace GigeVision.Core
             if (string.IsNullOrEmpty(reply))
             {
                 command = $"/C netsh advfirewall firewall add rule name =\"{ruleName}\" dir=in action=allow program=\"{appFullPath}\" enable=yes";
-                //RunCommandAdmin(command);
+                RunCommandAdmin(command);
             }
         }
 
