@@ -8,8 +8,8 @@ namespace GigeVision.Core.Models
     /// </summary>
     public class CameraInformation : BaseNotifyPropertyChanged
     {
+        private string iP, networkIP;
         private CameraStatus status;
-        private string iP;
 
         /// <summary>
         /// Discovery Packet Information for GigeCamera
@@ -46,16 +46,6 @@ namespace GigeVision.Core.Models
         public byte[] MacAddress { get; set; }
 
         /// <summary>
-        /// Camera Model
-        /// </summary>
-        public string Model { get; set; }
-
-        /// <summary>
-        /// Device Serial number
-        /// </summary>
-        public string SerialNumber { get; set; }
-
-        /// <summary>
         /// Device Manufacturer Name
         /// </summary>
         public string ManufacturerName { get; set; }
@@ -66,14 +56,30 @@ namespace GigeVision.Core.Models
         public string ManufacturerSpecificInformation { get; set; }
 
         /// <summary>
-        /// Device Version
+        /// Camera Model
         /// </summary>
-        public string Version { get; set; }
+        public string Model { get; set; }
 
         /// <summary>
-        /// Device User Defined Name
+        /// Network IP
         /// </summary>
-        public string UserDefinedName { get; set; }
+        public string NetworkIP
+        {
+            get { return networkIP; }
+            set
+            {
+                if (networkIP != value)
+                {
+                    networkIP = value;
+                    OnPropertyChanged(nameof(NetworkIP));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Device Serial number
+        /// </summary>
+        public string SerialNumber { get; set; }
 
         /// <summary>
         /// Device Status
@@ -90,6 +96,16 @@ namespace GigeVision.Core.Models
                 }
             }
         }
+
+        /// <summary>
+        /// Device User Defined Name
+        /// </summary>
+        public string UserDefinedName { get; set; }
+
+        /// <summary>
+        /// Device Version
+        /// </summary>
+        public string Version { get; set; }
 
         public override string ToString()
         {

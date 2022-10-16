@@ -11,20 +11,21 @@
     <PackageTags>GigeVision, GeniCam, GVSP, GVCP</PackageTags>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-
-    <Version>2.4</Version>
-
+    <Version>2.5.2</Version>
     <PackageLicenseFile>License.txt</PackageLicenseFile>
     <PackageIcon>gige.png</PackageIcon>
     <PackageIconUrl />
     <Platforms>x64</Platforms>
     <PackageReleaseNotes>
-	  2.4: Fix Get all registers, Force IP command, Documentation Added and .net5.0 support added
-      2.1.1: Upgraded to Netcore 6.0 with Multicast reception fix
-      1.8.0: Pushes the block id (frame number) in the frame event and Gives notification on frameloss
-      Fix Receiver IP Detection
-      Fix Discovery for all cameras in network
-    </PackageReleaseNotes>
+		2.5.2: Fix Sync Status bug
+		2.5.1: Fix Multi network camera discovery
+		2.5: Add firewall exception and Custom Stream Receiver option enabled
+		2.4: Fix Get all registers, Force IP command, Documentation Added and .net5.0 support added
+		2.1.1: Upgraded to Netcore 6.0 with Multicast reception fix
+		1.8.0: Pushes the block id (frame number) in the frame event and Gives notification on frameloss
+		Fix Receiver IP Detection
+		Fix Discovery for all cameras in network
+	</PackageReleaseNotes>
     <LangVersion>9.0</LangVersion>
     <Configurations>Debug;Release;PublishLocally</Configurations>
     <PackageProjectUrl>https://github.com/Touseefelahi/GigeVision</PackageProjectUrl>
@@ -44,6 +45,7 @@
   <ItemGroup>
     <PackageReference Include="GenICam" Version="2.1.5.1" />
     <PackageReference Include="Stira.WpfCore" Version="1.2.2" />
+    <PackageReference Include="System.IO.Pipelines" Version="6.0.3" />
   </ItemGroup>
 
   <ItemGroup>

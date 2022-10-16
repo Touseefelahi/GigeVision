@@ -1,5 +1,6 @@
 ﻿using Crc;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
@@ -10,6 +11,103 @@ namespace GigeVision.Core
 {
     public class NetworkService
     {
+        /// <summary>
+        /// This method requires admin rights
+        /// </summary>
+        /// <returns>Status</returns>
+        public static bool AllowAppThroughFirewall()
+        {
+            string appFullPath = Process.GetCurrentProcess().MainModule.FileName;
+            string appName = Path.GetFileNameWithoutExtension(appFullPath);
+
+            //Generating unique ID for this application
+            Crc16Ccitt checksum = new();
+            var crc = checksum.ComputeChecksum(appFullPath);
+            string ruleName = $"Gvsp-{appName}{crc:X4}".Replace(" ", "");
+            //Checking if we already have the access - only by checking the rule name is present or not
+            var command = $"/C netsh advfirewall firewall show rule name = all | findstr  /r /s /i /m /c:\"\\<{ruleName}\\>\"";
+            var reply = RunCommand(command);
+
+            if (string.IsNullOrEmpty(reply))
+            {
+                command = $"/C netsh advfirewall firewall add rule name =\"{ruleName}\" dir=in action=allow program=\"{appFullPath}\" enable=yes";
+                try
+                {
+                    RunCommandAdmin(command);
+                }
+                catch (Exception)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Get all ethernet interfaces for the device
+        /// </summary>
+        /// <param name="ipVersion4Only"></param>
+        /// <param name="skipWireless"></param>
+        /// <param name="allowedMask"></param>
+        /// <returns></returns>
+        public static List<string> GetAllInterfaces(bool ipVersion4Only = true, bool skipWireless = false, string allowedMask = "255.255.255.0")
+        {
+            List<string> interfaces = new();
+            foreach (var network in NetworkInterface.GetAllNetworkInterfaces())
+            {
+                if (network.OperationalStatus != OperationalStatus.Up)
+                {
+                    continue;
+                }
+
+                if (network.NetworkInterfaceType == NetworkInterfaceType.Loopback)
+                {
+                    continue;
+                }
+
+                if (skipWireless)
+                {
+                    if (network.NetworkInterfaceType == NetworkInterfaceType.Wireless80211)
+                    {
+                        continue;
+                    }
+                }
+                IPInterfaceProperties properties = network.GetIPProperties();
+                var ipProperties = properties.GetIPv4Properties();
+                foreach (UnicastIPAddressInformation address in properties.UnicastAddresses)
+                {
+                    if (IPAddress.IsLoopback(address.Address))
+                    {
+                        continue;
+                    }
+                    var addresses = properties.GatewayAddresses;
+                    if ((addresses == null) || (addresses.Count == 0))
+                    {
+                        var isValid = IPAddress.TryParse(allowedMask, out IPAddress validMask);
+                        if (isValid is false)
+                        {
+                            continue;
+                        }
+
+                        if (address.IPv4Mask.Equals(validMask) is false)
+                        {
+                            continue;
+                        }
+                    }
+                    if (ipVersion4Only)
+                    {
+                        if (address.Address.AddressFamily == AddressFamily.InterNetwork)
+                            interfaces.Add(address.Address.ToString());
+                    }
+                    else
+                    {
+                        interfaces.Add(address.Address.ToString());
+                    }
+                }
+            }
+            return interfaces;
+        }
+
         /// <summary>
         /// Get the System IP (For multi-network Static IP will be prefered by default)
         /// </summary>
@@ -87,30 +185,6 @@ namespace GigeVision.Core
             return mostSuitableIp != null
                 ? mostSuitableIp.Address.ToString()
                 : "";
-        }
-
-        /// <summary>
-        /// This method requires admin rights
-        /// </summary>
-        /// <returns></returns>
-        public static void AllowAppThroughFirewall()
-        {
-            string appFullPath = Process.GetCurrentProcess().MainModule.FileName;
-            string appName = Path.GetFileNameWithoutExtension(appFullPath);
-
-            //Generating unique ID for this application
-            Crc16Ccitt checksum = new();
-            var crc = checksum.ComputeChecksum(appFullPath);
-            string ruleName = $"Gvsp-{appName}{crc:X4}".Replace(" ", "");
-            //Checking if we already have the access
-            var command = $"/C netsh advfirewall firewall show rule name = all | findstr  /r /s /i /m /c:\"\\<{ruleName}\\>\"";
-            var reply = RunCommand(command);
-
-            if (string.IsNullOrEmpty(reply))
-            {
-                command = $"/C netsh advfirewall firewall add rule name =\"{ruleName}\" dir=in action=allow program=\"{appFullPath}\" enable=yes";
-                RunCommandAdmin(command);
-            }
         }
 
         private static string RunCommand(string command)
