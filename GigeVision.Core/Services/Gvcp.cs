@@ -1117,7 +1117,15 @@ namespace GigeVision.Core.Models
             XmlDocument xml = new XmlDocument();
             xml.Load(await GetXmlFileFromCamera(ip).ConfigureAwait(false));
             xmlHelper = new XmlHelper(xml, new GenPort(this));
-            IsXmlFileLoaded = await xmlHelper.LoadUp();
+            try
+            {
+                await xmlHelper.LoadUp();
+                IsXmlFileLoaded = true;
+            }
+            catch
+            {
+                IsXmlFileLoaded = false;
+            }
 
             return IsXmlFileLoaded;
         }
