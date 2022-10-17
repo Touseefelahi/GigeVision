@@ -355,6 +355,7 @@ namespace GenICam
             {
                 if (opreator.Equals("+"))
                 {
+                    value = (double)values.Pop();
                     if (opreators.Count > 0 && values.Count > 0)
                     {
                         if (opreators.Peek().Equals("*"))
@@ -368,12 +369,12 @@ namespace GenICam
                         }
                     }
 
-                    value = (double)values.Pop();
                     value = (double)values.Pop() + value;
                     values.Push(value);
                 }
                 else if (opreator.Equals("-"))
                 {
+                    value = (double)values.Pop();
                     if (opreators.Count > 0 && values.Count > 0)
                     {
                         if (opreators.Peek().Equals("*"))
@@ -387,7 +388,6 @@ namespace GenICam
                         }
                     }
 
-                    value = (double)values.Pop();
                     value = (double)values.Pop() - value;
                     values.Push(value);
                 }
