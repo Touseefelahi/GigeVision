@@ -333,26 +333,37 @@ namespace GigeVision.Core.Services
         /// <returns>Command Status</returns>
         public async Task<bool> SetOffsetAsync(uint offsetX, uint offsetY)
         {
-            if (!IsStreaming)
+            bool status = false;
+            try
             {
-                await Gvcp.TakeControl().ConfigureAwait(false);
+                if (!IsStreaming) //Just to check if we have the control or not
+                {
+                    await Gvcp.TakeControl().ConfigureAwait(false);
+                }
+                var offsetXRegister = (await Gvcp.GetRegister(nameof(RegisterName.OffsetX))).register;
+                var offsetYRegister = (await Gvcp.GetRegister(nameof(RegisterName.OffsetY))).register;
+                string[] registers = new string[2];
+                registers[0] = string.Format("0x{0:X8}", (await offsetXRegister.GetAddressAsync()));
+                registers[1] = string.Format("0x{0:X8}", (await offsetYRegister.GetAddressAsync()));
+                uint[] valueToWrite = new uint[] { offsetX, offsetY };
+                status = (await Gvcp.WriteRegisterAsync(registers, valueToWrite).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS;
+                GvcpReply reply = await Gvcp.ReadRegisterAsync(registers).ConfigureAwait(false);
+                if (reply.Status == GvcpStatus.GEV_STATUS_SUCCESS)
+                {
+                    OffsetX = reply.RegisterValues[0];
+                    OffsetY = reply.RegisterValues[1];
+                }
             }
-            var offsetXRegister = (await Gvcp.GetRegister(nameof(RegisterName.OffsetX))).register;
-            var offsetYRegister = (await Gvcp.GetRegister(nameof(RegisterName.OffsetY))).register;
-            string[] registers = new string[2];
-            registers[0] = string.Format("0x{0:X8}", (await offsetXRegister.GetAddressAsync()));
-            registers[1] = string.Format("0x{0:X8}", (await offsetYRegister.GetAddressAsync()));
-            uint[] valueToWrite = new uint[] { offsetX, offsetY };
-            bool status = (await Gvcp.WriteRegisterAsync(registers, valueToWrite).ConfigureAwait(false)).Status == GvcpStatus.GEV_STATUS_SUCCESS;
-            GvcpReply reply = await Gvcp.ReadRegisterAsync(registers).ConfigureAwait(false);
-            if (reply.Status == GvcpStatus.GEV_STATUS_SUCCESS)
+            catch (Exception ex)
             {
-                OffsetX = reply.RegisterValues[0];
-                OffsetY = reply.RegisterValues[1];
+                Updates?.Invoke(this, ex.Message);
             }
-            if (!IsStreaming)
+            finally
             {
-                await Gvcp.LeaveControl().ConfigureAwait(false);
+                if (!IsStreaming)
+                {
+                    await Gvcp.LeaveControl().ConfigureAwait(false);
+                }
             }
             return status;
         }
@@ -385,8 +396,9 @@ namespace GigeVision.Core.Services
                 await Gvcp.LeaveControl().ConfigureAwait(false);
                 return status;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Updates?.Invoke(this, ex.Message);
                 return false;
             }
         }
@@ -521,7 +533,15 @@ namespace GigeVision.Core.Services
         /// <returns>Is streaming status</returns>
         public async Task<bool> StopStream()
         {
-            await Gvcp.WriteRegisterAsync(GvcpRegister.GevSCDA, 0).ConfigureAwait(false);
+            var acquisitionStop = (await Gvcp.GetRegister(nameof(RegisterName.AcquisitionStop))).pValue;
+            if (acquisitionStop is not null)
+            {
+                await acquisitionStop.SetValueAsync(0);
+            }
+            else
+            {
+                await Gvcp.WriteRegisterAsync(GvcpRegister.GevSCPHostPort, 0).ConfigureAwait(false);
+            }
             StreamReceiver?.StopReception();
             if (await Gvcp.LeaveControl().ConfigureAwait(false))
             {
