@@ -662,6 +662,9 @@ namespace GenICam
                     case nameof(RegisterType.FloatReg):
                         return new GenIntReg(genRegister.address, genRegister.length, genRegister.accessMode, null, genRegister.pAddress, GenPort);
 
+                    case nameof(RegisterType.IntConverter):
+                       return await GetConverter(xmlNode);
+                        
                     case nameof(RegisterType.StructReg):
                     case nameof(RegisterType.MaskedIntReg):
                         if (xmlNode.Name.Equals(nameof(RegisterType.StructReg)))
