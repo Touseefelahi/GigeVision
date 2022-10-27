@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Prism.Commands;
 using Prism.Mvvm;
 
 namespace GenICam
@@ -8,6 +11,12 @@ namespace GenICam
     /// </summary>
     public class GenCategory : BindableBase, ICategory
     {
+        public GenCategory(CategoryProperties categoryProperties, IPValue pValue)
+        {
+            CategoryProperties = categoryProperties;
+            PValue = pValue;
+        }
+
         /// <inheritdoc/>
         public CategoryProperties CategoryProperties { get; internal set; }
 
@@ -31,9 +40,6 @@ namespace GenICam
         /// Gets the get value command.
         /// </summary>
         public System.Windows.Input.ICommand GetValueCommand { get; internal set; }
-
-        /// <inheritdoc/>
-        public GenAccessMode AccessMode { get; set; }
 
         /// <summary>
         /// Gets the list of features.

@@ -11,7 +11,7 @@ namespace GenICam
         /// Submits the command.
         /// </summary>
         /// <returns>A task.</returns>
-        public Task Execute();
+        public Task <IReplyPacket>Execute();
 
         /// <summary>
         /// Returns true if the command has been executed; false as long as it still  executes.

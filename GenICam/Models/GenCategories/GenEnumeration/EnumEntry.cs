@@ -12,7 +12,7 @@ namespace GenICam
         /// </summary>
         /// <param name="value">the index value.</param>
         /// <param name="isImplemented">Is implemented.</param>
-        public EnumEntry(uint value, IIsImplemented isImplemented = null)
+        public EnumEntry(long value, IIsImplemented isImplemented = null)
         {
             Value = value;
 
@@ -23,7 +23,7 @@ namespace GenICam
         /// <summary>
         /// Gets the index value.
         /// </summary>
-        public uint Value { get; private set; }
+        public long Value { get; private set; }
 
         // Keeping on purpose, waiting for implementation.
         // public IIsImplemented IsImplemented { get; private set; }

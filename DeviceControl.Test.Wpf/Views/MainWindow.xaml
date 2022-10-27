@@ -1,0 +1,11 @@
+﻿<Window x:Class="DeviceControl.Test.Wpf.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:prism="http://prismlibrary.com/"
+        prism:ViewModelLocator.AutoWireViewModel="True"
+        xmlns:us="clr-namespace:DeviceControl.Wpf.Views;assembly=DeviceControl.Wpf"
+        Title="{Binding Title}" Height="600" Width="410">
+    <Grid>
+        <us:DeviceControl DataContext="{Binding DeviceControl}" />
+    </Grid>
+</Window>

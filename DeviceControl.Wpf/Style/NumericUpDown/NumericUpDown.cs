@@ -89,7 +89,7 @@ namespace DeviceControl.Wpf.Style
 
         private void WriteValue()
         {
-            //if some how there is a entry error and the minimum property became greater than maximum property take the minimum value as first priority
+            //if somehow there is an entry error and the minimum property became greater than maximum property take the minimum value as first priority
             if (Value < Minimum)
             {
                 Value = Minimum;

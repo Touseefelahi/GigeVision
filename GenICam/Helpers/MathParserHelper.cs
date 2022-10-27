@@ -46,17 +46,23 @@ namespace GenICam
         /// <returns>The result.</returns>
         public static double CalculateExpression(string experssion)
         {
-            experssion = FormatExpression(experssion);
-            if (experssion.Contains("?"))
+            try
             {
-                experssion = experssion.Replace(" ", string.Empty);
-                var cases = experssion.Split(':', 2);
-                var subs = cases[0].Split("?", 2);
+                if (experssion.Contains("?"))
+                {
+                    var cases = experssion.Split(':', 2);
+                    var subs = cases[0].Split("?", 2);
 
-                experssion = $"if({GetBracketed(subs[0])}, {GetBracketed(subs[1])}, {CalculateExpression(GetBracketed(cases[1]))})";
+                    experssion = $"if({GetBracketed(subs[0])}, {GetBracketed(subs[1])}, {CalculateExpression(GetBracketed(cases[1]))})";
+                }
+
+                return new Expression(experssion).calculate();
             }
+            catch (Exception ex)
+            {
 
-            return new Expression(experssion).calculate();
+                throw new GenICamException(message: "XMath parser has failed to calculate formula", ex);
+            }
         }
 
         /// <summary>
@@ -104,6 +110,8 @@ namespace GenICam
         /// <returns>A formated expression.</returns>
         public static string FormatExpression(string formula)
         {
+            formula = formula.Replace(" ", string.Empty);
+
             return formula.Replace("0x", "h.")
                 .Replace("|", "@|")
                 .Replace("&", "@&")

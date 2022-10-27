@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Xml;
 
 namespace GenICam
 {
@@ -84,111 +85,65 @@ namespace GenICam
         {
             try
             {
-                if (Expressions != null)
+                foreach (var pVariable in PVariables)
                 {
-                    foreach (var expression in Expressions.ToList())
+                    var value = await pVariable.Value.GetValueAsync();
+                    if (Expressions?.Count > 0)
                     {
-                        foreach (var word in expression.Value.Split())
+                        foreach (var expression in Expressions)
                         {
-                            if (PVariables.ContainsKey(word))
-                            {
-                                await ReadExpressionPValues(word);
-                            }
-
-                            if (Constants.ContainsKey(word))
-                            {
-                                foreach (var constant in Constants)
-                                {
-                                    if (constant.Key.Equals(word))
-                                    {
-                                        Expressions[expression.Key] = expression.Value.Replace(word, constant.Value.ToString());
-                                        break;
-                                    }
-                                }
-                            }
+                            expression.Value.Replace(pVariable.Key, value.ToString());
                         }
                     }
+
+                    Formula = Formula.Replace(pVariable.Key, value.ToString());
                 }
 
-                foreach (var word in Formula.Split())
+                if (Constants?.Count > 0)
                 {
-                    if (PVariables.ContainsKey(word))
+                    foreach (var constant in Constants)
                     {
-                        await ReadExpressionPValues(word);
-                    }
-
-                    if (Constants != null)
-                    {
-                        if (Constants.ContainsKey(word))
-                        {
-                            foreach (var constant in Constants)
-                            {
-                                if (constant.Key.Equals(word))
-                                {
-                                    Formula = Formula.Replace(word, constant.Value.ToString());
-
-                                    break;
-                                }
-                            }
-                        }
-                    }
-
-                    if (Expressions != null)
-                    {
-                        if (Expressions.ContainsKey(word))
+                        if (Expressions?.Count > 0)
                         {
                             foreach (var expression in Expressions)
                             {
-                                if (expression.Key.Equals(word))
-                                {
-                                    Formula = Formula.Replace(word, expression.Value);
-                                    break;
-                                }
+                                expression.Value.Replace(constant.Key, constant.Value.ToString());
                             }
                         }
+
+                        Formula = Formula.Replace(constant.Key, constant.Value.ToString());
                     }
                 }
 
-                if (Formula != string.Empty)
+                if (Expressions?.Count > 0)
                 {
-                    string formula = Formula;
-
-                    return (double)MathParserHelper.CalculateExpression(formula);
-
-                    // Keeping the code as may need some implementation.
-                    // while (opreations.Any(c => formula.Contains(c)))
-                    // {
-                    //     formula = EvaluateFormula(formula);
-                    //     return Evaluate(formula);
-                    // }
+                    foreach (var expression in Expressions)
+                    {
+                        Formula = Formula.Replace(expression.Key, $"({MathParserHelper.CalculateExpression(expression.Value)})");
+                    }
                 }
-            }
-            catch (Exception)
-            {
-                throw;
-            }
 
-            return 0;
+                Formula = MathParserHelper.FormatExpression(Formula);
+                return (double)MathParserHelper.CalculateExpression(Formula);
+            }
+            catch (Exception ex)
+            {
+                throw new GenICamException(message: $"Failed to calculate the given formula {Formula}", ex);
+            }
         }
 
         /// <summary>
-        /// Helper To Read SwissKinfe Experssion Parameters.
+        /// Helper To Read SwissKinfe Expression Parameters.
         /// </summary>
         /// <param name="key">The key to read.</param>
         /// <returns>A task.</returns>
         private async Task ReadExpressionPValues(string key)
         {
-            if (key.Equals("BINXFPGA"))
-            {
-                // To implement.
-            }
-
-            double? value = null;
-            value = await PVariables[key].GetValueAsync();
+            long? value = await PVariables[key].GetValueAsync();
 
             if (value is null)
             {
-                throw new Exception("Failed to read register value", new InvalidDataException());
+                throw new GenICamException("Failed to read expression register", new NullReferenceException());
             }
 
             Formula = Formula.Replace(key, value.ToString());
