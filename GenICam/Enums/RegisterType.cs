@@ -22,6 +22,5 @@
 
         /// <summary>Structure register.</summary>
         StructReg,
-        IntConverter,
     }
 }

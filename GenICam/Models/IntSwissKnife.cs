@@ -85,6 +85,7 @@ namespace GenICam
         {
             try
             {
+                var formula = Formula;
                 foreach (var pVariable in PVariables)
                 {
                     var value = await pVariable.Value.GetValueAsync();
@@ -92,11 +93,11 @@ namespace GenICam
                     {
                         foreach (var expression in Expressions)
                         {
-                            expression.Value.Replace(pVariable.Key, value.ToString());
+                            expression.Value.Replace(pVariable.Key, string.Format(format: "h.{0:X8}", value));
                         }
                     }
 
-                    Formula = Formula.Replace(pVariable.Key, value.ToString());
+                    formula = formula.Replace(pVariable.Key, string.Format(format: "h.{0:X8}", value));
                 }
 
                 if (Constants?.Count > 0)
@@ -107,11 +108,11 @@ namespace GenICam
                         {
                             foreach (var expression in Expressions)
                             {
-                                expression.Value.Replace(constant.Key, constant.Value.ToString());
+                                expression.Value.Replace(constant.Key, string.Format(format: "h.{0:X8}", constant.Value));
                             }
                         }
 
-                        Formula = Formula.Replace(constant.Key, constant.Value.ToString());
+                        formula = formula.Replace(constant.Key, string.Format(format: "h.{0:X8}", constant.Value));
                     }
                 }
 
@@ -119,12 +120,12 @@ namespace GenICam
                 {
                     foreach (var expression in Expressions)
                     {
-                        Formula = Formula.Replace(expression.Key, $"({MathParserHelper.CalculateExpression(expression.Value)})");
+                        formula = formula.Replace(expression.Key, $"({MathParserHelper.CalculateExpression(expression.Value)})");
                     }
                 }
 
-                Formula = MathParserHelper.FormatExpression(Formula);
-                return (double)MathParserHelper.CalculateExpression(Formula);
+                formula = MathParserHelper.FormatExpression(formula);
+                return (double)MathParserHelper.CalculateExpression(formula);
             }
             catch (Exception ex)
             {
