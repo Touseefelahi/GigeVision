@@ -112,20 +112,18 @@ namespace GenICam
         {
             formula = formula.Replace(" ", string.Empty);
 
-            if (!formula.Contains("||") && formula.Contains("|"))
-            {
-                formula = formula.Replace("|", "@|");
-            }
-
-            if (!formula.Contains("&&") && formula.Contains("&"))
-            {
-                formula = formula.Replace("&", "@&");
-            }
             return formula.Replace("0x", "h.")
+                .Replace("&&", "AND")
+                .Replace("||", "OR")
+                .Replace("&", "@&")
+                .Replace("|", "@|")
                 .Replace("~", "@~")
                 .Replace("^", "@^")
                 .Replace("<<", "@<<")
-                .Replace(">>", "@>>");
+                .Replace("||", "OR")
+                .Replace("AND", "&&")
+                .Replace("OR", "||");
+
         }
 
         /// <summary>
