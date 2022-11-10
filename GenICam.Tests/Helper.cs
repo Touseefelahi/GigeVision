@@ -8,6 +8,7 @@ using org.mariuszgromada.math.mxparser;
 using System.Linq;
 using System.IO;
 using System;
+using GigeVision.Core.Services;
 
 namespace GenICam.Tests
 {
@@ -27,10 +28,13 @@ namespace GenICam.Tests
 
 
         [Theory]
+        [InlineData("((0x00000001=1)||(0x00000000=1))?(0x00000600 +12):(0x00000800)")]
+        [InlineData("(0x00000600+(0x00000000*8))")]
         [InlineData("(16=0)? 1: ( (0=1)?2:((0=2)? 3 :( (0=4)?4:((0=8)?5:((16=16)?6:((0=32)?7:8))))))")]
         public void MathParser(string formula)
         {
             var expectedValue = 6; 
+            formula = MathParserHelper.FormatExpression(formula);
             var actualValue = MathParserHelper.CalculateExpression(formula);
             Assert.Equal(expectedValue, actualValue);
         }

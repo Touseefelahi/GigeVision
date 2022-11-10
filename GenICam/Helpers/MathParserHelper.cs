@@ -112,9 +112,16 @@ namespace GenICam
         {
             formula = formula.Replace(" ", string.Empty);
 
+            if (!formula.Contains("||") && formula.Contains("|"))
+            {
+                formula = formula.Replace("|", "@|");
+            }
+
+            if (!formula.Contains("&&") && formula.Contains("&"))
+            {
+                formula = formula.Replace("&", "@&");
+            }
             return formula.Replace("0x", "h.")
-                .Replace("|", "@|")
-                .Replace("&", "@&")
                 .Replace("~", "@~")
                 .Replace("^", "@^")
                 .Replace("<<", "@<<")
