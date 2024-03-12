@@ -314,6 +314,14 @@ namespace GigeVision.Core.Interfaces
         Task<bool> ReadXmlFileAsync(string ip = null);
 
         /// <summary>
+        /// Reads xml file
+        /// </summary>
+        /// <param name="path">path</param>
+        /// <param name="ip">Camera IP</param>
+        /// <returns></returns>
+        Task SaveXmlFileFromCamera(string path, string ip = null);
+
+        /// <summary>
         /// Sycnronization check for xml file loading
         /// </summary>
         bool IsLoadingXml { get; }
