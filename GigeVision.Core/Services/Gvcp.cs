@@ -938,6 +938,32 @@ namespace GigeVision.Core.Services
             return xmlFile;
         }
 
+        private async Task SaveXmlFileFromCamera(string path, string ip = null)
+        {
+            if (string.IsNullOrEmpty(ip))
+            {
+                ip = CameraIp;
+            }
+            else
+            {
+                if (ValidateIp(ip) is false)
+                {
+                    throw new InvalidIpException();
+                }
+            }
+
+            (var fileData, var fileName) = await GetRawXmlFileFromCamera(ip).ConfigureAwait(false);
+            var filePath = Path.Combine(path, fileName);
+            try
+            {
+                File.WriteAllBytes(filePath, fileData);
+            }
+            catch (Exception ex)
+            {
+
+            }
+        }
+
         private async Task ReadAllRegisters(List<ICategory> categories)
         {
             if (categories == null)
