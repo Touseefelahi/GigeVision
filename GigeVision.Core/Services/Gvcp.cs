@@ -938,7 +938,7 @@ namespace GigeVision.Core.Services
             return xmlFile;
         }
 
-        private async Task SaveXmlFileFromCamera(string path, string ip = null)
+        public async Task SaveXmlFileFromCamera(string path, string ip = null)
         {
             if (string.IsNullOrEmpty(ip))
             {
