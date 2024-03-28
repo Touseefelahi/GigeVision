@@ -68,7 +68,7 @@ namespace GigeVisionLibrary.Test.Wpf
         private async void Setup()
         {
             camera = new Camera();
-            //camera.StreamReceiver = new StreamReceiverParallel();
+            camera.StreamReceiver = new CameraStreamDisplay();
             GigeVision.Core.NetworkService.AllowAppThroughFirewall();
             var listOfDevices = await camera.Gvcp.GetAllGigeDevicesInNetworkAsnyc().ConfigureAwait(true);
             cameraCount.Text = "Cam count: " + listOfDevices.Count.ToString();
@@ -80,7 +80,7 @@ namespace GigeVisionLibrary.Test.Wpf
             //camera.Gvcp.ForceIPAsync(listOfDevices[0].MacAddress, "192.168.10.243");
             camera.Payload = 5000;
 
-            camera.IsMulticast = true;
+            camera.IsMulticast = false;
             camera.FrameReady += FrameReady;
             camera.Gvcp.ElapsedOneSecond += UpdateFps;
         }

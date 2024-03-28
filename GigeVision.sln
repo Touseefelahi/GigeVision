@@ -26,6 +26,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GigeVisionLibrary.Test.Cons
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DeviceControl.Test.Wpf", "DeviceControl.Test.Wpf\DeviceControl.Test.Wpf.csproj", "{11AF7AA5-6522-4952-A002-C464FA21384B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CameraStreamReceiver", "CameraStreamReceiver\CameraStreamReceiver.csproj", "{5C799A2A-1F8C-4531-9F2C-9288662B6705}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -165,6 +167,24 @@ Global
 		{11AF7AA5-6522-4952-A002-C464FA21384B}.Release|x64.Build.0 = Release|x64
 		{11AF7AA5-6522-4952-A002-C464FA21384B}.Release|x86.ActiveCfg = Release|Any CPU
 		{11AF7AA5-6522-4952-A002-C464FA21384B}.Release|x86.Build.0 = Release|Any CPU
+		{5C799A2A-1F8C-4531-9F2C-9288662B6705}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5C799A2A-1F8C-4531-9F2C-9288662B6705}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5C799A2A-1F8C-4531-9F2C-9288662B6705}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{5C799A2A-1F8C-4531-9F2C-9288662B6705}.Debug|x64.Build.0 = Debug|Any CPU
+		{5C799A2A-1F8C-4531-9F2C-9288662B6705}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{5C799A2A-1F8C-4531-9F2C-9288662B6705}.Debug|x86.Build.0 = Debug|Any CPU
+		{5C799A2A-1F8C-4531-9F2C-9288662B6705}.PublishLocally|Any CPU.ActiveCfg = Debug|Any CPU
+		{5C799A2A-1F8C-4531-9F2C-9288662B6705}.PublishLocally|Any CPU.Build.0 = Debug|Any CPU
+		{5C799A2A-1F8C-4531-9F2C-9288662B6705}.PublishLocally|x64.ActiveCfg = Debug|Any CPU
+		{5C799A2A-1F8C-4531-9F2C-9288662B6705}.PublishLocally|x64.Build.0 = Debug|Any CPU
+		{5C799A2A-1F8C-4531-9F2C-9288662B6705}.PublishLocally|x86.ActiveCfg = Debug|Any CPU
+		{5C799A2A-1F8C-4531-9F2C-9288662B6705}.PublishLocally|x86.Build.0 = Debug|Any CPU
+		{5C799A2A-1F8C-4531-9F2C-9288662B6705}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5C799A2A-1F8C-4531-9F2C-9288662B6705}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5C799A2A-1F8C-4531-9F2C-9288662B6705}.Release|x64.ActiveCfg = Release|Any CPU
+		{5C799A2A-1F8C-4531-9F2C-9288662B6705}.Release|x64.Build.0 = Release|Any CPU
+		{5C799A2A-1F8C-4531-9F2C-9288662B6705}.Release|x86.ActiveCfg = Release|Any CPU
+		{5C799A2A-1F8C-4531-9F2C-9288662B6705}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -177,6 +197,7 @@ Global
 		{76194E2F-D17E-42F6-8EF0-E084C408A022} = {0307491D-B8FC-42AE-8EAB-69D2C072973B}
 		{9D658ABE-E015-4F3F-87F8-F290B12A2E1A} = {0307491D-B8FC-42AE-8EAB-69D2C072973B}
 		{11AF7AA5-6522-4952-A002-C464FA21384B} = {0307491D-B8FC-42AE-8EAB-69D2C072973B}
+		{5C799A2A-1F8C-4531-9F2C-9288662B6705} = {0307491D-B8FC-42AE-8EAB-69D2C072973B}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C6692468-3D71-4CF6-BBB2-3E938FFB2E6F}

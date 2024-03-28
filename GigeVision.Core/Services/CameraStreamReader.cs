@@ -31,7 +31,7 @@ namespace GigeVision.Core.Services
 
             Task.Run(() => ReadCameraStreamAndWriteToSharedMemory(sharedMemory));
             Task.Run(() => GetCameraStreamDisplayBufferCount());
-            Task.Run(() => new CameraStreamDisplay(GvspInfo, FrameReady));
+            //Task.Run(() => new CameraStreamDisplay(GvspInfo, FrameReady));
         }
 
         public void ReadCameraStreamAndWriteToSharedMemory(MemoryMappedFile sharedMemory)
