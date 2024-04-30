@@ -68,7 +68,7 @@ namespace GigeVisionLibrary.Test.Wpf
         private async void Setup()
         {
             camera = new Camera();
-            //camera.StreamReceiver = new StreamReceiverParallel();
+            //camera.StreamReceiver = new StreamReceiverParallel_Legacy();
             GigeVision.Core.NetworkService.AllowAppThroughFirewall();
             var listOfDevices = await camera.Gvcp.GetAllGigeDevicesInNetworkAsnyc().ConfigureAwait(true);
             cameraCount.Text = "Cam count: " + listOfDevices.Count.ToString();
