@@ -20,7 +20,6 @@ namespace GigeVision.OpenCV
         private readonly int packetBufferLength = ChunkPacketCount;
         private readonly SemaphoreSlim waitForPacketChunk = new(0);
         private byte[][] packetBuffersFlat = null!;
-        public int imageHeight, imageWidth = 0;
 
         public StreamReceiverParallelOpencv(int totalBuffers = 3)
         {
@@ -44,8 +43,6 @@ namespace GigeVision.OpenCV
             try
             {
                 DetectGvspType();
-                imageHeight = GvspInfo.Height;
-                imageWidth = GvspInfo.Width;
                 packetBuffersFlat = new byte[flatBufferCount][];
                 Memory<byte>[] memory = new Memory<byte>[flatBufferCount];
                 for (int i = 0; i < flatBufferCount; i++)

@@ -26,7 +26,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GigeVisionLibrary.Test.Cons
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DeviceControl.Test.Wpf", "DeviceControl.Test.Wpf\DeviceControl.Test.Wpf.csproj", "{11AF7AA5-6522-4952-A002-C464FA21384B}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GigeVisionLibrary.Avalonia", "GigeVisionLibrary.Avalonia\GigeVisionLibrary.Avalonia.csproj", "{5644D86C-4498-4F17-9369-C43ACFFA4EC8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GigeVisionLibrary.Test.Avalonia", "GigeVisionLibrary.Avalonia\GigeVisionLibrary.Test.Avalonia.csproj", "{5644D86C-4498-4F17-9369-C43ACFFA4EC8}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GigeVision.OpenCV", "GigeVision.OpenCV\GigeVision.OpenCV.csproj", "{4BAAC2B1-4449-4BCA-981B-A97E6FEEDFB5}"
 EndProject

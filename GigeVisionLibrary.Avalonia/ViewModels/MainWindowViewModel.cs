@@ -62,7 +62,7 @@ namespace GigeVisionLibrary.Avalonia.ViewModels
         {
             int localBufferIndex = 0;
             long frameOutCounter = 0;
-            Mat coloredMat = new Mat(streamReceiver.imageHeight, streamReceiver.imageWidth, Emgu.CV.CvEnum.DepthType.Cv8U, 3);
+            Mat coloredMat = new Mat(streamReceiver.GvspInfo.Height, streamReceiver.GvspInfo.Width, Emgu.CV.CvEnum.DepthType.Cv8U, 3);
             while (streamReceiver.IsReceiving)
             {
                 streamReceiver.waitHandleFrame.Wait();

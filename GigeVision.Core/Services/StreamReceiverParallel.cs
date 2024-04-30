@@ -1,6 +1,9 @@
-﻿using System;
+﻿using GigeVision.Core.Enums;
+using GigeVision.Core.Models;
+using System;
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -8,161 +11,150 @@ namespace GigeVision.Core.Services
 {
     public class StreamReceiverParallel : StreamReceiverBase
     {
-        private int arrayIndex = 0;
-        private Thread decoderThread;
-        private byte[] globalBuffer;
-        private List<string> info;
-        private List<int> listOfPacketIDs;
-        private volatile int offsetCopy, lengthCopy;
-        private int packetCount = 20;
-        private Stopwatch stopwatch;
-        private List<TimeSpan> timeSpansReception, timeSpansWriter;
-        private AutoResetEvent waitHandle;
+        public uint frameInCounter = 0;
+        public byte[][] image = null!;
+        public long imageIndex, lossCount = 0;
+        public SemaphoreSlim waitHandleFrame = new(0);
+        private const int ChunkPacketCount = 100;
+        private const int flatBufferCount = 5;
+        private readonly int packetBufferLength = ChunkPacketCount;
+        private readonly SemaphoreSlim waitForPacketChunk = new(0);
+        private byte[][] packetBuffersFlat = null!;
+
+        public StreamReceiverParallel(int totalBuffers = 3)
+        {
+            if (totalBuffers < 1)
+            {
+                throw new ArgumentException("Total Buffers should be greater than 0, Use at least 2 buffers");
+            }
+            MissingPacketTolerance = 0;
+            TotalBuffers = totalBuffers;
+        }
+
+        public int TotalBuffers { get; private set; }
 
         protected override async void Receiver()
         {
-            listOfPacketIDs = new List<int>();
-            waitHandle = new AutoResetEvent(false);
-            timeSpansReception = new();
-            timeSpansWriter = new();
-            stopwatch = new();
-            stopwatch.Start();
-            DetectGvspType();
-            info = new();
-            globalBuffer = new byte[GvspInfo.PacketLength * packetCount];
-
-            var readingPipe = ReceiverTask();
-            // var decoderPipe = DecoderTask();
-            await Task.WhenAll(readingPipe);
-        }
-
-        //private async Task DecoderTask()
-        //{
-        //    int i;
-        //    byte[] buffer = GC.AllocateArray<byte>(length: GvspInfo.RawImageSize, pinned: true);
-        //    int bufferIndex = 0;
-        //    int packetID = 0, bufferStart;
-        //    int packetRxCount = 0;
-        //    var listOfPacketIDs = new List<int>();
-        //    var packetSize = GvspInfo.PayloadSize + GvspInfo.PayloadOffset;
-        //    int arrayIndexDecoder = 0;
-        //    while (IsReceiving)
-        //    {
-        //        waitHandle.WaitOne();
-        //        arrayIndexDecoder = arrayIndex == 1 ? 0 : 1;
-        //        Trace.WriteLine($"{arrayIndexDecoder} {stopwatch.ElapsedTicks}");
-        //        timeSpansWriter.Add(stopwatch.Elapsed);
-        //        for (i = 0; i < buffers[arrayIndexDecoder].Length - packetSize; i += packetSize)
-        //        {
-        //            var singlePacket = buffers[arrayIndexDecoder].AsMemory().Slice(i, packetSize);
-        //            if (singlePacket.Span.Slice(4, 1)[0] == GvspInfo.DataIdentifier) //Packet
-        //            {
-        //                packetRxCount++;
-        //                packetID = (singlePacket.Span.Slice(GvspInfo.PacketIDIndex, 1)[0] << 8) | singlePacket.Span.Slice(GvspInfo.PacketIDIndex + 1, 1)[0];
-        //                bufferStart = (packetID - 1) * GvspInfo.PayloadSize; //This use buffer length of regular packet
-        //                listOfPacketIDs.Add(packetID);
-        //                //singlePacket.Slice(GvspInfo.PayloadOffset, GvspInfo.PayloadSize).CopyTo(buffer.AsSpan().Slice(bufferStart, GvspInfo.PayloadSize));
-        //            }
-        //            if (packetID == GvspInfo.FinalPacketID)
-        //            {
-        //                if (packetID - packetRxCount < MissingPacketTolerance)
-        //                {
-        //                    //  FrameReady?.Invoke((ulong)1, buffer);
-        //                    bufferIndex = bufferIndex == 1 ? 0 : 1;
-        //                    //listOfPacketIDs.Clear();
-        //                }
-        //                packetRxCount = 0;
-        //            }
-        //        }
-        //        waitHandle.Reset();
-        //    }
-        //}
-        private void ProcessPackets(int startIndex, int length)
-        {
-            int i;
-            int bufferIndex = 0;
-            int packetID = 0, bufferStart;
-            int packetRxCount = 0;
-            info.Add($"P {startIndex} : {length}");
-            for (i = startIndex; i < length - GvspInfo.PacketLength; i += GvspInfo.PacketLength)
-            {
-                if (globalBuffer[i + 4] == GvspInfo.DataIdentifier) //Packet
-                {
-                    packetRxCount++;
-                    packetID = (globalBuffer[i + GvspInfo.PacketIDIndex] << 8) | globalBuffer[i + GvspInfo.PacketIDIndex + 1];
-                    bufferStart = (packetID - 1) * GvspInfo.PayloadSize; //This use buffer length of regular packet
-                    listOfPacketIDs.Add(packetID);
-                    //singlePacket.Slice(GvspInfo.PayloadOffset, GvspInfo.PayloadSize).CopyTo(buffer.AsSpan().Slice(bufferStart, GvspInfo.PayloadSize));
-                }
-                if (packetID == GvspInfo.FinalPacketID)
-                {
-                    if (packetID - packetRxCount < MissingPacketTolerance)
-                    {
-                        //  FrameReady?.Invoke((ulong)1, buffer);
-                        bufferIndex = bufferIndex == 1 ? 0 : 1;
-                        //listOfPacketIDs.Clear();
-                    }
-                    packetRxCount = 0;
-                }
-            }
-        }
-
-        private async Task ReceiverTask()
-        {
-            int count = 0;
-            int localByteCounter = 0;
-            int size = GvspInfo.PacketLength;
-            Memory<byte> memoryList = new Memory<byte>(globalBuffer);
-            var listMissingPacketIDs = new List<int>();
-            await Task.Delay(2);
-            int previousID = 0;
-            int midValue = globalBuffer.Length / 2;
-            int offset = 0;
-            int offsetCopy, lengthCopy;
+            int indexMemoryWriter = 0;
+            int length = 0;
+            int counterForChunkPackets = 0;
+            frameInCounter = 0;
+            int counterBufferWriter = 0;
             try
             {
+                DetectGvspType();
+                packetBuffersFlat = new byte[flatBufferCount][];
+                Memory<byte>[] memory = new Memory<byte>[flatBufferCount];
+                for (int i = 0; i < flatBufferCount; i++)
+                {
+                    packetBuffersFlat[i] = new byte[packetBufferLength * GvspInfo.PacketLength];
+                    memory[i] = new Memory<byte>(packetBuffersFlat[i]);
+                }
+                image = new byte[TotalBuffers][];
+                for (int i = 0; i < TotalBuffers; i++)
+                {
+                    image[i] = new byte[GvspInfo.Height * GvspInfo.Width * GvspInfo.BytesPerPixel];
+                }
+                indexMemoryWriter = 0;
+                _ = Task.Run(DecodePackets);
                 while (IsReceiving)
                 {
-                    int length = socketRxRaw.Receive(memoryList.Span.Slice(offset + localByteCounter, size));
-                    timeSpansReception.Add(stopwatch.Elapsed);
-                    if (length > 100)
+                    Memory<byte> singlePacket;
+                    singlePacket = memory[indexMemoryWriter].Slice(counterBufferWriter * GvspInfo.PacketLength, GvspInfo.PacketLength);
+                    counterBufferWriter++;
+
+                    length = socketRxRaw.Receive(singlePacket.Span);
+
+                    if (++counterForChunkPackets % ChunkPacketCount == 0)
                     {
-                        int packetID = (globalBuffer[offset + localByteCounter + GvspInfo.PacketIDIndex] << 8) | (globalBuffer[offset + localByteCounter + GvspInfo.PacketIDIndex + 1]);
-                        if (packetID - previousID != 1)
+                        if (++indexMemoryWriter > flatBufferCount - 1)
                         {
-                            listMissingPacketIDs.Add(packetID);
+                            indexMemoryWriter = 0;
+                            counterBufferWriter = 0;
                         }
-                        previousID = packetID;
-                        if (packetID == GvspInfo.FinalPacketID)
-                        {
-                            previousID = 0;
-                        }
-                        localByteCounter += length;
-                        if (count++ >= packetCount / 2 - 1)
-                        {
-                            count = 0;
-
-                            offsetCopy = offset;
-                            lengthCopy = localByteCounter;
-                            info.Add($"R {offsetCopy} : {lengthCopy}");
-                            ProcessPackets(offsetCopy, lengthCopy);
-
-                            localByteCounter = 0;
-                            if (offset == 0)
-                            {
-                                offset = midValue;
-                            }
-                            else
-                            {
-                                offset = 0;
-                            }
-                            //waitHandle.Set();
-                        }
+                        waitForPacketChunk.Release();
+                        counterBufferWriter = 0;
                     }
                 }
             }
             catch (Exception ex)
             {
+                if (IsReceiving) // We didn't deliberately stop the stream
+                {
+                    Updates?.Invoke(UpdateType.StreamStopped, ex.Message);
+                }
+                IsReceiving = false;
+                waitForPacketChunk.Release();
+                waitHandleFrame.Release();
+            }
+        }
+
+        private void DecodePackets()
+        {
+            int indexMemoryReader, imageBufferIndex = 0, packetRxCount = 0, packetID, bufferStart, bufferLength;
+            imageIndex = 0;
+            lossCount = 0;
+            var imageSpan = new Span<byte>(image[imageBufferIndex]);
+            Memory<byte>[] span = new Memory<byte>[flatBufferCount];
+
+            for (int i = 0; i < flatBufferCount; i++)
+            {
+                span[i] = new Memory<byte>(packetBuffersFlat[i]);
+            }
+
+            int finalPacketLength = image[imageBufferIndex].Length % GvspInfo.PayloadSize;
+            var length = GvspInfo.PacketLength;
+            indexMemoryReader = 0;
+            while (IsReceiving)
+            {
+                waitForPacketChunk.Wait();
+                var currentMemoryBuffer = span[indexMemoryReader];
+
+                for (int i = 0; i < ChunkPacketCount; i++)
+                {
+                    Span<byte> packet;
+                    packet = currentMemoryBuffer.Span.Slice(i * length, length);
+
+                    switch (packet[4] & 0x0F)//it unifies extended ID and normal ID
+                    {
+                        case 3: //Data
+                            packetRxCount++;
+                            packetID = (packet[GvspInfo.PacketIDIndex] << 8) | packet[GvspInfo.PacketIDIndex + 1];
+                            bufferStart = (packetID - 1) * GvspInfo.PayloadSize;
+                            bufferLength = GvspInfo.PayloadSize;
+                            if (packetID == GvspInfo.FinalPacketID)
+                            {
+                                bufferLength = finalPacketLength;
+                            }
+                            packet.Slice(GvspInfo.PayloadOffset, bufferLength).TryCopyTo(imageSpan.Slice(bufferStart, bufferLength));
+                            break;
+
+                        case 2: //Data End
+                            imageIndex++;
+                            //Checking if we receive all packets
+                            if (Math.Abs(packetRxCount - GvspInfo.FinalPacketID) > MissingPacketTolerance)
+                            {
+                                lossCount++;
+                                packetRxCount = 0;
+                                break;
+                            }
+                            packetRxCount = 0;
+                            frameInCounter++;
+                            waitHandleFrame.Release();
+                            imageBufferIndex++;
+                            if (imageBufferIndex == TotalBuffers)
+                            {
+                                imageBufferIndex = 0;
+                            }
+                            imageSpan = new Span<byte>(image[imageBufferIndex]); //Next Frame
+                            break;
+                    }
+                }
+
+                if (++indexMemoryReader > flatBufferCount - 1)
+                {
+                    indexMemoryReader = 0;
+                }
             }
         }
     }
