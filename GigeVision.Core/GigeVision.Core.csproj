@@ -29,6 +29,7 @@
     <LangVersion>9.0</LangVersion>
     <Configurations>Debug;Release;PublishLocally</Configurations>
     <PackageProjectUrl>https://github.com/Touseefelahi/GigeVision</PackageProjectUrl>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
@@ -43,6 +44,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Emgu.CV" Version="4.9.0.5494" />
     <PackageReference Include="GenICam" Version="2.1.5.1" />
     <PackageReference Include="Stira.WpfCore" Version="1.2.2" />
     <PackageReference Include="System.IO.Pipelines" Version="6.0.3" />
