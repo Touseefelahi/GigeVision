@@ -1,15 +1,15 @@
 ﻿using Emgu.CV;
 using GigeVision.Core.Enums;
+using GigeVision.Core.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
-namespace GigeVisionLibrary.Avalonia.Services
+namespace GigeVision.OpenCV
 {
-    internal sealed class StreamReceiverParallelOpencv : GigeVision.Core.Services.StreamReceiverBase
+    public class StreamReceiverParallelOpencv : StreamReceiverBase
     {
         public uint frameInCounter = 0;
         public Mat[] image = null!;
@@ -20,7 +20,7 @@ namespace GigeVisionLibrary.Avalonia.Services
         private readonly int packetBufferLength = ChunkPacketCount;
         private readonly SemaphoreSlim waitForPacketChunk = new(0);
         private byte[][] packetBuffersFlat = null!;
-        public int height,width = 0;
+        public int imageHeight, imageWidth = 0;
 
         public StreamReceiverParallelOpencv(int totalBuffers = 3)
         {
@@ -44,7 +44,8 @@ namespace GigeVisionLibrary.Avalonia.Services
             try
             {
                 DetectGvspType();
-                height = GvspInfo.Height; width = GvspInfo.Width;
+                imageHeight = GvspInfo.Height;
+                imageWidth = GvspInfo.Width;
                 packetBuffersFlat = new byte[flatBufferCount][];
                 Memory<byte>[] memory = new Memory<byte>[flatBufferCount];
                 for (int i = 0; i < flatBufferCount; i++)

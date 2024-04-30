@@ -26,4 +26,9 @@
     <PackageReference Include="Emgu.CV.runtime.windows" Version="4.9.0.5494" />
     <PackageReference Include="GigeVision.Core" Version="2.5.2" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GigeVision.Core\GigeVision.Core.csproj" />
+    <ProjectReference Include="..\GigeVision.OpenCV\GigeVision.OpenCV.csproj" />
+  </ItemGroup>
 </Project>

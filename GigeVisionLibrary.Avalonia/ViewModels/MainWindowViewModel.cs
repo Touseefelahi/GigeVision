@@ -32,7 +32,7 @@ namespace GigeVisionLibrary.Avalonia.ViewModels
         [ObservableProperty] private uint packetSize = 8000;
         [ObservableProperty] private TimeSpan recordingTime;
         private Stopwatch stopwatch;
-        private Services.StreamReceiverParallelOpencv streamReceiver = new(2);
+        private GigeVision.OpenCV.StreamReceiverParallelOpencv streamReceiver = new(2);
         private Thread threadProcessingPipeline = null!;
         [ObservableProperty] private long totalFrames;
 
@@ -62,7 +62,7 @@ namespace GigeVisionLibrary.Avalonia.ViewModels
         {
             int localBufferIndex = 0;
             long frameOutCounter = 0;
-            Mat coloredMat = new Mat(streamReceiver.height, streamReceiver.width, Emgu.CV.CvEnum.DepthType.Cv8U, 3);
+            Mat coloredMat = new Mat(streamReceiver.imageHeight, streamReceiver.imageWidth, Emgu.CV.CvEnum.DepthType.Cv8U, 3);
             while (streamReceiver.IsReceiving)
             {
                 streamReceiver.waitHandleFrame.Wait();

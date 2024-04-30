@@ -1,15 +1,18 @@
-﻿using Emgu.CV;
-using GigeVision.Core.Enums;
+﻿using GigeVision.Core.Enums;
+using GigeVision.Core.Models;
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace GigeVision.Core.Services
 {
-    internal sealed class StreamReceiverParallelOpencv : GigeVision.Core.Services.StreamReceiverBase
+    public class CameraStreamReceiverParallel : StreamReceiverBase
     {
         public uint frameInCounter = 0;
-        public Mat[] image = null!;
+        public byte[][] image = null!;
         public long imageIndex, lossCount = 0;
         public SemaphoreSlim waitHandleFrame = new(0);
         private const int ChunkPacketCount = 100;
@@ -18,7 +21,7 @@ namespace GigeVision.Core.Services
         private readonly SemaphoreSlim waitForPacketChunk = new(0);
         private byte[][] packetBuffersFlat = null!;
 
-        public StreamReceiverParallelOpencv(int totalBuffers = 3)
+        public CameraStreamReceiverParallel(int totalBuffers = 3)
         {
             if (totalBuffers < 1)
             {
@@ -47,17 +50,10 @@ namespace GigeVision.Core.Services
                     packetBuffersFlat[i] = new byte[packetBufferLength * GvspInfo.PacketLength];
                     memory[i] = new Memory<byte>(packetBuffersFlat[i]);
                 }
-                image = new Mat[TotalBuffers];
+                image = new byte[TotalBuffers][];
                 for (int i = 0; i < TotalBuffers; i++)
                 {
-                    if (GvspInfo.BytesPerPixel == 1)
-                    {
-                        image[i] = new Mat(GvspInfo.Height, GvspInfo.Width, Emgu.CV.CvEnum.DepthType.Cv8U, 1);
-                    }
-                    if (GvspInfo.BytesPerPixel == 2)
-                    {
-                        image[i] = new Mat(GvspInfo.Height, GvspInfo.Width, Emgu.CV.CvEnum.DepthType.Cv16U, 1);
-                    }
+                    image[i] = new byte[GvspInfo.Height * GvspInfo.Width * GvspInfo.BytesPerPixel];
                 }
                 indexMemoryWriter = 0;
                 _ = Task.Run(DecodePackets);
@@ -98,7 +94,7 @@ namespace GigeVision.Core.Services
             int indexMemoryReader, imageBufferIndex = 0, packetRxCount = 0, packetID, bufferStart, bufferLength;
             imageIndex = 0;
             lossCount = 0;
-            var imageSpan = GetSpan(image[imageBufferIndex]);
+            var imageSpan = new Span<byte>(image[imageBufferIndex]);
             Memory<byte>[] span = new Memory<byte>[flatBufferCount];
 
             for (int i = 0; i < flatBufferCount; i++)
@@ -106,7 +102,7 @@ namespace GigeVision.Core.Services
                 span[i] = new Memory<byte>(packetBuffersFlat[i]);
             }
 
-            int finalPacketLength = (image[imageBufferIndex].Width * image[imageBufferIndex].Height) % GvspInfo.PayloadSize;
+            int finalPacketLength = image[imageBufferIndex].Length % GvspInfo.PayloadSize;
             var length = GvspInfo.PacketLength;
             indexMemoryReader = 0;
             while (IsReceiving)
@@ -150,7 +146,7 @@ namespace GigeVision.Core.Services
                             {
                                 imageBufferIndex = 0;
                             }
-                            imageSpan = GetSpan(image[imageBufferIndex]); //Next Frame
+                            imageSpan = new Span<byte>(image[imageBufferIndex]); //Next Frame
                             break;
                     }
                 }
@@ -160,11 +156,6 @@ namespace GigeVision.Core.Services
                     indexMemoryReader = 0;
                 }
             }
-        }
-
-        private unsafe Span<byte> GetSpan(Mat mat)
-        {
-            return new Span<byte>((void*)mat.DataPointer, (int)mat.Total);
         }
     }
 }
