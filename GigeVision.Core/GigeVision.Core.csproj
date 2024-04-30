@@ -29,7 +29,6 @@
     <LangVersion>9.0</LangVersion>
     <Configurations>Debug;Release;PublishLocally</Configurations>
     <PackageProjectUrl>https://github.com/Touseefelahi/GigeVision</PackageProjectUrl>
-    <AllowUnsafeBlocks>False</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
