@@ -1,19 +1,25 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFrameworks>net7.0;net8.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+	<Description>
+		GigE Vision Implementation Using OpenCV
+	</Description>
+	<Version>1.0</Version>
+    <Title>GigeVisionLibraryOpenCV</Title>
+	  <PackageReleaseNotes>
+		  1.0: 	GigE Vision Implementation Using OpenCV
+	  </PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Emgu.CV" Version="4.9.0.5494" />
     <PackageReference Include="Emgu.CV.runtime.windows" Version="4.9.0.5494" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\GigeVision.Core\GigeVision.Core.csproj" />
+    <PackageReference Include="GigeVision.Core" Version="2.6.0" />
   </ItemGroup>
 
 </Project>

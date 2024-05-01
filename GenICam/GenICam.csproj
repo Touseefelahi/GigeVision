@@ -1,12 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net5.0;net6.0</TargetFrameworks>
+    <TargetFrameworks>net5.0;net6.0;net7.0;net8.0</TargetFrameworks>
     <Platforms>x64</Platforms>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>2.1.6</Version>
+    <Version>2.2</Version>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
 	  <PackageReleaseNotes>
+		  2.2: 	Version Update
 		  2.1.5.1: 	Updated Docs
 	  </PackageReleaseNotes>
   </PropertyGroup>

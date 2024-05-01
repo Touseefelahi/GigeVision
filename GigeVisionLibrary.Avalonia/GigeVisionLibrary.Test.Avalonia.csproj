@@ -23,11 +23,6 @@
     <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="$(AvaloniaVersion)" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
     <PackageReference Include="Emgu.CV" Version="4.9.0.5494" />
-    <PackageReference Include="GigeVision.Core" Version="2.5.2" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\GigeVision.Core\GigeVision.Core.csproj" />
-    <ProjectReference Include="..\GigeVision.OpenCV\GigeVision.OpenCV.csproj" />
+    <PackageReference Include="GigeVision.OpenCV" Version="1.0.0" />
   </ItemGroup>
 </Project>
