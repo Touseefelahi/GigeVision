@@ -8,6 +8,7 @@ using org.mariuszgromada.math.mxparser;
 using System.Linq;
 using System.IO;
 using System;
+using GigeVision.Core.Services;
 
 namespace GenICam.Tests
 {
@@ -25,12 +26,11 @@ namespace GenICam.Tests
             Assert.NotEmpty(xmlHelper.CategoryDictionary);
         }
 
-
         [Theory]
         [InlineData("(16=0)? 1: ( (0=1)?2:((0=2)? 3 :( (0=4)?4:((0=8)?5:((16=16)?6:((0=32)?7:8))))))")]
         public void MathParser(string formula)
         {
-            var expectedValue = 6; 
+            var expectedValue = 6;
             var actualValue = MathParserHelper.CalculateExpression(formula);
             Assert.Equal(expectedValue, actualValue);
         }
@@ -41,7 +41,7 @@ namespace GenICam.Tests
         public void GetBracket(string formula)
         {
             var expected = "(8)";
-            var actual  = MathParserHelper.GetBracketed(formula);
+            var actual = MathParserHelper.GetBracketed(formula);
             Assert.Equal(expected, actual);
         }
     }
