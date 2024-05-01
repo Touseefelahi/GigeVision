@@ -7,7 +7,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 	<Description>
-		GigE Vision Implementation Using OpenCV
+		GigE Vision Implementation With OpenCV/EMGU support
 	</Description>
 	<Version>1.0</Version>
     <Title>GigeVisionLibraryOpenCV</Title>
