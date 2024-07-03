@@ -112,7 +112,7 @@ namespace GenICam
             }
 
             falseCondition = builder.ToString();
-            return new List<string>() { condition, trueCondition, falseCondition };
+            return new List<string> { condition, trueCondition, falseCondition };
         }
 
         /// <summary>
