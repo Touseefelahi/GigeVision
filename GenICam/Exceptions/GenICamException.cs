@@ -12,7 +12,7 @@ namespace GenICam
         /// </summary>
         /// <param name="message">error message</param>
         /// <param name="inner">inner exception that holds the original exception</param>
-        public GenICamException(string message, Exception? inner = null)
+        public GenICamException(string message, Exception inner = null)
             : base(message, inner)
         {
         }

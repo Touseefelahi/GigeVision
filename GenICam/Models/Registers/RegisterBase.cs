@@ -72,7 +72,7 @@ namespace GenICam.Models
                     }
                 }
 
-                if (Address is not null)
+                if (!(Address is null))
                 {
                     return Address;
                 }

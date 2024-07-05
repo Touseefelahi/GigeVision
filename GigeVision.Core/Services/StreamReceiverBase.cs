@@ -103,7 +103,7 @@ namespace GigeVision.Core.Services
         protected void DetectGvspType()
         {
             Span<byte> singlePacket = new byte[9000];
-            socketRxRaw.Receive(singlePacket);
+            socketRxRaw.Receive(singlePacket.ToArray());
             GvspInfo.IsDecodingAsVersion2 = ((singlePacket[4] & 0xF0) >> 4) == 8;
             GvspInfo.SetDecodingTypeParameter();
 
@@ -120,7 +120,7 @@ namespace GigeVision.Core.Services
             }
 
             //Optimizing the array length for receive buffer
-            int length = socketRxRaw.Receive(singlePacket);
+            int length = socketRxRaw.Receive(singlePacket.ToArray());
             packetID = (singlePacket[GvspInfo.PacketIDIndex] << 8) | singlePacket[GvspInfo.PacketIDIndex + 1];
             if (packetID > 0)
             {
@@ -161,7 +161,7 @@ namespace GigeVision.Core.Services
 
                 while (IsReceiving)
                 {
-                    length = socketRxRaw.Receive(singlePacket);
+                    length = socketRxRaw.Receive(singlePacket.ToArray());
                     if (singlePacket[4] == GvspInfo.DataIdentifier) //Packet
                     {
                         packetRxCount++;
@@ -182,7 +182,7 @@ namespace GigeVision.Core.Services
                         blockID = singlePacket.Slice(GvspInfo.BlockIDIndex, GvspInfo.BlockIDLength).ToArray();
                         Array.Reverse(blockID);
                         Array.Resize(ref blockID, 8);
-                        imageID = BitConverter.ToUInt64(blockID);
+                        imageID = BitConverter.ToUInt64(blockID, 0);
                         packetRxCountClone = packetRxCount;
                         lastImageIDClone = lastImageID;
                         bufferIndexClone = bufferIndex;

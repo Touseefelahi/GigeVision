@@ -1,4 +1,6 @@
 ﻿using GigeVision.Core.Services;
+using System;
+using System.Threading;
 
 namespace GigeVisionLibrary.Test.Con
 {

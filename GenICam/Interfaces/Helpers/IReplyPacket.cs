@@ -10,53 +10,53 @@ namespace GenICam
         /// <summary>
         /// Gets or sets error to display if any.
         /// </summary>
-        public string Error { get; set; }
+         string Error { get; set; }
 
         /// <summary>
         /// Gets or sets iP address of the sender.
         /// </summary>
-        public string IPSender { get; set; }
+         string IPSender { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether command sent.
         /// </summary>
-        public bool IsSent { get; set; }
+         bool IsSent { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether command Sent and camera replied.
         /// </summary>
-        public bool IsSentAndReplyReceived { get; set; }
+         bool IsSentAndReplyReceived { get; set; }
 
         /// <summary>
         /// Gets or sets sending Port.
         /// </summary>
-        public int PortSender { get; set; }
+         int PortSender { get; set; }
 
         /// <summary>
         /// Gets raw reply packet.
         /// </summary>
-        public List<byte> Reply { get; }
+         List<byte> Reply { get; }
 
         /// <summary>
         /// Gets or sets register value.
         /// </summary>
-        public uint RegisterValue { get; set; }
+         uint RegisterValue { get; set; }
 
         /// <summary>
         /// Gets or sets memory Value.
         /// </summary>
-        public byte[] MemoryValue { get; set; }
+         byte[] MemoryValue { get; set; }
 
         /// <summary>
         /// It sets the list of byte.
         /// </summary>
         /// <param name="reply">The reply bytes.</param>
-        public void SetReply(byte[] reply);
+         void SetReply(byte[] reply);
 
         /// <summary>
         /// It sets the list of byte.
         /// </summary>
         /// <param name="reply">The reply bytes.</param>
-        public void SetReply(List<byte> reply);
+         void SetReply(List<byte> reply);
     }
 }

@@ -129,7 +129,7 @@ namespace GenICam
 
             if (IncMode != null)
             {
-                throw new GenICamException(message: $"Unable to get the increment value, Increment mode is {Enum.GetName((IncrementMode)IncMode)}", new InvalidOperationException());
+                throw new GenICamException(message: $"Unable to get the increment value, Increment mode is {Enum.GetName(typeof(IncrementMode), (IncrementMode)IncMode)}", new InvalidOperationException());
             }
 
             throw new GenICamException(message: $"Unable to get the increment value, Increment mode is missing", new NullReferenceException());
@@ -162,7 +162,7 @@ namespace GenICam
 
             if (IncMode != null)
             {
-                throw new GenICamException(message: $"Unable to get the valid values list, Increment mode is {Enum.GetName((IncrementMode)IncMode)}", new InvalidOperationException());
+                throw new GenICamException(message: $"Unable to get the valid values list, Increment mode is {Enum.GetName(typeof(IncrementMode), (IncrementMode)IncMode)}", new InvalidOperationException());
             }
 
             throw new GenICamException(message: $"Unable to get the increment value, Increment mode is missing", new NullReferenceException());
@@ -198,7 +198,7 @@ namespace GenICam
         /// <inheritdoc/>
         public async Task<long?> GetValueAsync()
         {
-            if (PValue is not null)
+            if (!(PValue is null))
             {
                     Value = (long)(await PValue.GetValueAsync());
                     return (long)Value;

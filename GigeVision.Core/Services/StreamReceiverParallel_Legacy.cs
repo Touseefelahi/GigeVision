@@ -123,7 +123,7 @@ namespace GigeVision.Core.Services
             {
                 while (IsReceiving)
                 {
-                    int length = socketRxRaw.Receive(memoryList.Span.Slice(offset + localByteCounter, size));
+                    int length = socketRxRaw.Receive(memoryList.Span.Slice(offset + localByteCounter, size).ToArray());
                     timeSpansReception.Add(stopwatch.Elapsed);
                     if (length > 100)
                     {

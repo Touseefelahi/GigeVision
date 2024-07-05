@@ -10,16 +10,16 @@ namespace GenICam
         /// <summary>
         /// Gets the category properties.
         /// </summary>
-        public CategoryProperties CategoryProperties { get; }
+         CategoryProperties CategoryProperties { get; }
 
         /// <summary>
         /// Gets or sets the PFeatures.
         /// </summary>
-        public List<ICategory> PFeatures { get; set; }
+         List<ICategory> PFeatures { get; set; }
 
         /// <summary>
         /// Gets the PValue.
         /// </summary>
-        public IPValue PValue { get; }
+         IPValue PValue { get; }
     }
 }

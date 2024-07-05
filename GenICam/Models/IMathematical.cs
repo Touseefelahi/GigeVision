@@ -8,6 +8,6 @@
         /// <summary>
         /// Gets the value.
         /// </summary>
-        public double Value { get; }
+        double Value { get; }
     }
 }

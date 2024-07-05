@@ -42,7 +42,7 @@ namespace GenICam
         /// <inheritdoc/>
         public async Task<long> GetValueAsync()
         {
-            if (PValue is not null)
+            if (!(PValue is null))
             {
                 return (long)await PValue.GetValueAsync();
             }
@@ -53,7 +53,7 @@ namespace GenICam
         /// <inheritdoc/>
         public async Task<IReplyPacket> SetValueAsync(long value)
         {
-            if (PValue is not null)
+            if (!(PValue is null))
             {
                 try
                 {

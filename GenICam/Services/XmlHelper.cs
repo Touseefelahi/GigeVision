@@ -154,7 +154,7 @@ namespace GenICam
         {
             try
             {
-                (IPValue pValue, IRegister register) tuple = new(null, null);
+                (IPValue pValue, IRegister register) tuple = (null, null);
                 if (GetAllNodesByAttirbuteValue(attirbuteValue: name) is XmlNodeList xmlNodeList)
                 {
                     ICategory category = null;
@@ -640,7 +640,7 @@ namespace GenICam
                     xmlNode = xmlNode.ParentNode;
                 }
 
-                if (!Enum.GetNames<RegisterType>().Where(x => x.Equals(xmlNode.Name) && x != "StructEntry").Any())
+                if (!Enum.GetNames(typeof(RegisterType)).Where(x => x.Equals(xmlNode.Name) && x != "StructEntry").Any())
                 {
                     throw new GenICamException(message: $"Failed to find GenRegister type by the given node name {xmlNode.Name}", new NotImplementedException());
                 }
@@ -697,7 +697,7 @@ namespace GenICam
                         Sign? sign = null;
                         if (signNode != null)
                         {
-                            sign = Enum.Parse<Sign>(signNode.InnerText);
+                            sign = (Sign)Enum.Parse(typeof(Sign), signNode.InnerText);
                         }
 
                         return new GenMaskedIntReg(genRegister.address, genRegister.length, msb, lsb, bit, sign, genRegister.accessMode, genRegister.pAddress, GenPort);
@@ -764,12 +764,12 @@ namespace GenICam
 
                             default:
                                 pAddress = await GetRegister(pNode);
-                                pAddress ??= await GetGenCategory(pNode);
+                                pAddress = (pAddress == null) ? await GetGenCategory(pNode) : pAddress;
 
                                 break;
                         }
 
-                        pAddress ??= await GetGenCategory(pNode);
+                        pAddress = (pAddress == null) ? await GetGenCategory(pNode) : pAddress;
                     }
                 }
 
@@ -876,11 +876,11 @@ namespace GenICam
 
                                     default:
                                         pVariable = await GetRegister(pNode);
-                                        pVariable ??= await GetGenCategory(pNode) as IPValue;
+                                        pVariable = (pVariable == null) ? await GetGenCategory(pNode) as IPValue : pVariable;
                                         break;
                                 }
 
-                                pVariable ??= await GetGenCategory(pNode) as IPValue;
+                                pVariable = (pVariable==null) ? await GetGenCategory(pNode) as IPValue : pVariable;
 
                                 pVariables.Add(node.Attributes[NodeName].Value, pVariable);
                             }
@@ -953,11 +953,11 @@ namespace GenICam
 
                                     default:
                                         pVariable = await GetRegister(pNode);
-                                        pVariable ??= await GetGenCategory(pNode) as IPValue;
+                                        pVariable = pVariable == null ? await GetGenCategory(pNode) as IPValue : pVariable;
                                         break;
                                 }
 
-                                pVariable ??= await GetGenCategory(pNode) as IPValue;
+                                pVariable = pVariable == null ? await GetGenCategory(pNode) as IPValue : pVariable;
 
                                 pVariables.Add(node.Attributes[NodeName].Value, pVariable);
                             }
@@ -977,15 +977,15 @@ namespace GenICam
                             if (pValueNode != null)
                             {
                                 pValue = await GetRegister(pValueNode);
-                                pValue ??= await GetIntSwissKnife(pValueNode);
-                                pValue ??= await GetConverter(pValueNode);
-                                pValue ??= await GetGenCategory(pValueNode) as IPValue;
+                                pValue = pValue == null ? await GetIntSwissKnife(pValueNode) : pValue;
+                                pValue = pValue == null ? await GetConverter(pValueNode) : pValue;
+                                pValue = pValue == null ? await GetGenCategory(pValueNode) as IPValue : pValue;
                             }
 
                             break;
 
                         case "Slope":
-                            slope = Enum.Parse<Slope>(node.InnerText);
+                            slope = (Slope)Enum.Parse(typeof(Slope), node.InnerText);
                             break;
 
                         default:
@@ -1029,7 +1029,7 @@ namespace GenICam
 
                 if (SelectSingleNode(xmlNode, "Visibility") is XmlNode visibilityNode)
                 {
-                    visibilty = Enum.Parse<GenVisibility>(visibilityNode.InnerText);
+                    visibilty = (GenVisibility)Enum.Parse(typeof(GenVisibility), visibilityNode.InnerText);
                 }
 
                 if (SelectSingleNode(xmlNode, "ToolTip") is XmlNode toolTipNode)
