@@ -11,7 +11,7 @@ namespace GenICam
     /// </summary>
     public class MathParserHelper
     {
-        private static readonly List<char> opreations = new() { '(', '+', '-', '/', '*', '=', '?', ':', ')', '>', '<', '&', '|', '^', '~', '%' };
+        private static readonly List<char> opreations = new List<char>() { '(', '+', '-', '/', '*', '=', '?', ':', ')', '>', '<', '&', '|', '^', '~', '%' };
 
         /// <summary>
         /// Prepare a formula.
@@ -46,17 +46,18 @@ namespace GenICam
         /// <returns>The result.</returns>
         public static double CalculateExpression(string experssion)
         {
+            //throw new NotImplementedException();
             try
             {
                 if (experssion.Contains("?"))
                 {
-                    var cases = experssion.Split(':', 2);
-                    var subs = cases[0].Split("?", 2);
+                    var cases = experssion.Split(new char[] { ':' }, 2);
+                    var subs = cases[0].Split(new char[] { '?' }, 2);
 
                     experssion = $"if({GetBracketed(subs[0])}, {GetBracketed(subs[1])}, {CalculateExpression(GetBracketed(cases[1]))})";
                 }
 
-                return new Expression(experssion).calculate();
+                return new Expression(GetBracketed(experssion)).calculate();
             }
             catch (Exception ex)
             {
@@ -96,7 +97,7 @@ namespace GenICam
 
             while (openBracketCounter > 0)
             {
-                formula = formula.Remove(0, 1);
+                formula += ")";
                 --openBracketCounter;
             }
 
@@ -149,7 +150,7 @@ namespace GenICam
             {
                 if (word.StartsWith("0x"))
                 {
-                    values.Push(long.Parse(word[2..], System.Globalization.NumberStyles.HexNumber));
+                    values.Push(long.Parse(word.Substring(2), System.Globalization.NumberStyles.HexNumber));
 
                     // valuesList.Last().Push(values.Peek());
                 }
@@ -622,7 +623,7 @@ namespace GenICam
             double result;
             string equation;
 
-            foreach (var item in formula.Split('(', StringSplitOptions.None))
+            foreach (var item in formula.Split('('))
             {
                 equation = item;
                 if (item.Contains(')'))
