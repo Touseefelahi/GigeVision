@@ -1,0 +1,3 @@
+[submodule "Stira.WpfCore"]
+	path = Stira.WpfCore
+	url = https://github.com/Touseefelahi/Stira.WpfCore.git

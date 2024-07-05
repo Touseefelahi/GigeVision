@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.IO.Pipelines;
 using System.Net.Sockets;
 using System.Threading.Tasks;
@@ -40,17 +41,17 @@ namespace GigeVision.Core.Services
                     while (i < bufferLength)
                     {
                         var singlePacket = i + GvspInfo.PacketLength <= packetsBuffer.Length ? packetsBuffer.Slice(i, GvspInfo.PacketLength) : packetsBuffer.Slice(i, bufferLength - i);
-                        int packetLength = singlePacket.FirstSpan.Length;
+                        int packetLength = singlePacket.First.Span.Length;
                         int segmentLength = 0;
 
                         if (singlePacket.IsSingleSegment)
                         {
-                            if (singlePacket.FirstSpan[4] == GvspInfo.DataIdentifier)
+                            if (singlePacket.First.Span[4] == GvspInfo.DataIdentifier)
                             {
                                 totalPacketsInFrame++;
-                                packetId = (singlePacket.FirstSpan[GvspInfo.PacketIDIndex] << 8 | singlePacket.FirstSpan[GvspInfo.PacketIDIndex + 1]);
+                                packetId = (singlePacket.First.Span[GvspInfo.PacketIDIndex] << 8 | singlePacket.First.Span[GvspInfo.PacketIDIndex + 1]);
                                 startPos = (packetId - 1) * GvspInfo.PayloadSize;
-                                singlePacket.FirstSpan.Slice(GvspInfo.PayloadOffset, packetLength - GvspInfo.PayloadOffset).CopyTo(buffer.AsSpan().Slice(startPos, packetLength));
+                                singlePacket.First.Span.Slice(GvspInfo.PayloadOffset, packetLength - GvspInfo.PayloadOffset).CopyTo(buffer.AsSpan().Slice(startPos, packetLength));
                             }
                         }
                         else
@@ -98,7 +99,7 @@ namespace GigeVision.Core.Services
                 while (IsReceiving)
                 {
                     var packet = writer.GetMemory(GvspInfo.PacketLength);
-                    int length = socketRxRaw.Receive(packet.Span);
+                    int length = socketRxRaw.Receive(packet.Span.ToArray());
                     writer.Advance(length);
                     i++;
                     if (i >= (GvspInfo.IsDecodingAsVersion2 ? 10 : 9))

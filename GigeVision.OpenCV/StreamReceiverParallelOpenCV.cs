@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace GigeVision.OpenCV
@@ -12,14 +13,14 @@ namespace GigeVision.OpenCV
     public class StreamReceiverParallelOpencv : StreamReceiverBase
     {
         public uint frameInCounter = 0;
-        public Mat[] image = null!;
+        public Mat[] image = null;
         public long imageIndex, lossCount = 0;
-        public SemaphoreSlim waitHandleFrame = new(0);
+        public SemaphoreSlim waitHandleFrame = new SemaphoreSlim(0);
         private const int ChunkPacketCount = 100;
         private const int flatBufferCount = 5;
         private readonly int packetBufferLength = ChunkPacketCount;
-        private readonly SemaphoreSlim waitForPacketChunk = new(0);
-        private byte[][] packetBuffersFlat = null!;
+        private readonly SemaphoreSlim waitForPacketChunk = new SemaphoreSlim(0);
+        private byte[][] packetBuffersFlat = null;
 
         public StreamReceiverParallelOpencv(int totalBuffers = 3)
         {
@@ -70,7 +71,7 @@ namespace GigeVision.OpenCV
                     singlePacket = memory[indexMemoryWriter].Slice(counterBufferWriter * GvspInfo.PacketLength, GvspInfo.PacketLength);
                     counterBufferWriter++;
 
-                    length = socketRxRaw.Receive(singlePacket.Span);
+                    length = socketRxRaw.Receive(singlePacket.Span.ToArray());
 
                     if (++counterForChunkPackets % ChunkPacketCount == 0)
                     {

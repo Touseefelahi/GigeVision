@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard1.0</TargetFramework>
+    <Authors>Touseef Elahi</Authors>
+    <Company>Stira.sa</Company>
+    <Product>WPF Core</Product>
+    <Description>Simple implementation of ICommand Interface and INotifyPropertyChanged
+Inspired by AngelSix (Luke) youtube channel
+</Description>
+    <PackageTags>Wpf, Propertychanged, DelegateCommand</PackageTags>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+</Project>

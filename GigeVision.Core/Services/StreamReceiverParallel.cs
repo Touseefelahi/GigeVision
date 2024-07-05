@@ -63,7 +63,7 @@ namespace GigeVision.Core.Services
                     singlePacket = memory[indexMemoryWriter].Slice(counterBufferWriter * GvspInfo.PacketLength, GvspInfo.PacketLength);
                     counterBufferWriter++;
 
-                    length = socketRxRaw.Receive(singlePacket.Span);
+                    length = socketRxRaw.Receive(singlePacket.Span.ToArray());
 
                     if (++counterForChunkPackets % ChunkPacketCount == 0)
                     {

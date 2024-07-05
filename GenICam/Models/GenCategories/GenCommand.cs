@@ -45,7 +45,7 @@ namespace GenICam
         {
             try
             {
-                if (PValue is not null)
+                if (!(PValue is null))
                 {
                     return await PValue.SetValueAsync(CommandValue);
                 }

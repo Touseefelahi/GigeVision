@@ -30,7 +30,7 @@ namespace GigeVision.Core.Services
         private async Task DecoderPipe(PipeReader reader)
         {
             int i;
-            byte[] buffer = GC.AllocateArray<byte>(length: GvspInfo.RawImageSize, pinned: true);
+            byte[] buffer = new byte[GvspInfo.RawImageSize]; //GC.AllocateArray<byte>(length: GvspInfo.RawImageSize, pinned: true);
             int bufferIndex = 0;
             int packetID = 0, bufferStart;
             int packetRxCount = 0;
@@ -45,10 +45,10 @@ namespace GigeVision.Core.Services
                 for (i = 0; i < dataBuffer.Buffer.Length - packetSize; i += packetSize)
                 {
                     var singlePacket = dataBuffer.Buffer.Slice(i, packetSize);
-                    if (singlePacket.FirstSpan.Slice(4, 1)[0] == GvspInfo.DataIdentifier) //Packet
+                    if (singlePacket.First.Span.Slice(4, 1)[0] == GvspInfo.DataIdentifier) //Packet
                     {
                         packetRxCount++;
-                        packetID = (singlePacket.FirstSpan.Slice(GvspInfo.PacketIDIndex, 1)[0] << 8) | singlePacket.FirstSpan.Slice(GvspInfo.PacketIDIndex + 1, 1)[0];
+                        packetID = (singlePacket.First.Span.Slice(GvspInfo.PacketIDIndex, 1)[0] << 8) | singlePacket.First.Span.Slice(GvspInfo.PacketIDIndex + 1, 1)[0];
                         bufferStart = (packetID - 1) * GvspInfo.PayloadSize; //This use buffer length of regular packet
                         listOfPacketIDs.Add(packetID);
                         //singlePacket.Slice(GvspInfo.PayloadOffset, GvspInfo.PayloadSize).CopyTo(buffer.AsSpan().Slice(bufferStart, GvspInfo.PayloadSize));
@@ -75,7 +75,7 @@ namespace GigeVision.Core.Services
             while (IsReceiving)
             {
                 var spanPacket = writer.GetMemory(9000);
-                int length = socketRxRaw.Receive(spanPacket.Span);
+                int length = socketRxRaw.Receive(spanPacket.Span.ToArray());
                 timeSpansReception.Add(stopwatch.Elapsed);
                 //int length = await socketRxRaw.ReceiveAsync(spanPacket, SocketFlags.None);
                 if (length > 100)

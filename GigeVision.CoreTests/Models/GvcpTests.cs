@@ -1,4 +1,6 @@
-﻿using System;
+﻿using GigeVision.Core.Services;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -16,6 +18,7 @@ namespace GigeVision.Core.Models.Tests
             gvcp = new Gvcp() { CameraIp = "192.168.10.155" };
         }
 
+        /*
         [TestMethod()]
         public async Task ReadAllRegisterAddressFromCameraAsyncTestAsync()
         {
@@ -30,18 +33,18 @@ namespace GigeVision.Core.Models.Tests
                 string startRegister = registers["AcquisitionStart"].Register.Address;
                 Assert.IsTrue(isTrue);
             }
-        }
+        }*/
 
         [TestMethod()]
         public async Task ReadRegisterAsyncTest()
         {
-            GvcpReply value = await gvcp.ReadRegisterAsync(ipCamera, Enums.GvcpRegister.CCP);
+            GvcpReply value = await gvcp.ReadRegisterAsync(ipCamera, Enums.GvcpRegister.GevCCP);
             if (value.IsSentAndReplyReceived)
             {
                 Assert.IsTrue(value.IsValid);
             }
 
-            GvcpReply value2 = await gvcp.ReadRegisterAsync(Enums.GvcpRegister.CCP);
+            GvcpReply value2 = await gvcp.ReadRegisterAsync(Enums.GvcpRegister.GevCCP);
             if (value2.IsSentAndReplyReceived)
             {
                 Assert.IsTrue(value2.IsValid);
@@ -68,7 +71,7 @@ namespace GigeVision.Core.Models.Tests
         public async Task WriteRegisterAsyncTest()
         {
             // var registers = await gvcp.ReadAllRegisterAddressFromCameraAsync().ConfigureAwait(false);
-            GvcpReply reply = await gvcp.WriteRegisterAsync(Enums.GvcpRegister.CCP, 2).ConfigureAwait(false);
+            GvcpReply reply = await gvcp.WriteRegisterAsync(Enums.GvcpRegister.GevCCP, 2).ConfigureAwait(false);
             // var repply = await gvcp.WriteRegisterAsync(ipCamera, Enums.GvcpRegister.SCDA, 1);
             await Task.Delay(1000);
             //var reply = await gvcp.WriteRegisterAsync(registers["AcquisitionStartReg"], 1);

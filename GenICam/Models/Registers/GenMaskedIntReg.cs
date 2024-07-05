@@ -150,13 +150,13 @@ namespace GenICam
                 switch (Length)
                 {
                     case 2:
-                        return BitConverter.ToUInt16(valueBytes);
+                        return BitConverter.ToUInt16(valueBytes, 0);
 
                     case 4:
-                        return BitConverter.ToUInt32(valueBytes);
+                        return BitConverter.ToUInt32(valueBytes, 0);
 
                     default:
-                        return BitConverter.ToInt64(valueBytes);
+                        return BitConverter.ToInt64(valueBytes, 0);
                 }
             }
             catch (ArgumentOutOfRangeException ex)

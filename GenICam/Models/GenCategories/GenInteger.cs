@@ -31,12 +31,12 @@ namespace GenICam
             PMax = pMax;
             PMin = pMin;
 
-            if (min is not null)
+            if (!(min is null))
             {
                 Min = (long)min;
             }
 
-            if (max is not null)
+            if (!(max is  null))
             {
                 if (max != 0)
                 {
@@ -44,12 +44,12 @@ namespace GenICam
                 }
             }
 
-            if (inc is not null)
+            if (!(inc is null))
             {
                 Inc = (long)inc;
             }
 
-            if (value is not null)
+            if (!(value is null))
             {
                 Value = (long)value;
             }
@@ -127,12 +127,12 @@ namespace GenICam
         /// <inheritdoc/>
         public async Task<long?> GetValueAsync()
         {
-            if (PValue is not null)
+            if (!(PValue is null))
             {
                 Value = (long)(await PValue.GetValueAsync());
                 return Value;
             }
-            else if (Value is not null)
+            else if (!(Value is null))
             {
                 return Value;
             }
@@ -146,7 +146,7 @@ namespace GenICam
             RaisePropertyChanged(nameof(Max));
             RaisePropertyChanged(nameof(Min));
 
-            if (PValue is not null)
+            if (!(PValue is null))
             {
                 return await PValue.SetValueAsync(value);
             }
@@ -160,7 +160,7 @@ namespace GenICam
         /// <returns>The minimum value or 0 if not set.</returns>
         public async Task<long> GetMinAsync()
         {
-            if (PMin is not null)
+            if (!(PMin is null))
             {
                 return (long)(await PMin.GetValueAsync());
             }
@@ -174,7 +174,7 @@ namespace GenICam
         /// <returns>The maximum value or 0 if not set.</returns>
         public async Task<long> GetMaxAsync()
         {
-            if (PMax is not null)
+            if (!(PMax is null))
             {
                 return (long)(await PMax.GetValueAsync());
             }
@@ -192,7 +192,7 @@ namespace GenICam
 
             if (IncMode != null)
             {
-                throw new GenICamException(message: $"Unable to get the increment value, Increment mode is {Enum.GetName((IncrementMode)IncMode)}", new InvalidOperationException());
+                throw new GenICamException(message: $"Unable to get the increment value, Increment mode is {Enum.GetName(typeof(IncrementMode), (IncrementMode)IncMode)}", new InvalidOperationException());
             }
 
             throw new GenICamException(message: $"Unable to get the increment value, Increment mode is missing", new NullReferenceException());
@@ -208,7 +208,7 @@ namespace GenICam
 
             if (IncMode != null)
             {
-                throw new GenICamException(message: $"Unable to get the valid values list, Increment mode is {Enum.GetName((IncrementMode)IncMode)}", new InvalidOperationException());
+                throw new GenICamException(message: $"Unable to get the valid values list, Increment mode is {Enum.GetName(typeof(IncrementMode), (IncrementMode)IncMode)}", new InvalidOperationException());
             }
 
             throw new GenICamException(message: $"Unable to get the increment value, Increment mode is missing", new NullReferenceException());

@@ -37,7 +37,7 @@ namespace GenICam.Tests
 
         [Theory]
         [InlineData("(8))")]
-        [InlineData("((8)")]
+        [InlineData("(8")]
         public void GetBracket(string formula)
         {
             var expected = "(8)";

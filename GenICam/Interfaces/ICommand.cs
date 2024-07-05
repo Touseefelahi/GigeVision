@@ -11,12 +11,12 @@ namespace GenICam
         /// Submits the command.
         /// </summary>
         /// <returns>A task.</returns>
-        public Task <IReplyPacket>Execute();
+         Task <IReplyPacket>Execute();
 
         /// <summary>
         /// Returns true if the command has been executed; false as long as it still  executes.
         /// </summary>
         /// <returns>True when it's finished.</returns>
-        public Task<bool> IsDone();
+         Task<bool> IsDone();
     }
 }

@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29519.181
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stira.WpfCore", "Stira.WpfCore\Stira.WpfCore.csproj", "{955B711A-C87C-4A5A-A76E-4898CF0DD024}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{955B711A-C87C-4A5A-A76E-4898CF0DD024}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{955B711A-C87C-4A5A-A76E-4898CF0DD024}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{955B711A-C87C-4A5A-A76E-4898CF0DD024}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{955B711A-C87C-4A5A-A76E-4898CF0DD024}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {343DAD5F-AD2B-4817-AA62-40C19E8189CA}
+	EndGlobalSection
+EndGlobal
