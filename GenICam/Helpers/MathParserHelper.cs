@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using org.mariuszgromada.math.mxparser;
 
 namespace GenICam
@@ -50,10 +51,8 @@ namespace GenICam
             {
                 if (experssion.Contains("?"))
                 {
-                    var cases = experssion.Split(':', 2);
-                    var subs = cases[0].Split("?", 2);
-
-                    experssion = $"if({GetBracketed(subs[0])}, {GetBracketed(subs[1])}, {CalculateExpression(GetBracketed(cases[1]))})";
+                    var ternaryData = SeparateTernaryExpressions(experssion);
+                    experssion = $"if({GetBracketed(ternaryData[0])}, {CalculateExpression(GetBracketed(ternaryData[1]))}, {CalculateExpression(GetBracketed(ternaryData[2]))})";
                 }
 
                 return new Expression(experssion).calculate();
@@ -63,6 +62,57 @@ namespace GenICam
 
                 throw new GenICamException(message: "XMath parser has failed to calculate formula", ex);
             }
+        }
+
+        private static List<string> SeparateTernaryExpressions(string expression)
+        {
+            StringBuilder builder = new StringBuilder();
+            string condition = String.Empty;
+            string trueCondition = String.Empty;
+            string falseCondition = String.Empty;
+
+            bool firstConditionFound = false;
+            var parenthesis = 0;
+            for (int i = 0; i < expression.Length; ++i) {
+                char ch = expression[i];
+
+                if (ch == '(')
+                {
+                    parenthesis++;
+                }
+                else if (ch == ')')
+                {
+                    parenthesis--;
+                }
+                else if (ch == '?' && !firstConditionFound)
+                { 
+                    for (var w = parenthesis; w > 0; w--)
+                    {
+                        builder.Append(")");
+                    }
+
+                    condition = builder.ToString();
+                    builder.Clear();
+                    firstConditionFound = true;
+                    parenthesis = 0;
+                    continue;
+                }
+                else if (ch == ':' && parenthesis == 0)
+                {
+                    trueCondition = builder.ToString();
+                    builder.Clear();
+                    continue;
+                }
+                builder.Append(ch);
+            }
+
+            if (parenthesis > 0) 
+            {
+                Console.Write("a");
+            }
+
+            falseCondition = builder.ToString();
+            return new List<string> { condition, trueCondition, falseCondition };
         }
 
         /// <summary>
