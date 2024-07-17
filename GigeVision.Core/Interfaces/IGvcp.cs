@@ -27,6 +27,11 @@ namespace GigeVision.Core.Interfaces
         /// Camera IP
         /// </summary>
         string CameraIp { get; set; }
+        
+        /// <summary>
+        /// The socket read timeout in milliseconds. Set -1 for infinite timeout
+        /// </summary>
+        int ReceiveTimeoutInMilliseconds { get; set; }
 
         /// <summary>
         /// Controlling port for GVCP

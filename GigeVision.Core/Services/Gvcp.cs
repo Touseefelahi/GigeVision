@@ -39,13 +39,30 @@ namespace GigeVision.Core.Services
         {
             CameraIp = ip;
         }
+        
+        /// <summary>
+        /// Gvcp constructor, initializes camera IP and socket timeout, and try to get register values
+        /// </summary>
+        /// <param name="ip"></param>
+        /// <param name="socketReadTimeoutInMilliseconds"></param>
+        public Gvcp(string ip, int socketReadTimeoutInMilliseconds)
+        {
+            CameraIp = ip;
+            ReceiveTimeoutInMilliseconds = socketReadTimeoutInMilliseconds;
+        }
 
         /// <summary>
         /// Default GVCP constructor
         /// </summary>
         public Gvcp()
         {
+            ReceiveTimeoutInMilliseconds = 1000;
         }
+        
+        /// <summary>
+        /// The socket read timeout in milliseconds. Set -1 for infinite timeout
+        /// </summary>
+        public int ReceiveTimeoutInMilliseconds { get; set; }
 
         /// <summary>
         /// Camera IP, whenever changed, library tries to get latest register values
@@ -315,7 +332,7 @@ namespace GigeVision.Core.Services
             {
                 GvcpCommand command = new(memoryAddress, GvcpCommandType.ReadMem, requestID: gvcpRequestID++, count: count);
                 using UdpClient socket = new();
-                socket.Client.ReceiveTimeout = 1000;
+                socket.Client.ReceiveTimeout = ReceiveTimeoutInMilliseconds;
                 socket.Connect(ip, 3956);
                 return await SendGvcpCommand(socket, command).ConfigureAwait(false);
             }
