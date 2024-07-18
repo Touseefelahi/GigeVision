@@ -100,6 +100,22 @@ namespace GigeVision.Core.Services
         }
 
         /// <summary>
+        /// The receive socket timeout in milliseconds. Set -1 for infinite timeout
+        /// </summary>
+        public int ReceiveTimeoutInMilliseconds
+        {
+            get => Gvcp.ReceiveTimeoutInMilliseconds;
+            set
+            {
+                Gvcp.ReceiveTimeoutInMilliseconds = value;
+                StreamReceiver.ReceiveTimeoutInMilliseconds = value;
+                
+                OnPropertyChanged(nameof(ReceiveTimeoutInMilliseconds));
+            }
+        }
+
+        
+        /// <summary>
         /// Multi-Cast Option
         /// </summary>
         public bool IsMulticast
@@ -625,6 +641,7 @@ namespace GigeVision.Core.Services
         {
             StreamReceiver ??= new StreamReceiverBufferswap();
             StreamReceiver.RxIP = RxIP;
+            StreamReceiver.ReceiveTimeoutInMilliseconds = ReceiveTimeoutInMilliseconds;
             StreamReceiver.IsMulticast = IsMulticast;
             StreamReceiver.MulticastIP = MulticastIP;
             StreamReceiver.PortRx = PortRx;

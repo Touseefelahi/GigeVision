@@ -47,6 +47,11 @@ namespace GigeVision.Core.Interfaces
         /// RX IP, required for multicast group
         /// </summary>
         string RxIP { get; set; }
+        
+        /// <summary>
+        /// The socket receive timeout in milliseconds. Set -1 to infinite timeout
+        /// </summary>
+        public int ReceiveTimeoutInMilliseconds { get; set; }
 
         /// <summary>
         /// General update event

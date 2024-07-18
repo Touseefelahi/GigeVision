@@ -24,7 +24,13 @@ namespace GigeVision.Core.Services
         {
             GvspInfo = new GvspInfo();
             MissingPacketTolerance = 2;
+            ReceiveTimeoutInMilliseconds = 1000;
         }
+        
+        /// <summary>
+        /// The socket receive timeout in milliseconds. Set -1 to infinite timeout
+        /// </summary>
+        public int ReceiveTimeoutInMilliseconds { get; set; }
 
         /// <summary>
         /// Event for frame ready
@@ -242,7 +248,7 @@ namespace GigeVision.Core.Services
                     MulticastOption mcastOption = new(IPAddress.Parse(MulticastIP), IPAddress.Parse(RxIP));
                     socketRxRaw.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership, mcastOption);
                 }
-                socketRxRaw.ReceiveTimeout = 1000;
+                socketRxRaw.ReceiveTimeout = ReceiveTimeoutInMilliseconds;
                 //One full hd image with GVSP2.0 Header as default, it will be updated for image type
                 socketRxRaw.ReceiveBufferSize = (int)(1920 * 1100);
             }
