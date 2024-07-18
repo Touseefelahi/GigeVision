@@ -333,6 +333,11 @@ namespace GenICam
                                 else if (pNode.Attributes["Name"].Value.EndsWith("Expr") || pNode.Attributes["Name"].Value.EndsWith("Conv"))
                                 {
                                     pValue = await GetFormula(pNode);
+                                } 
+                                else if (pNode.Attributes["Name"].Value.EndsWith("_Float") || pNode.Attributes["Name"].Value.EndsWith("_Int") || pNode.Attributes["Name"].Value.EndsWith("_Bit"))
+                                {
+                                    var register = await GetRegisterByName(pNode.Attributes["Name"].Value).ConfigureAwait(false);
+                                    pValue = register.pValue;
                                 }
                             }
 
@@ -380,6 +385,11 @@ namespace GenICam
                         else if (pNode.Attributes["Name"].Value.EndsWith("Expr") || pNode.Attributes["Name"].Value.EndsWith("Conv"))
                         {
                             pValue = await GetFormula(pNode);
+                        }
+                        else if (pNode.Attributes["Name"].Value.EndsWith("_Float") || pNode.Attributes["Name"].Value.EndsWith("_Int") || pNode.Attributes["Name"].Value.EndsWith("_Bit"))
+                        {
+                            var register = await GetRegisterByName(pNode.Attributes["Name"].Value).ConfigureAwait(false);
+                            pValue = register.pValue;
                         }
                     }
                 }
@@ -439,6 +449,11 @@ namespace GenICam
                         else if (pNode.Attributes["Name"].Value.EndsWith("Expr") || pNode.Attributes["Name"].Value.EndsWith("Conv"))
                         {
                             pValue = await GetFormula(pNode);
+                        }
+                        else if (pNode.Attributes["Name"].Value.EndsWith("_Float") || pNode.Attributes["Name"].Value.EndsWith("_Int") || pNode.Attributes["Name"].Value.EndsWith("_Bit"))
+                        {
+                            var register = await GetRegisterByName(pNode.Attributes["Name"].Value).ConfigureAwait(false);
+                            pValue = register.pValue;
                         }
                     }
                 }
@@ -586,6 +601,11 @@ namespace GenICam
                 {
                     pValue = await GetFormula(pNode);
                 }
+                else if (pNode.Attributes["Name"].Value.EndsWith("_Float") || pNode.Attributes["Name"].Value.EndsWith("_Int") || pNode.Attributes["Name"].Value.EndsWith("_Bit"))
+                {
+                    var register = await GetRegisterByName(pNode.Attributes["Name"].Value).ConfigureAwait(false);
+                    pValue = register.pValue;
+                }
             }
 
             return pValue;
@@ -618,6 +638,11 @@ namespace GenICam
                     else if (pNode.Attributes["Name"].Value.EndsWith("Expr") || pNode.Attributes["Name"].Value.EndsWith("Conv"))
                     {
                         pValue = await GetFormula(pNode);
+                    }
+                    else if (pNode.Attributes["Name"].Value.EndsWith("_Float") || pNode.Attributes["Name"].Value.EndsWith("_Int") || pNode.Attributes["Name"].Value.EndsWith("_Bit"))
+                    {
+                        var register = await GetRegisterByName(pNode.Attributes["Name"].Value).ConfigureAwait(false);
+                        pValue = register.pValue;
                     }
                 }
 
@@ -818,6 +843,11 @@ namespace GenICam
                                 else if (pNode.Attributes["Name"].Value.EndsWith("Conv"))
                                 {
                                     pValue = await GetConverter(pNode);
+                                }
+                                else if (pNode.Attributes["Name"].Value.EndsWith("_Float") || pNode.Attributes["Name"].Value.EndsWith("_Int") || pNode.Attributes["Name"].Value.EndsWith("_Bit"))
+                                {
+                                    var register = await GetRegisterByName(pNode.Attributes["Name"].Value).ConfigureAwait(false);
+                                    pValue = register.pValue;
                                 }
                             }
 
