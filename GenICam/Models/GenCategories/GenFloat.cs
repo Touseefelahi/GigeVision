@@ -186,21 +186,21 @@ namespace GenICam
         /// <exception cref="NotImplementedException">Not yet implemented.</exception>
         public async Task<double> GetMaxAsync()
         {
-            if (PMin is not null)
+            if (PMax is not null)
             {
-                return (long)(await PMin.GetValueAsync());
+                return (long)(await PMax.GetValueAsync());
             }
 
-            return Min;
+            return Max;
         }
 
         /// <inheritdoc/>
         /// <exception cref="NotImplementedException">Not yet implemented.</exception>
         public async Task<double> GetMinAsync()
         {
-            if (PMax is not null)
+            if (PMin is not null)
             {
-                return (long)(await PMax.GetValueAsync());
+                return (long)(await PMin.GetValueAsync());
             }
 
             return Min;
