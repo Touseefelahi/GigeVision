@@ -108,7 +108,10 @@ namespace GigeVision.Core.Services
             set
             {
                 Gvcp.ReceiveTimeoutInMilliseconds = value;
-                StreamReceiver.ReceiveTimeoutInMilliseconds = value;
+                if (StreamReceiver != null)
+                {
+                    StreamReceiver.ReceiveTimeoutInMilliseconds = value;   
+                }
                 
                 OnPropertyChanged(nameof(ReceiveTimeoutInMilliseconds));
             }

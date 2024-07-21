@@ -16,6 +16,8 @@ namespace GenICam
         /// <param name="categoryProperties">the category properties.</param>
         /// <param name="min">The minimum value.</param>
         /// <param name="max">The maximum value.</param>
+        /// <param name="pMin">The address pointer to min value.</param>
+        /// <param name="pMax">The address pointer to max value.</param>
         /// <param name="inc">The increment.</param>
         /// <param name="incMode">The increment mode.</param>
         /// <param name="representation">The representation.</param>
@@ -23,9 +25,11 @@ namespace GenICam
         /// <param name="unit">The unit.</param>
         /// <param name="pValue">The PValue.</param>
         /// <param name="expressions">The expressions.</param>
-        public GenFloat(CategoryProperties categoryProperties, double min, double max, long inc, IncrementMode incMode, Representation representation, double value, string unit, IPValue pValue)
+        public GenFloat(CategoryProperties categoryProperties, double min, double max, IPValue pMin, IPValue pMax, long inc, IncrementMode incMode, Representation representation, double value, string unit, IPValue pValue)
                 : base(categoryProperties, pValue)
         {
+            PMax = pMax;
+            PMin = pMin;
             Min = min;
             Max = max;
             Inc = inc;
@@ -36,6 +40,16 @@ namespace GenICam
             SetValueCommand = new DelegateCommand<object>(ExecuteSetValueCommand);
             GetValueCommand = new DelegateCommand(ExecuteGetValueCommand);
         }
+
+        /// <summary>
+        /// Gets the pointer on the mathematical maximum value.
+        /// </summary>
+        public IPValue PMax { get; }
+
+        /// <summary>
+        /// Gets the pointer on the mathematical minimum value.
+        /// </summary>
+        public IPValue PMin { get; }
 
         /// <summary>
         /// Gets the minimum value.
@@ -172,14 +186,24 @@ namespace GenICam
         /// <exception cref="NotImplementedException">Not yet implemented.</exception>
         public async Task<double> GetMaxAsync()
         {
-            throw new NotImplementedException();
+            if (PMax is not null)
+            {
+                return (long)(await PMax.GetValueAsync());
+            }
+
+            return Max;
         }
 
         /// <inheritdoc/>
         /// <exception cref="NotImplementedException">Not yet implemented.</exception>
         public async Task<double> GetMinAsync()
         {
-            throw new NotImplementedException();
+            if (PMin is not null)
+            {
+                return (long)(await PMin.GetValueAsync());
+            }
+
+            return Min;
         }
 
         /// <inheritdoc/>

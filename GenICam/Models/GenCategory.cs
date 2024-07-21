@@ -17,6 +17,14 @@ namespace GenICam
             PValue = pValue;
         }
 
+        public GenCategory(CategoryProperties categoryProperties, IPValue pValue, IPValue pMIn, IPValue pMax)
+        {
+            CategoryProperties = categoryProperties;
+            PValue = pValue;
+            PMax = pMax;
+            PMin = pMIn;
+        }
+
         /// <inheritdoc/>
         public CategoryProperties CategoryProperties { get; internal set; }
 
@@ -25,6 +33,12 @@ namespace GenICam
 
         /// <inheritdoc/>
         public IPValue PValue { get; internal set; }
+
+        /// <inheritdoc/>
+        public IPValue PMin { get; internal set; }
+
+        /// <inheritdoc/>
+        public IPValue PMax { get; internal set; }
 
         /// <summary>
         /// Gets the group name.

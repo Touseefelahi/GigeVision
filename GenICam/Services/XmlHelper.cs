@@ -150,11 +150,11 @@ namespace GenICam
         /// </summary>
         /// <param name="name">The name of the register.</param>
         /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation.</returns>
-        public async Task<(IPValue pValue, IRegister register)> GetRegisterByName(string name)
+        public async Task<(IPValue pValue, IRegister register, IPValue minPValue, IPValue maxPValue)> GetRegisterByName(string name)
         {
             try
             {
-                (IPValue pValue, IRegister register) tuple = new(null, null);
+                (IPValue pValue, IRegister register, IPValue minPValue, IPValue maxPValue) tuple = new(null, null, null, null);
                 if (GetAllNodesByAttirbuteValue(attirbuteValue: name) is XmlNodeList xmlNodeList)
                 {
                     ICategory category = null;
@@ -169,6 +169,16 @@ namespace GenICam
                         if (category.PValue is IPValue pValue)
                         {
                             tuple.pValue = pValue;
+                        }
+
+                        if (category.PMin is IPValue minPValue)
+                        {
+                            tuple.minPValue = minPValue;
+                        }
+
+                        if (category.PMax is IPValue MaxPValue)
+                        {
+                            tuple.maxPValue = MaxPValue;
                         }
 
                         if (category.PValue is IRegister register)
@@ -292,6 +302,9 @@ namespace GenICam
                 string unit = string.Empty;
                 Representation representation = Representation.PureNumber;
                 XmlNode pNode;
+                IPValue pMin = null;
+                IPValue pMax = null;
+                
                 foreach (XmlNode node in xmlNode.ChildNodes)
                 {
                     switch (node.Name)
@@ -309,11 +322,19 @@ namespace GenICam
                             break;
 
                         case NodePMin:
+                            pNode = ReadPNode(node.InnerText);
+                            if (pNode != null)
+                            {
+                                pMin = await PNodeToPValue(pNode);
+                            }
+
+                            break;
+
                         case NodePMax:
                             pNode = ReadPNode(node.InnerText);
                             if (pNode != null)
                             {
-                                expressions.Add(node.Name, await GetFormula(pNode));
+                                pMax = await PNodeToPValue(pNode);
                             }
 
                             break;
@@ -338,6 +359,8 @@ namespace GenICam
                                 {
                                     var register = await GetRegisterByName(pNode.Attributes["Name"].Value).ConfigureAwait(false);
                                     pValue = register.pValue;
+                                    pMin = register.minPValue;
+                                    pMax = register.maxPValue;
                                 }
                             }
 
@@ -356,7 +379,7 @@ namespace GenICam
                     }
                 }
 
-                return new GenFloat(categoryPropreties, min, max, inc, IncrementMode.fixedIncrement, representation, value, unit, pValue);
+                return new GenFloat(categoryPropreties, min, max, pMin, pMax, inc, IncrementMode.fixedIncrement, representation, value, unit, pValue);
             }
             catch (Exception ex)
             {
@@ -581,6 +604,40 @@ namespace GenICam
                 }
 
                 return new GenInteger(categoryPropreties, min, max, inc, pMax, pMin, pInc, IncrementMode.fixedIncrement, representation, value, unit, pValue);
+            }
+            catch (Exception ex)
+            {
+                throw new GenICamException($"Failed to get Integer Category by the given node {xmlNode.Name}", ex);
+            }
+        }
+        
+        private async Task<GenCategory> ReadPMaxAndPmin(XmlNode xmlNode)
+        {
+            try
+            {
+                IPValue pMax = null;
+                IPValue pMin = null;
+
+                foreach (XmlNode node in xmlNode.ChildNodes)
+                {
+                    switch (node.Name)
+                    {
+                        case NodePMin:
+                            var pNode = ReadPNode(node.InnerText);
+                            pMin = await PNodeToPValue(pNode);
+
+                            break;
+                        case NodePMax:
+                            pNode = ReadPNode(node.InnerText);
+                            pMax = await PNodeToPValue(pNode);
+                            break;
+
+                        default:
+                            break;
+                    }
+                }
+
+                return new GenCategory(null, null, pMin, pMax);
             }
             catch (Exception ex)
             {
