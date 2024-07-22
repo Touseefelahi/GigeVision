@@ -1,4 +1,6 @@
 using System;
+using System.Drawing;
+using System.IO;
 using System.IO.Pipelines;
 using System.Net.Sockets;
 using System.Threading.Tasks;
@@ -23,8 +25,13 @@ namespace GigeVision.Core.Services
 
         private async Task DisplayStreamPipe(PipeReader reader)
         {
+            int pixel = 0;
+            var greenColor = 0;
+            var redColor = 0;
+            var blueColor = 0;
             packetSize = GvspInfo.PayloadSize + GvspInfo.PayloadOffset;
             var buffer = new byte[GvspInfo.FinalPacketID * packetSize];
+            byte[] colorImageBytes = new byte[GvspInfo.FinalPacketID * packetSize * 3];
             int startPos = 0;
             int totalPacketsInFrame = 0;
 
@@ -75,7 +82,58 @@ namespace GigeVision.Core.Services
                         {
                             if (packetId - totalPacketsInFrame <= MissingPacketTolerance)
                             {
-                                FrameReady?.Invoke(totalPacketsInFrame, buffer);
+                                for (int row = 1; row < GvspInfo.Height - 1; row++)
+                                {
+                                    for (int column = 1; column < GvspInfo.Width - 1; column += 3)
+                                    {
+                                        pixel = row * GvspInfo.Width + column;
+                                        if (row % 2 == 0 && column % 2 == 0)
+                                        {
+                                            redColor = buffer[pixel];
+                                            greenColor = ((buffer[row * GvspInfo.Width + (column - 1)]) + (buffer[row * GvspInfo.Width + (column + 1)])
+                                                          + (buffer[(row - 1) * GvspInfo.Width + (column)]) + (buffer[(row + 1) * GvspInfo.Width + column])) / 4;
+                                            blueColor = ((buffer[(row - 1) * GvspInfo.Width + (column - 1)]) + (buffer[(row - 1) * GvspInfo.Width + (column + 1)])
+                                                          + (buffer[(row + 1) * GvspInfo.Width + (column - 1)]) + (buffer[(row + 1) * GvspInfo.Width + (column + 1)])) / 4;
+                                            colorImageBytes[pixel]     = (byte)greenColor;
+                                            colorImageBytes[pixel + 1] = (byte)redColor;
+                                            colorImageBytes[pixel + 2] = (byte)blueColor;
+
+                                        }
+                                        else if (row % 2 != 0 && column % 2 != 0)
+                                        {
+                                            blueColor = buffer[pixel];
+                                            greenColor = ((buffer[row * GvspInfo.Width + (column - 1)]) + (buffer[row * GvspInfo.Width + (column + 1)])
+                                                          + (buffer[(row - 1) * GvspInfo.Width + (column)]) + (buffer[(row + 1) * GvspInfo.Width + column])) / 4;
+                                            redColor = ((buffer[(row - 1) * GvspInfo.Width + (column - 1)]) + (buffer[(row - 1) * GvspInfo.Width + (column + 1)])
+                                                          + (buffer[(row + 1) * GvspInfo.Width + (column - 1)]) + (buffer[(row + 1) * GvspInfo.Width + (column + 1)])) / 4;
+                                            colorImageBytes[pixel] = (byte)greenColor;
+                                            colorImageBytes[pixel + 1] = (byte)redColor;
+                                            colorImageBytes[pixel + 2] = (byte)blueColor;
+
+                                        }
+                                        else if (row % 2 == 0 && column % 2 != 0)
+                                        {
+                                            greenColor = buffer[pixel];
+                                            redColor = ((buffer[row * GvspInfo.Width + (column - 1)]) + (buffer[row * GvspInfo.Width + (column + 1)])) / 2;
+                                            blueColor = ((buffer[(row - 1) * GvspInfo.Width + column]) + (buffer[(row + 1) * GvspInfo.Width + column])) / 2;
+                                            colorImageBytes[pixel] = (byte)greenColor;
+                                            colorImageBytes[pixel + 1] = (byte)redColor;
+                                            colorImageBytes[pixel + 2] = (byte)blueColor;
+
+                                        }
+                                        else if (row % 2 != 0 && column % 2 == 0)
+                                        {
+                                            greenColor = buffer[pixel];
+                                            blueColor = ((buffer[row * GvspInfo.Width + (column - 1)]) + (buffer[row * GvspInfo.Width + (column + 1)])) / 2;
+                                            redColor = ((buffer[(row - 1) * GvspInfo.Width + column]) + (buffer[(row + 1) * GvspInfo.Width + column])) / 2;
+                                            colorImageBytes[pixel] = (byte)greenColor;
+                                            colorImageBytes[pixel + 1] = (byte)redColor;
+                                            colorImageBytes[pixel + 2] = (byte)blueColor;
+
+                                        }
+                                    }
+                                }
+                                FrameReady?.Invoke(totalPacketsInFrame, colorImageBytes);
                                 totalPacketsInFrame = 0;
                             }
                         }

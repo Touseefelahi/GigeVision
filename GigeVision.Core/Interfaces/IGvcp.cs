@@ -319,7 +319,7 @@ namespace GigeVision.Core.Interfaces
         Task<bool> ReadXmlFileAsync(string ip = null);
 
         /// <summary>
-        /// Reads xml file
+        /// Read and Save xml file
         /// </summary>
         /// <param name="path">path</param>
         /// <param name="ip">Camera IP</param>
