@@ -150,7 +150,7 @@ namespace GenICam
         /// </summary>
         /// <param name="name">The name of the register.</param>
         /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation.</returns>
-        public async Task<(IPValue pValue, IRegister register, IPValue minPValue, IPValue maxPValue)> GetRegisterByName(string name)
+        public async Task<ICategory> GetRegisterByName(string name)
         {
             try
             {
@@ -166,31 +166,11 @@ namespace GenICam
                             continue;
                         }
 
-                        if (category.PValue is IPValue pValue)
-                        {
-                            tuple.pValue = pValue;
-                        }
-
-                        if (category.PMin is IPValue minPValue)
-                        {
-                            tuple.minPValue = minPValue;
-                        }
-
-                        if (category.PMax is IPValue MaxPValue)
-                        {
-                            tuple.maxPValue = MaxPValue;
-                        }
-
-                        if (category.PValue is IRegister register)
-                        {
-                            tuple.register = register;
-                        }
-
-                        return tuple;
+                        return category;
                     }
                 }
 
-                return tuple;
+                return null;
             }
             catch (Exception ex)
             {
@@ -266,6 +246,11 @@ namespace GenICam
                         genCategory = await GetIntegerCategory(node);
                         break;
 
+                    case nameof(CategoryType.IntConverter):
+                        var ipValue = (IPValue) await GetConverter(node);
+                        genCategory = new GenCategory(null, ipValue);
+                        break;
+
                     case nameof(CategoryType.Boolean):
                         genCategory = await GetBooleanCategory(node);
                         break;
@@ -278,6 +263,11 @@ namespace GenICam
                         genCategory = await GetCategoryFeatures(node);
                         break;
                     default:
+                        var detail = await GetGenericPValue(node);
+                        if (detail != null && detail.PValue != null) {
+                            return (ICategory) detail;
+                        }
+
                         break;
                 }
 
@@ -286,6 +276,81 @@ namespace GenICam
             catch (Exception ex)
             {
                 throw new GenICamException($"Failed to get Gen Category by the given node {node.Name}", ex);
+            }
+        }
+
+        private async Task<ICategory> GetGenericPValue(XmlNode xmlNode) {
+            try
+            {
+                Dictionary<string, IPValue> pVariables = new Dictionary<string, IPValue>();
+
+                IPValue pValue = null;
+                IPValue pMin = null;
+                IPValue pMax = null;
+                foreach (XmlNode node in xmlNode.ChildNodes)
+                {
+                    // child could be either pVariable or Formula
+                    switch (node.Name)
+                    {
+                        case "pVariable":
+                            // pVariable could be IntSwissKnife, SwissKnife, Integer, IntReg, Float, FloatReg,
+                            IPValue pVariable = null;
+                            var pNode = ReadPNode(node.InnerText);
+                            if (pNode != null)
+                            {
+                                switch (pNode.Name)
+                                {
+                                    case "IntSwissKnife":
+                                    case "SwissKnife":
+                                        pVariable = await GetIntSwissKnife(pNode);
+                                        break;
+
+                                    case "IntConverter":
+                                    case "Converter":
+                                        pVariable = await GetConverter(pNode);
+                                        break;
+
+                                    default:
+                                        pVariable = await GetRegister(pNode);
+                                        pVariable ??= await GetGenCategory(pNode) as IPValue;
+                                        break;
+                                }
+
+                                pVariable ??= await GetGenCategory(pNode) as IPValue;
+
+                                pVariables.Add(node.Attributes[NodeName].Value, pVariable);
+                            }
+
+                            break;
+
+                        case NodePValue:
+                            var pValueNode = ReadPNode(node.InnerText);
+                            if (pValueNode != null)
+                            {
+                                pValue = await GetRegister(pValueNode);
+                                pValue ??= await GetIntSwissKnife(pValueNode);
+                                pValue ??= await GetConverter(pValueNode);
+                                pValue ??= await GetGenCategory(pValueNode) as IPValue;
+
+                                var genCategory = await ReadPMaxAndPmin(pValueNode).ConfigureAwait(false);
+                                if (genCategory != null) {
+                                    pMin = genCategory.PMin;
+                                    pMax = genCategory.PMax;
+                                }
+                            }
+
+                            break;
+
+                        default:
+                            break;
+                    }
+                }
+
+                return new GenCategory(null, pValue, pMin, pMax);
+            }
+            catch (Exception ex)
+            {
+                throw new GenICamException($"Failed to get the Converter by the given node {xmlNode.Name}", ex);
             }
         }
 
@@ -358,9 +423,9 @@ namespace GenICam
                                 else if (pNode.Attributes["Name"].Value.EndsWith("_Float") || pNode.Attributes["Name"].Value.EndsWith("_Int") || pNode.Attributes["Name"].Value.EndsWith("_Bit"))
                                 {
                                     var register = await GetRegisterByName(pNode.Attributes["Name"].Value).ConfigureAwait(false);
-                                    pValue = register.pValue;
-                                    pMin = register.minPValue;
-                                    pMax = register.maxPValue;
+                                    pValue = register.PValue;
+                                    pMin = register.PMin;
+                                    pMax = register.PMax;
                                 }
                             }
 
@@ -412,7 +477,7 @@ namespace GenICam
                         else if (pNode.Attributes["Name"].Value.EndsWith("_Float") || pNode.Attributes["Name"].Value.EndsWith("_Int") || pNode.Attributes["Name"].Value.EndsWith("_Bit"))
                         {
                             var register = await GetRegisterByName(pNode.Attributes["Name"].Value).ConfigureAwait(false);
-                            pValue = register.pValue;
+                            pValue = register.PValue;
                         }
                     }
                 }
@@ -476,7 +541,7 @@ namespace GenICam
                         else if (pNode.Attributes["Name"].Value.EndsWith("_Float") || pNode.Attributes["Name"].Value.EndsWith("_Int") || pNode.Attributes["Name"].Value.EndsWith("_Bit"))
                         {
                             var register = await GetRegisterByName(pNode.Attributes["Name"].Value).ConfigureAwait(false);
-                            pValue = register.pValue;
+                            pValue = register.PValue;
                         }
                     }
                 }
@@ -661,7 +726,7 @@ namespace GenICam
                 else if (pNode.Attributes["Name"].Value.EndsWith("_Float") || pNode.Attributes["Name"].Value.EndsWith("_Int") || pNode.Attributes["Name"].Value.EndsWith("_Bit"))
                 {
                     var register = await GetRegisterByName(pNode.Attributes["Name"].Value).ConfigureAwait(false);
-                    pValue = register.pValue;
+                    pValue = register.PValue;
                 }
             }
 
@@ -699,7 +764,7 @@ namespace GenICam
                     else if (pNode.Attributes["Name"].Value.EndsWith("_Float") || pNode.Attributes["Name"].Value.EndsWith("_Int") || pNode.Attributes["Name"].Value.EndsWith("_Bit"))
                     {
                         var register = await GetRegisterByName(pNode.Attributes["Name"].Value).ConfigureAwait(false);
-                        pValue = register.pValue;
+                        pValue = register.PValue;
                     }
                 }
 
@@ -904,7 +969,7 @@ namespace GenICam
                                 else if (pNode.Attributes["Name"].Value.EndsWith("_Float") || pNode.Attributes["Name"].Value.EndsWith("_Int") || pNode.Attributes["Name"].Value.EndsWith("_Bit"))
                                 {
                                     var register = await GetRegisterByName(pNode.Attributes["Name"].Value).ConfigureAwait(false);
-                                    pValue = register.pValue;
+                                    pValue = register.PValue;
                                 }
                             }
 

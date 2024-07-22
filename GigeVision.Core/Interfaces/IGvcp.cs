@@ -312,6 +312,13 @@ namespace GigeVision.Core.Interfaces
         Task<(IPValue pValue, IRegister register)> GetRegister(string name);
 
         /// <summary>
+        /// Get paramter descriptor
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        Task<ICategory> GetRegisterCategory(string name);
+
+        /// <summary>
         /// Reads xml file
         /// </summary>
         /// <param name="ip">Camera IP</param>

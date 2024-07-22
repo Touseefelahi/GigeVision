@@ -2,11 +2,14 @@
 using GigeVision.Core.Interfaces;
 using Stira.WpfCore;
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
+using GenICam;
 using GigeVision.Core.Models;
+using Converter = GigeVision.Core.Models.Converter;
 
 namespace GigeVision.Core.Services
 {
@@ -36,6 +39,7 @@ namespace GigeVision.Core.Services
         private int portRx;
         private string rxIP;
         private uint width, height, offsetX, offsetY, bytesPerPixel;
+        private Dictionary<string,ICategory> cameraParametersCache;
 
         /// <summary>
         /// Camera constructor with initialized Gvcp Controller
@@ -44,6 +48,7 @@ namespace GigeVision.Core.Services
         public Camera(IGvcp gvcp)
         {
             Gvcp = gvcp;
+            cameraParametersCache = new Dictionary<string, ICategory>();
             Task.Run(async () => await SyncParameters().ConfigureAwait(false));
             Init();
         }
@@ -57,6 +62,7 @@ namespace GigeVision.Core.Services
         public Camera()
         {
             Gvcp = new Gvcp();
+            cameraParametersCache = new Dictionary<string, ICategory>();
             Init();
         }
 
@@ -549,6 +555,111 @@ namespace GigeVision.Core.Services
             return IsStreaming;
         }
 
+        public async Task<long?> GetParameterValue(string parameterName)
+        {
+            if (cameraParametersCache == null) 
+            {
+                cameraParametersCache = new Dictionary<string, ICategory>();
+            }
+            if (!cameraParametersCache.ContainsKey(parameterName) && ! await LoadParameter(parameterName))
+            {
+                return null;
+            }
+           
+            return await cameraParametersCache[parameterName].PValue.GetValueAsync().ConfigureAwait(false);
+        }
+        
+        /// <summary>
+        /// Load a camera parameter
+        /// </summary>
+        /// <param name="parameterName"></param>
+        /// <returns></returns>
+        public async Task<bool> LoadParameter(string parameterName)
+        {
+            var value = (await Gvcp.GetRegisterCategory(parameterName).ConfigureAwait(false));
+            if (value == null)
+            {
+                return false;
+            }
+
+            cameraParametersCache[parameterName] = value;
+            return true;
+        }
+
+        /// <summary>
+        /// Obtain the parameter properties like name, description, tooltip
+        /// </summary>
+        /// <param name="parameterName">The name of the parameter</param>
+        /// <returns></returns>
+        public async Task<CategoryProperties> GetParameterProperties(string parameterName)
+        {
+            if (!cameraParametersCache.ContainsKey(parameterName) && ! await LoadParameter(parameterName).ConfigureAwait(false))
+            {
+                return null;
+            }
+
+            return cameraParametersCache[parameterName].CategoryProperties;
+        }
+        
+        /// <summary>
+        /// Obtain the minimum value allowed for the parameter. 0 if the parameter does not support it.
+        /// </summary>
+        /// <param name="parameterName">The name of the parameter</param>
+        /// <returns></returns>
+        public async Task<long> GetParameterMinValue(string parameterName)
+        {
+            if (!cameraParametersCache.ContainsKey(parameterName) && ! await LoadParameter(parameterName).ConfigureAwait(false))
+            {
+                return 0;
+            }
+
+            if (cameraParametersCache[parameterName].PMin == null)
+            {
+                return 0;
+            }
+            
+            var result = await cameraParametersCache[parameterName].PMin.GetValueAsync().ConfigureAwait(false);
+            return result ?? 0;
+        }
+        
+        /// <summary>
+        /// Obtain the maximum value allowed for the parameter. 0 if the parameter does not support it.
+        /// </summary>
+        /// <param name="parameterName">The name of the parameter&lt;</param>;
+        /// <returns></returns>
+        public async Task<long> GetParameterMaxValue(string parameterName)
+        {
+            if (!cameraParametersCache.ContainsKey(parameterName) && ! await LoadParameter(parameterName).ConfigureAwait(false))
+            {
+                return 0;
+            }
+
+            if (cameraParametersCache[parameterName].PMax == null)
+            {
+                return 0;
+            }
+            
+            var result = await cameraParametersCache[parameterName].PMax.GetValueAsync().ConfigureAwait(false);
+            return result ?? 0;
+        }
+
+        /// <summary>
+        /// Set the value of a camera paramter
+        /// </summary>
+        /// <param name="parameterName">The name of the parameter to change</param>
+        /// <param name="value">the new value to set</param>
+        /// <returns></returns>
+        public async Task<bool> SetCameraParameter(string parameterName, long value)
+        {
+            if (!cameraParametersCache.ContainsKey(parameterName) && ! await LoadParameter(parameterName).ConfigureAwait(false))
+            {
+                return false;
+            }
+            
+            var result  = await cameraParametersCache[parameterName].PValue.SetValueAsync(value).ConfigureAwait(false) as GvcpReply;
+            return result.Status == GvcpStatus.GEV_STATUS_SUCCESS;
+        }
+
         /// <summary>
         /// It reads all the parameters from the camera
         /// </summary>
@@ -560,17 +671,13 @@ namespace GigeVision.Core.Services
                 if (!await Gvcp.ReadXmlFileAsync(IP))
                     return false;
 
-                var widthPValue = (await Gvcp.GetRegister(nameof(RegisterName.Width))).pValue;
-                var heightPValue = (await Gvcp.GetRegister(nameof(RegisterName.Height))).pValue;
-                var offsetXPValue = (await Gvcp.GetRegister(nameof(RegisterName.OffsetX))).pValue;
-                var offsetYPValue = (await Gvcp.GetRegister(nameof(RegisterName.OffsetY))).pValue;
-                var pixelFormatPValue = (await Gvcp.GetRegister(nameof(RegisterName.PixelFormat))).pValue;
-                Width = (uint)await widthPValue.GetValueAsync().ConfigureAwait(false);
-                Height = (uint)await heightPValue.GetValueAsync().ConfigureAwait(false);
-                OffsetX = (uint)await offsetXPValue.GetValueAsync().ConfigureAwait(false);
-                OffsetY = (uint)await offsetYPValue.GetValueAsync().ConfigureAwait(false);
-                PixelFormat = (PixelFormat)(uint)await pixelFormatPValue.GetValueAsync().ConfigureAwait(false);
+                Width = (uint)await GetParameterValue(nameof(RegisterName.Width)).ConfigureAwait(false);
+                Height = (uint)await GetParameterValue(nameof(RegisterName.Height)).ConfigureAwait(false);
+                OffsetX = (uint)await GetParameterValue(nameof(RegisterName.OffsetX)).ConfigureAwait(false);
+                OffsetY = (uint)await GetParameterValue(nameof(RegisterName.OffsetY)).ConfigureAwait(false);
+                PixelFormat = (PixelFormat)(uint)await GetParameterValue(nameof(RegisterName.PixelFormat)).ConfigureAwait(false);
                 bytesPerPixel = (uint)PixelFormatToBytesPerPixel(PixelFormat);
+                
                 return true;
             }
             catch (Exception ex)

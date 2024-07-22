@@ -245,10 +245,28 @@ namespace GigeVision.Core.Services
         public async Task<(IPValue pValue, IRegister register)> GetRegister(string name)
         {
             (IPValue pValue, IRegister register) tuple = new(null, null);
-            var extendedTuple =  await xmlHelper.GetRegisterByName(name);
-            tuple.register = extendedTuple.register;
-            tuple.pValue = extendedTuple.pValue;
+            var category = await xmlHelper.GetRegisterByName(name);
+            if (category == null)
+            {
+                return tuple;
+            }
+
+            if (category.PValue is IPValue pValue)
+            {
+                tuple.pValue = pValue;
+            }
+            
+            if (category.PValue is IRegister register)
+            {
+                tuple.register = register;
+            }
+
             return tuple;
+        }
+        
+        public async Task<ICategory> GetRegisterCategory(string name)
+        {
+            return await xmlHelper.GetRegisterByName(name);
         }
 
         /// <summary>

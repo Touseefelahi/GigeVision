@@ -8,6 +8,11 @@
         /// <summary>Integer.</summary>
         Integer,
 
+        /// <summary>
+        /// IntConverter.
+        /// </summary>
+        IntConverter,
+
         /// <summary>Float.</summary>
         Float,
 
@@ -25,5 +30,8 @@
 
         /// <summary>Category.</summary>
         Category,
+
+        /// <summary>Converter.</summary>
+        Converter
     }
 }
