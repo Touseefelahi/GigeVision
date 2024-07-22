@@ -557,6 +557,10 @@ namespace GigeVision.Core.Services
 
         public async Task<long?> GetParameterValue(string parameterName)
         {
+            if (cameraParametersCache == null) 
+            {
+                cameraParametersCache = new Dictionary<string, ICategory>();
+            }
             if (!cameraParametersCache.ContainsKey(parameterName) && ! await LoadParameter(parameterName))
             {
                 return null;
