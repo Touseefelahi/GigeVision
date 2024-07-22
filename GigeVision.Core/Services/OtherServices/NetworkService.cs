@@ -50,7 +50,7 @@ namespace GigeVision.Core
         /// <param name="skipWireless"></param>
         /// <param name="allowedMask"></param>
         /// <returns></returns>
-        public static List<string> GetAllInterfaces(bool ipVersion4Only = true, bool skipWireless = false, string allowedMask = "255.255.255.0")
+        public static List<string> GetAllInterfaces(string allowedMask = "*", bool ipVersion4Only = true, bool skipWireless = false)
         {
             List<string> interfaces = new();
             foreach (var network in NetworkInterface.GetAllNetworkInterfaces())
@@ -81,7 +81,7 @@ namespace GigeVision.Core
                         continue;
                     }
                     var addresses = properties.GatewayAddresses;
-                    if ((addresses == null) || (addresses.Count == 0))
+                    if (((addresses == null) || (addresses.Count == 0)) && allowedMask != "*")
                     {
                         var isValid = IPAddress.TryParse(allowedMask, out IPAddress validMask);
                         if (isValid is false)

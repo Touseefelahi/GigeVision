@@ -163,7 +163,7 @@ namespace GigeVision.Core.Services
         /// <param name="macAddress">MAC address of the camera</param>
         /// <param name="iPToSet">IP of camera that needs to be set</param>
         /// <returns>Success Status</returns>
-        public async Task<bool> ForceIPAsync(byte[] macAddress, string iPToSet)
+        public async Task<bool> ForceIPAsync(byte[] macAddress, string iPToSet, string netmask)
         {
             var forceIpCommand = new byte[64];
 
@@ -184,7 +184,7 @@ namespace GigeVision.Core.Services
             Array.Reverse(ipBytes, 0, 4);
             Array.Copy(ipBytes, 0, forceIpCommand, 28, 4);//4bytes, TotalLength= 32 + (12 reserved bytes) = 44
 
-            var maskBytes = BitConverter.GetBytes(Converter.ConvertIpToNumber("255.255.255.0"));
+            var maskBytes = BitConverter.GetBytes(Converter.ConvertIpToNumber(netmask));
             Array.Reverse(maskBytes, 0, 4);
             Array.Copy(maskBytes, 0, forceIpCommand, 44, 4);//4bytes, TotalLength= 48 + (12 reserved bytes) = 60
 
@@ -215,9 +215,9 @@ namespace GigeVision.Core.Services
         /// <param name="macAddress">Mac Address of Camera</param>
         /// <param name="iPToSet">IP to set</param>
         /// <returns></returns>
-        public async Task<bool> ForceIPAsync(string macAddress, string iPToSet)
+        public async Task<bool> ForceIPAsync(string macAddress, string iPToSet, string netmask)
         {
-            return await ForceIPAsync(Converter.HexStringToByteArray(macAddress), iPToSet).ConfigureAwait(false);
+            return await ForceIPAsync(Converter.HexStringToByteArray(macAddress), iPToSet, netmask).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -1100,7 +1100,7 @@ namespace GigeVision.Core.Services
         /// <param name="packet"></param>
         /// <param name="receptionEvent"></param>
         /// <param name="ipNetwork"></param>
-        private async Task SendBroadCastPacket(byte[] packet, Action<IPEndPoint, byte[]> receptionEvent, string ipNetworkFixed = "")
+        private async Task SendBroadCastPacket(byte[] packet, Action<IPEndPoint, byte[]> receptionEvent, string ipNetworkFixed = "", string allowedNetMask = "*")
         {
             var reply = Array.Empty<byte>();
             List<IPAddress> ips = new();
@@ -1110,7 +1110,7 @@ namespace GigeVision.Core.Services
             }
             else
             {
-                var ipsString = NetworkService.GetAllInterfaces();
+                var ipsString = NetworkService.GetAllInterfaces(allowedNetMask);
                 foreach (var ipString in ipsString)
                 {
                     if (IPAddress.TryParse(ipString, out IPAddress ipToAdd))
