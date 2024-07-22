@@ -254,7 +254,7 @@ namespace GigeVision.Core.Interfaces
         /// <param name="macAddress">MAC address of the camera</param>
         /// <param name="iPToSet">IP of camera that needs to be set</param>
         /// <returns>Success Status</returns>
-        Task<bool> ForceIPAsync(byte[] macAddress, string iPToSet);
+        Task<bool> ForceIPAsync(byte[] macAddress, string iPToSet, string netmask);
 
         /// <summary>
         /// Forces the IP of camera to be changed to the given IP
@@ -262,7 +262,7 @@ namespace GigeVision.Core.Interfaces
         /// <param name="macAddress">MAC address of the camera</param>
         /// <param name="iPToSet">IP of camera that needs to be set</param>
         /// <returns>Success Status</returns>
-        Task<bool> ForceIPAsync(string macAddress, string iPToSet);
+        Task<bool> ForceIPAsync(string macAddress, string iPToSet, string netmask);
 
         /// <summary>
         /// It will get all the devices from the network and then fires the event for updated list
