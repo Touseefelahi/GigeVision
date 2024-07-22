@@ -76,6 +76,15 @@ namespace GigeVision.Core.Services
         public IGvcp Gvcp { get; private set; }
 
         /// <summary>
+        /// The source port from camera to host for GSVP protocol
+        /// </summary>
+        public int SCSPPort
+        {
+            get;
+            private set;
+        }
+        
+        /// <summary>
         /// Camera height
         /// </summary>
         public uint Height
@@ -497,29 +506,40 @@ namespace GigeVision.Core.Services
                 SetRxBuffer();
             }
 
-            SetupReceiver();
+            
 
             var acquisitionStart = (await Gvcp.GetRegister(nameof(RegisterName.AcquisitionStart))).pValue;
             if (acquisitionStart != null)
             {
                 if (await Gvcp.TakeControl(true).ConfigureAwait(false))
                 {
-                    SetupRxThread();
                     var gevSCPHostPort = (await Gvcp.GetRegister(nameof(GvcpRegister.GevSCPHostPort))).pValue;
                     if ((await gevSCPHostPort.SetValueAsync((uint)PortRx).ConfigureAwait(false) as GvcpReply).Status == GvcpStatus.GEV_STATUS_SUCCESS)
                     {
                         var gevSCDA = (await Gvcp.GetRegister(nameof(GvcpRegister.GevSCDA))).pValue;
-                        await gevSCDA.SetValueAsync(Converter.IpToNumber(ip2Send)).ConfigureAwait(false);
+                        if ((await gevSCDA.SetValueAsync(Converter.IpToNumber(ip2Send)).ConfigureAwait(false) as GvcpReply).Status == GvcpStatus.GEV_STATUS_SUCCESS)
+                        {
+                            var gevSCSP = (await Gvcp.GetRegister(nameof(GvcpRegister.GevSCSP))).pValue;
+                            var getSCSPPortValue = await gevSCSP.GetValueAsync().ConfigureAwait((false));
+                            if (getSCSPPortValue.HasValue)
+                            {
+                                SCSPPort = (int)getSCSPPortValue.Value;
+                            }
 
-                        var gevSCPSPacketSize = (await Gvcp.GetRegister(nameof(GvcpRegister.GevSCPSPacketSize))).pValue;
-                        var reply = await gevSCPSPacketSize.SetValueAsync(Payload).ConfigureAwait(false);
-                        if (((await acquisitionStart.SetValueAsync(1).ConfigureAwait(false)) as GvcpReply).Status == GvcpStatus.GEV_STATUS_SUCCESS)
-                        {
-                            IsStreaming = true;
-                        }
-                        else
-                        {
-                            await StopStream().ConfigureAwait(false);
+                            var gevSCPSPacketSize = (await Gvcp.GetRegister(nameof(GvcpRegister.GevSCPSPacketSize))).pValue;
+                            var reply = await gevSCPSPacketSize.SetValueAsync(Payload).ConfigureAwait(false);
+                            
+                            SetupReceiver();
+                            SetupRxThread();
+                            
+                            if (((await acquisitionStart.SetValueAsync(1).ConfigureAwait(false)) as GvcpReply).Status == GvcpStatus.GEV_STATUS_SUCCESS)
+                            {
+                                IsStreaming = true;
+                            }
+                            else
+                            {
+                                await StopStream().ConfigureAwait(false);
+                            }   
                         }
                     }
                 }
@@ -531,10 +551,6 @@ namespace GigeVision.Core.Services
                         IsStreaming = true;
                     }
                 }
-            }
-            else
-            {
-                Updates?.Invoke(this, "Fatal Error: Acquisition Start Register Not Found");
             }
             return IsStreaming;
         }
@@ -750,6 +766,8 @@ namespace GigeVision.Core.Services
         {
             StreamReceiver ??= new StreamReceiverBufferswap();
             StreamReceiver.RxIP = RxIP;
+            StreamReceiver.CameraIP = IP;
+            StreamReceiver.CameraSourcePort = SCSPPort;
             StreamReceiver.ReceiveTimeoutInMilliseconds = ReceiveTimeoutInMilliseconds;
             StreamReceiver.IsMulticast = IsMulticast;
             StreamReceiver.MulticastIP = MulticastIP;

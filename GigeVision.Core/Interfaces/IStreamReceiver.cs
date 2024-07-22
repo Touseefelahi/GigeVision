@@ -12,6 +12,16 @@ namespace GigeVision.Core.Interfaces
         /// Event for frame ready
         /// </summary>
         EventHandler<byte[]> FrameReady { get; set; }
+        
+        /// <summary>
+        /// The camera source traffic port. Required for firewall traversal traffic
+        /// </summary>
+        int CameraSourcePort { get; set; }
+        
+        /// <summary>
+        /// Camera ip, required for firewall traversal traffic
+        /// </summary>
+        string CameraIP { get; set; }
 
         /// <summary>
         /// GVSP info for image info

@@ -40,6 +40,16 @@ namespace GigeVision.Core.Services
         /// GVSP info for image info
         /// </summary>
         public GvspInfo GvspInfo { get; protected set; }
+        
+        /// <summary>
+        /// The interval for sending to the camera a package to keep the route opened through the firewall
+        /// </summary>
+        public string CameraIP { get; set; }
+        
+        /// <summary>
+        /// The camera source traffic port. Required for firewall traversal traffic
+        /// </summary>
+        public int CameraSourcePort { get; set; }
 
         /// <summary>
         /// Is multicast enabled
@@ -242,12 +252,15 @@ namespace GigeVision.Core.Services
                 }
                 socketRxRaw = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
                 socketRxRaw.Bind(new IPEndPoint(IPAddress.Any, PortRx));
+                socketRxRaw.ReceiveTimeout = ReceiveTimeoutInMilliseconds;
+                
+                socketRxRaw.SendTo(new byte[8], new IPEndPoint(IPAddress.Parse(CameraIP), CameraSourcePort));
+                
                 if (IsMulticast)
                 {
                     MulticastOption mcastOption = new(IPAddress.Parse(MulticastIP), IPAddress.Parse(RxIP));
                     socketRxRaw.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership, mcastOption);
                 }
-                socketRxRaw.ReceiveTimeout = ReceiveTimeoutInMilliseconds;
                 //One full hd image with GVSP2.0 Header as default, it will be updated for image type
                 socketRxRaw.ReceiveBufferSize = (int)(1920 * 1100);
             }
