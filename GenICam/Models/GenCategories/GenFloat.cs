@@ -42,16 +42,6 @@ namespace GenICam
         }
 
         /// <summary>
-        /// Gets the pointer on the mathematical maximum value.
-        /// </summary>
-        public IPValue PMax { get; }
-
-        /// <summary>
-        /// Gets the pointer on the mathematical minimum value.
-        /// </summary>
-        public IPValue PMin { get; }
-
-        /// <summary>
         /// Gets the minimum value.
         /// </summary>
         public double Min { get; private set; }
