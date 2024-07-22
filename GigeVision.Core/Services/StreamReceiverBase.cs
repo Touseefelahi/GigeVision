@@ -1,5 +1,4 @@
 ﻿using GigeVision.Core.Enums;
-using Stira.WpfCore;
 using System;
 using System.Net;
 using System.Net.Sockets;
