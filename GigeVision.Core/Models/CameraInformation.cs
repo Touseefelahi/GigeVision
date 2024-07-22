@@ -1,11 +1,11 @@
 ﻿using GigeVision.Core.Enums;
-using Stira.WpfCore;
 
 namespace GigeVision.Core.Models
 {
     /// <summary>
     /// Discovery Packet Information for GigeCamera
     /// </summary>
+    
     public class CameraInformation : BaseNotifyPropertyChanged
     {
         private string iP, networkIP;

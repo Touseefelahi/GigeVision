@@ -1,6 +1,5 @@
 ﻿using GigeVision.Core.Enums;
 using GigeVision.Core.Interfaces;
-using Stira.WpfCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
