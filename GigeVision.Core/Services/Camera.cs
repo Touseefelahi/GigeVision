@@ -576,12 +576,13 @@ namespace GigeVision.Core.Services
             {
                 cameraParametersCache = new Dictionary<string, ICategory>();
             }
-            if (!cameraParametersCache.ContainsKey(parameterName) && ! await LoadParameter(parameterName))
+            ICategory parameter = await GetParameter(parameterName).ConfigureAwait(false);
+            if (parameter == null)
             {
                 return null;
             }
            
-            return await cameraParametersCache[parameterName].PValue.GetValueAsync().ConfigureAwait(false);
+            return await parameter.PValue.GetValueAsync().ConfigureAwait(false);
         }
         
         /// <summary>
@@ -608,12 +609,13 @@ namespace GigeVision.Core.Services
         /// <returns></returns>
         public async Task<CategoryProperties> GetParameterProperties(string parameterName)
         {
-            if (!cameraParametersCache.ContainsKey(parameterName) && ! await LoadParameter(parameterName).ConfigureAwait(false))
+            ICategory parameter = await GetParameter(parameterName).ConfigureAwait(false);
+            if (parameter == null)
             {
                 return null;
             }
 
-            return cameraParametersCache[parameterName].CategoryProperties;
+            return parameter.CategoryProperties;
         }
         
         /// <summary>
@@ -623,39 +625,58 @@ namespace GigeVision.Core.Services
         /// <returns></returns>
         public async Task<long> GetParameterMinValue(string parameterName)
         {
-            if (!cameraParametersCache.ContainsKey(parameterName) && ! await LoadParameter(parameterName).ConfigureAwait(false))
+            ICategory parameter = await GetParameter(parameterName).ConfigureAwait(false);
+            
+            if (parameter == null)
             {
                 return 0;
             }
 
-            if (cameraParametersCache[parameterName].PMin == null)
+            if (parameter.PMin == null)
             {
                 return 0;
             }
             
-            var result = await cameraParametersCache[parameterName].PMin.GetValueAsync().ConfigureAwait(false);
+            var result = await parameter.PMin.GetValueAsync().ConfigureAwait(false);
             return result ?? 0;
         }
         
         /// <summary>
         /// Obtain the maximum value allowed for the parameter. 0 if the parameter does not support it.
         /// </summary>
-        /// <param name="parameterName">The name of the parameter&lt;</param>;
+        /// <param name="parameterName">The name of the parameter</param>;
         /// <returns></returns>
         public async Task<long> GetParameterMaxValue(string parameterName)
         {
-            if (!cameraParametersCache.ContainsKey(parameterName) && ! await LoadParameter(parameterName).ConfigureAwait(false))
+            ICategory parameter = await GetParameter(parameterName).ConfigureAwait(false);
+            
+            if (parameter == null)
             {
                 return 0;
             }
 
-            if (cameraParametersCache[parameterName].PMax == null)
+            if (parameter.PMax == null)
             {
                 return 0;
             }
             
-            var result = await cameraParametersCache[parameterName].PMax.GetValueAsync().ConfigureAwait(false);
+            var result = await parameter.PMax.GetValueAsync().ConfigureAwait(false);
             return result ?? 0;
+        }
+        
+        /// <summary>
+        /// Get the description of the parameter
+        /// </summary>
+        /// <param name="parameterName">The name of the parameter</param>
+        /// <returns></returns>
+        public async Task<ICategory> GetParameter(string parameterName)
+        {
+            if (!cameraParametersCache.ContainsKey(parameterName) && ! await LoadParameter(parameterName).ConfigureAwait(false))
+            {
+                return null;
+            }
+
+            return cameraParametersCache[parameterName];
         }
 
         /// <summary>
