@@ -15,6 +15,7 @@ namespace GigeVision.Core.Services
     public abstract class StreamReceiverBase : BaseNotifyPropertyChanged, IStreamReceiver
     {
         protected Socket socketRxRaw;
+        private DateTime lastFirewallPunchKeepAliveSent;
 
         /// <summary>
         /// Receives the GigeStream
@@ -24,6 +25,7 @@ namespace GigeVision.Core.Services
             GvspInfo = new GvspInfo();
             MissingPacketTolerance = 2;
             ReceiveTimeoutInMilliseconds = 1000;
+            FirewallPunchKeepAliveIntervalInSeconds = 30;
         }
         
         /// <summary>
@@ -31,6 +33,11 @@ namespace GigeVision.Core.Services
         /// </summary>
         public int ReceiveTimeoutInMilliseconds { get; set; }
 
+        /// <summary>
+        /// Time interval from a package to another for firewall traversal. Set value <= 0 to disable it
+        /// </summary>
+        public int FirewallPunchKeepAliveIntervalInSeconds { get; set; }
+        
         /// <summary>
         /// Event for frame ready
         /// </summary>
@@ -205,6 +212,12 @@ namespace GigeVision.Core.Services
                         packetRxCount = 0;
                         lastImageID = imageID;
 
+                        if (DateTime.Now.Subtract(lastFirewallPunchKeepAliveSent).Seconds >= FirewallPunchKeepAliveIntervalInSeconds && FirewallPunchKeepAliveIntervalInSeconds > 0)
+                        {
+                            lastFirewallPunchKeepAliveSent  = DateTime.Now;
+                            socketRxRaw.SendTo(new byte[8], new IPEndPoint(IPAddress.Parse(CameraIP), CameraSourcePort));   
+                        }
+                        
                         Task.Run(() =>
                         {
                             //Checking if we receive all packets
@@ -255,6 +268,7 @@ namespace GigeVision.Core.Services
                 socketRxRaw.ReceiveTimeout = ReceiveTimeoutInMilliseconds;
                 
                 socketRxRaw.SendTo(new byte[8], new IPEndPoint(IPAddress.Parse(CameraIP), CameraSourcePort));
+                lastFirewallPunchKeepAliveSent  = DateTime.Now;
                 
                 if (IsMulticast)
                 {

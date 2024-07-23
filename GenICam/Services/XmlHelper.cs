@@ -423,9 +423,12 @@ namespace GenICam
                                 else if (pNode.Attributes["Name"].Value.EndsWith("_Float") || pNode.Attributes["Name"].Value.EndsWith("_Int") || pNode.Attributes["Name"].Value.EndsWith("_Bit"))
                                 {
                                     var register = await GetRegisterByName(pNode.Attributes["Name"].Value).ConfigureAwait(false);
-                                    pValue = register.PValue;
-                                    pMin = register.PMin;
-                                    pMax = register.PMax;
+                                    if (register != null)
+                                    {
+                                        pValue = register.PValue;
+                                        pMin = register.PMin;
+                                        pMax = register.PMax;
+                                    }
                                 }
                             }
 
@@ -477,7 +480,10 @@ namespace GenICam
                         else if (pNode.Attributes["Name"].Value.EndsWith("_Float") || pNode.Attributes["Name"].Value.EndsWith("_Int") || pNode.Attributes["Name"].Value.EndsWith("_Bit"))
                         {
                             var register = await GetRegisterByName(pNode.Attributes["Name"].Value).ConfigureAwait(false);
-                            pValue = register.PValue;
+                            if (register != null)
+                            {
+                                pValue = register.PValue;   
+                            }
                         }
                     }
                 }
@@ -549,7 +555,10 @@ namespace GenICam
                         else if (pNode.Attributes["Name"].Value.EndsWith("_Float") || pNode.Attributes["Name"].Value.EndsWith("_Int") || pNode.Attributes["Name"].Value.EndsWith("_Bit"))
                         {
                             var register = await GetRegisterByName(pNode.Attributes["Name"].Value).ConfigureAwait(false);
-                            pValue = register.PValue;
+                            if (register != null)
+                            {
+                                pValue = register.PValue;
+                            }
                         }
                     }
                 }
@@ -734,7 +743,10 @@ namespace GenICam
                 else if (pNode.Attributes["Name"].Value.EndsWith("_Float") || pNode.Attributes["Name"].Value.EndsWith("_Int") || pNode.Attributes["Name"].Value.EndsWith("_Bit"))
                 {
                     var register = await GetRegisterByName(pNode.Attributes["Name"].Value).ConfigureAwait(false);
-                    pValue = register.PValue;
+                    if (register != null)
+                    {
+                        pValue = register.PValue;
+                    }
                 }
             }
 
@@ -772,7 +784,10 @@ namespace GenICam
                     else if (pNode.Attributes["Name"].Value.EndsWith("_Float") || pNode.Attributes["Name"].Value.EndsWith("_Int") || pNode.Attributes["Name"].Value.EndsWith("_Bit"))
                     {
                         var register = await GetRegisterByName(pNode.Attributes["Name"].Value).ConfigureAwait(false);
-                        pValue = register.PValue;
+                        if (register != null)
+                        {
+                            pValue = register.PValue;   
+                        }
                     }
                 }
 
@@ -977,7 +992,10 @@ namespace GenICam
                                 else if (pNode.Attributes["Name"].Value.EndsWith("_Float") || pNode.Attributes["Name"].Value.EndsWith("_Int") || pNode.Attributes["Name"].Value.EndsWith("_Bit"))
                                 {
                                     var register = await GetRegisterByName(pNode.Attributes["Name"].Value).ConfigureAwait(false);
-                                    pValue = register.PValue;
+                                    if (register != null)
+                                    {
+                                        pValue = register.PValue;   
+                                    }
                                 }
                             }
 
