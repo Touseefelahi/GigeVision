@@ -7,6 +7,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using GigeVision.Core.Models;
+using System.Diagnostics;
 
 namespace GigeVision.Core.Services
 {
@@ -486,6 +487,9 @@ namespace GigeVision.Core.Services
                     {
                         var gevSCDA = (await Gvcp.GetRegister(nameof(GvcpRegister.GevSCDA))).pValue;
                         await gevSCDA.SetValueAsync(Converter.IpToNumber(ip2Send)).ConfigureAwait(false);
+
+                        //Debug.Assert(await gevSCDA.GetValueAsync() == Converter.IpToNumber(ip2Send));
+                        //Debug.Assert(await gevSCPHostPort.GetValueAsync() == (uint)PortRx);
 
                         var gevSCPSPacketSize = (await Gvcp.GetRegister(nameof(GvcpRegister.GevSCPSPacketSize))).pValue;
                         var reply = await gevSCPSPacketSize.SetValueAsync(Payload).ConfigureAwait(false);

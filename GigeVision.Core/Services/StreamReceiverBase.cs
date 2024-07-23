@@ -102,8 +102,8 @@ namespace GigeVision.Core.Services
         /// </summary>
         protected void DetectGvspType()
         {
-            Span<byte> singlePacket = new byte[9000];
-            socketRxRaw.Receive(singlePacket.ToArray());
+            byte[] singlePacket = new byte[9000];
+            socketRxRaw.Receive(singlePacket);
             GvspInfo.IsDecodingAsVersion2 = ((singlePacket[4] & 0xF0) >> 4) == 8;
             GvspInfo.SetDecodingTypeParameter();
 
@@ -120,7 +120,7 @@ namespace GigeVision.Core.Services
             }
 
             //Optimizing the array length for receive buffer
-            int length = socketRxRaw.Receive(singlePacket.ToArray());
+            int length = socketRxRaw.Receive(singlePacket);
             packetID = (singlePacket[GvspInfo.PacketIDIndex] << 8) | singlePacket[GvspInfo.PacketIDIndex + 1];
             if (packetID > 0)
             {
@@ -157,29 +157,30 @@ namespace GigeVision.Core.Services
                 DetectGvspType();
                 buffer[0] = new byte[GvspInfo.RawImageSize];
                 buffer[1] = new byte[GvspInfo.RawImageSize];
-                Span<byte> singlePacket = stackalloc byte[GvspInfo.PacketLength];
+                byte[] singlePacket = new byte[GvspInfo.PacketLength];
 
                 while (IsReceiving)
                 {
-                    length = socketRxRaw.Receive(singlePacket.ToArray());
+                    length = socketRxRaw.Receive(singlePacket);
+                    Span<byte> singlePacketAsSpan = singlePacket.AsSpan<byte>();
                     if (singlePacket[4] == GvspInfo.DataIdentifier) //Packet
                     {
                         packetRxCount++;
-                        packetID = (singlePacket[GvspInfo.PacketIDIndex] << 8) | singlePacket[GvspInfo.PacketIDIndex + 1];
+                        packetID = (singlePacketAsSpan[GvspInfo.PacketIDIndex] << 8) | singlePacketAsSpan[GvspInfo.PacketIDIndex + 1];
                         bufferStart = (packetID - 1) * GvspInfo.PayloadSize; //This use buffer length of regular packet
                         bufferLength = length - GvspInfo.PayloadOffset;  //This will only change for final packet
-                        singlePacket.Slice(GvspInfo.PayloadOffset, bufferLength).CopyTo(buffer[bufferIndex].AsSpan().Slice(bufferStart, bufferLength));
+                        singlePacketAsSpan.Slice(GvspInfo.PayloadOffset, bufferLength).CopyTo(buffer[bufferIndex].AsSpan().Slice(bufferStart, bufferLength));
                         continue;
                     }
-                    if (singlePacket[4] == GvspInfo.DataEndIdentifier)
+                    if (singlePacketAsSpan[4] == GvspInfo.DataEndIdentifier)
                     {
                         if (GvspInfo.FinalPacketID == 0)
                         {
-                            packetID = (singlePacket[GvspInfo.PacketIDIndex] << 8) | singlePacket[GvspInfo.PacketIDIndex + 1];
+                            packetID = (singlePacketAsSpan[GvspInfo.PacketIDIndex] << 8) | singlePacketAsSpan[GvspInfo.PacketIDIndex + 1];
                             GvspInfo.FinalPacketID = packetID - 1;
                         }
 
-                        blockID = singlePacket.Slice(GvspInfo.BlockIDIndex, GvspInfo.BlockIDLength).ToArray();
+                        blockID = singlePacketAsSpan.Slice(GvspInfo.BlockIDIndex, GvspInfo.BlockIDLength).ToArray();
                         Array.Reverse(blockID);
                         Array.Resize(ref blockID, 8);
                         imageID = BitConverter.ToUInt64(blockID, 0);
@@ -242,7 +243,8 @@ namespace GigeVision.Core.Services
                     MulticastOption mcastOption = new(IPAddress.Parse(MulticastIP), IPAddress.Parse(RxIP));
                     socketRxRaw.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership, mcastOption);
                 }
-                socketRxRaw.ReceiveTimeout = 1000;
+				// high imout for Debugging TODO: remove
+                socketRxRaw.ReceiveTimeout = 10000;
                 //One full hd image with GVSP2.0 Header as default, it will be updated for image type
                 socketRxRaw.ReceiveBufferSize = (int)(1920 * 1100);
             }

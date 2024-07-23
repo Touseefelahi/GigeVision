@@ -13,11 +13,11 @@
 	  <PackageReleaseNotes>
 		  1.0: 	GigE Vision Implementation With OpenCV/EMGU support
 	  </PackageReleaseNotes>
+	  <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Emgu.CV" Version="4.9.0.5494" />
-    <PackageReference Include="GigeVision.Core" Version="2.6.0" />
   </ItemGroup>
 
   <ItemGroup>

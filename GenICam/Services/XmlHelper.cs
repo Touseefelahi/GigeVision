@@ -432,11 +432,11 @@ namespace GenICam
                     var pNode = ReadPNode(enumPValue.InnerText);
                     if (pNode != null)
                     {
-                        if (pNode.Attributes["Name"].Value.EndsWith("Reg") || pNode.Attributes["Name"].Value.EndsWith("Val"))
+                        if (pNode.Name.EndsWith("Reg") || pNode.Name.EndsWith("Val"))
                         {
                             pValue = await GetRegister(pNode);
                         }
-                        else if (pNode.Attributes["Name"].Value.EndsWith("Expr") || pNode.Attributes["Name"].Value.EndsWith("Conv"))
+                        else if (pNode.Name.EndsWith("Expr") || pNode.Name.EndsWith("Conv"))
                         {
                             pValue = await GetFormula(pNode);
                         }
@@ -578,11 +578,11 @@ namespace GenICam
             IPValue pValue = null;
             if (pNode != null)
             {
-                if (pNode.Attributes["Name"].Value.EndsWith("Reg") || pNode.Attributes["Name"].Value.EndsWith("Val"))
+                if (pNode.Name.EndsWith("Reg") || pNode.Name.EndsWith("Val") || pNode.ParentNode.Name == "StructReg")
                 {
                     pValue = await GetRegister(pNode);
                 }
-                else if (pNode.Attributes["Name"].Value.EndsWith("Expr") || pNode.Attributes["Name"].Value.EndsWith("Conv"))
+                else if (pNode.Name.EndsWith("Expr") || pNode.Name.EndsWith("Conv"))
                 {
                     pValue = await GetFormula(pNode);
                 }
@@ -611,11 +611,11 @@ namespace GenICam
 
                 if (pNode != null)
                 {
-                    if (pNode.Attributes["Name"].Value.EndsWith("Reg") || pNode.Attributes["Name"].Value.EndsWith("Val"))
+                    if (pNode.Name.EndsWith("Reg") || pNode.Name.EndsWith("Val"))
                     {
                         pValue = await GetRegister(pNode);
                     }
-                    else if (pNode.Attributes["Name"].Value.EndsWith("Expr") || pNode.Attributes["Name"].Value.EndsWith("Conv"))
+                    else if (pNode.Name.EndsWith("Expr") || pNode.Name.EndsWith("Conv"))
                     {
                         pValue = await GetFormula(pNode);
                     }
