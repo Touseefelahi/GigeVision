@@ -517,8 +517,16 @@ namespace GenICam
                     ////            isImplementedValue = await GetGenCategory(isImplementedExpr);
                     ////    }
                     ////}
-                    uint entryValue;
-                    uint.TryParse(SelectSingleNode(enumEntry, NodeValue).InnerText, out entryValue);
+                    long entryValue = 0;
+                    if (SelectSingleNode(enumEntry, NodeValue).InnerText.StartsWith("0x"))
+                    {
+                        entryValue = long.Parse(SelectSingleNode(enumEntry, NodeValue).InnerText.Replace("0x", String.Empty), System.Globalization.NumberStyles.HexNumber);
+                    }
+                    else
+                    {
+                        long.TryParse(SelectSingleNode(enumEntry, NodeValue).InnerText, out entryValue);
+                    }
+
                     entry.Add(enumEntry.Attributes[NodeName].Value, new EnumEntry(entryValue, isImplementedValue));
                 }
 
