@@ -67,6 +67,11 @@ namespace GigeVision.Core.Interfaces
         /// General update event
         /// </summary>
         EventHandler<string> Updates { get; set; }
+        
+        /// <summary>
+        /// Time interval from a package to another for firewall traversal. Set value <= 0 to disable it
+        /// </summary>
+        public int FirewallPunchKeepAliveIntervalInSeconds { get; set; }
 
         /// <summary>
         /// Start reception thread
