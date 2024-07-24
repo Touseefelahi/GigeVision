@@ -1,5 +1,6 @@
 ﻿using Emgu.CV;
 using GigeVision.Core.Enums;
+using GigeVision.Core.Models;
 using GigeVision.Core.Services;
 using System;
 using System.Collections.Generic;

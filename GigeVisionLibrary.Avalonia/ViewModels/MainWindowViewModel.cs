@@ -29,10 +29,12 @@ namespace GigeVisionLibrary.Avalonia.ViewModels
         [ObservableProperty] private string ip = "IP";
         private bool isRecording;
         [ObservableProperty] private bool isRecordingStarted;
-        [ObservableProperty] private uint packetSize = 8000;
+        [ObservableProperty] private uint packetSize = 1200;
         [ObservableProperty] private TimeSpan recordingTime;
         private Stopwatch stopwatch;
+
         private GigeVision.OpenCV.StreamReceiverParallelOpencv streamReceiver = new(2);
+
         private Thread threadProcessingPipeline = null!;
         [ObservableProperty] private long totalFrames;
 

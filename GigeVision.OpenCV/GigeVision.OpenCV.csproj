@@ -9,7 +9,7 @@
 	<Description>
 		GigE Vision Implementation With OpenCV/EMGU support
 	</Description>
-	<Version>1.0</Version>
+	<Version>1.1</Version>
     <Title>GigeVisionLibraryOpenCV</Title>
 	  <PackageReleaseNotes>
 		  1.0: 	GigE Vision Implementation With OpenCV/EMGU support
@@ -18,7 +18,11 @@
 
   <ItemGroup>
     <PackageReference Include="Emgu.CV" Version="4.9.0.5494" />
-    <PackageReference Include="GigeVision.Core" Version="2.6.0" />
+    <PackageReference Include="GigeVision.Core" Version="2.7.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GigeVision.Core\GigeVision.Core.csproj" />
   </ItemGroup>
 
 </Project>
