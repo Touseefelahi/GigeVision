@@ -5,6 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+	<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
 	<Description>
 		GigE Vision Implementation Using OpenCV
 	</Description>

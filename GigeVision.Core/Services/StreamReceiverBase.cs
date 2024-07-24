@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using GigeVision.Core.Models;
 using GigeVision.Core.Interfaces;
+using System.Diagnostics;
 
 namespace GigeVision.Core.Services
 {
@@ -105,6 +106,10 @@ namespace GigeVision.Core.Services
             byte[] singlePacket = new byte[9000];
             socketRxRaw.Receive(singlePacket);
             GvspInfo.IsDecodingAsVersion2 = ((singlePacket[4] & 0xF0) >> 4) == 8;
+            //TODO: Debug:
+            string l_DebugString = BitConverter.ToString(singlePacket).Replace("-", " ");
+            Debug.WriteLine(l_DebugString);
+
             GvspInfo.SetDecodingTypeParameter();
 
             var packetID = (singlePacket[GvspInfo.PacketIDIndex] << 8) | singlePacket[GvspInfo.PacketIDIndex + 1];
