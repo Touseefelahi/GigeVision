@@ -248,9 +248,9 @@ namespace GigeVision.Core.Services
                     MulticastOption mcastOption = new(IPAddress.Parse(MulticastIP), IPAddress.Parse(RxIP));
                     socketRxRaw.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership, mcastOption);
                 }
-				// high imout for Debugging TODO: remove
                 socketRxRaw.ReceiveTimeout = 10000;
                 //One full hd image with GVSP2.0 Header as default, it will be updated for image type
+                // DEBUG: added times tenv (TODO: Remove)
                 socketRxRaw.ReceiveBufferSize = (int)(1920 * 1100);
             }
             catch (Exception ex)

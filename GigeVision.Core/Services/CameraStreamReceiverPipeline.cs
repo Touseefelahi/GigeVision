@@ -98,8 +98,11 @@ namespace GigeVision.Core.Services
             {
                 while (IsReceiving)
                 {
+                    // very ineficient (socket.receive does not take span arguments in netstandard2.0)
                     var packet = writer.GetMemory(GvspInfo.PacketLength);
-                    int length = socketRxRaw.Receive(packet.Span.ToArray());
+                    var packetAsArray = new byte[packet.Length];
+                    int length = socketRxRaw.Receive(packetAsArray);
+                    packetAsArray.CopyTo(packet);
                     writer.Advance(length);
                     i++;
                     if (i >= (GvspInfo.IsDecodingAsVersion2 ? 10 : 9))

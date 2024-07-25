@@ -63,7 +63,13 @@ namespace GigeVision.Core.Services
                     singlePacket = memory[indexMemoryWriter].Slice(counterBufferWriter * GvspInfo.PacketLength, GvspInfo.PacketLength);
                     counterBufferWriter++;
 
-                    length = socketRxRaw.Receive(singlePacket.Span.ToArray());
+                    // horribly ineficient should be okay for my purposes
+                    // the whole codebase would need to be restructured to
+                    // to be compatible with netstandard2.0 otherwise 
+                    // (arround heap arrays instead of stacalloc spans)
+                    var singlePacketArr = new byte[singlePacket.Length];
+                    length = socketRxRaw.Receive(singlePacketArr);
+                    singlePacketArr.CopyTo(singlePacket);
 
                     if (++counterForChunkPackets % ChunkPacketCount == 0)
                     {
