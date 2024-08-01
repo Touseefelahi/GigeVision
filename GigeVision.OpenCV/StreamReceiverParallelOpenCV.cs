@@ -2,11 +2,6 @@
 using GigeVision.Core.Enums;
 using GigeVision.Core.Models;
 using GigeVision.Core.Services;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace GigeVision.OpenCV
 {
@@ -102,7 +97,7 @@ namespace GigeVision.OpenCV
             int indexMemoryReader, imageBufferIndex = 0, packetRxCount = 0, packetID, bufferStart, bufferLength;
             imageIndex = 0;
             lossCount = 0;
-            var imageSpan = GetSpan(image[imageBufferIndex]);
+            var imageSpan = image[imageBufferIndex].GetSpan<byte>();
             Memory<byte>[] span = new Memory<byte>[flatBufferCount];
 
             for (int i = 0; i < flatBufferCount; i++)
@@ -154,7 +149,7 @@ namespace GigeVision.OpenCV
                             {
                                 imageBufferIndex = 0;
                             }
-                            imageSpan = GetSpan(image[imageBufferIndex]); //Next Frame
+                            imageSpan = image[imageBufferIndex].GetSpan<byte>(); //Next Frame
                             break;
                     }
                 }
@@ -164,11 +159,6 @@ namespace GigeVision.OpenCV
                     indexMemoryReader = 0;
                 }
             }
-        }
-
-        private unsafe Span<byte> GetSpan(Mat mat)
-        {
-            return new Span<byte>((void*)mat.DataPointer, (int)mat.Total);
         }
     }
 }
