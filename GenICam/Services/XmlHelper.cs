@@ -369,7 +369,7 @@ namespace GenICam
                 XmlNode pNode;
                 IPValue pMin = null;
                 IPValue pMax = null;
-                
+
                 foreach (XmlNode node in xmlNode.ChildNodes)
                 {
                     switch (node.Name)
@@ -412,14 +412,10 @@ namespace GenICam
                             pNode = ReadPNode(node.InnerText);
                             if (pNode != null)
                             {
-                                if (pNode.Attributes["Name"].Value.EndsWith("Reg") || pNode.Attributes["Name"].Value.EndsWith("Val"))
-                                {
-                                    pValue = await GetRegister(pNode);
-                                }
-                                else if (pNode.Attributes["Name"].Value.EndsWith("Expr") || pNode.Attributes["Name"].Value.EndsWith("Conv"))
+                                if (pNode.Attributes["Name"].Value.EndsWith("Expr") || pNode.Attributes["Name"].Value.EndsWith("Conv"))
                                 {
                                     pValue = await GetFormula(pNode);
-                                } 
+                                }
                                 else if (pNode.Attributes["Name"].Value.EndsWith("_Float") || pNode.Attributes["Name"].Value.EndsWith("_Int") || pNode.Attributes["Name"].Value.EndsWith("_Bit"))
                                 {
                                     var register = await GetRegisterByName(pNode.Attributes["Name"].Value).ConfigureAwait(false);
@@ -429,6 +425,10 @@ namespace GenICam
                                         pMin = register.PMin;
                                         pMax = register.PMax;
                                     }
+                                }
+                                else if (Enum.GetNames<RegisterType>().Contains(pNode.Name))
+                                {
+                                    pValue = await GetRegister(pNode);
                                 }
                             }
 
@@ -469,11 +469,7 @@ namespace GenICam
                     XmlNode pNode = ReadPNode(pValueNode.InnerText);
                     if (pNode != null)
                     {
-                        if (pNode.Attributes["Name"].Value.EndsWith("Reg") || pNode.Attributes["Name"].Value.EndsWith("Val"))
-                        {
-                            pValue = await GetRegister(pNode);
-                        }
-                        else if (pNode.Attributes["Name"].Value.EndsWith("Expr") || pNode.Attributes["Name"].Value.EndsWith("Conv"))
+                        if (pNode.Attributes["Name"].Value.EndsWith("Expr") || pNode.Attributes["Name"].Value.EndsWith("Conv"))
                         {
                             pValue = await GetFormula(pNode);
                         }
@@ -482,8 +478,12 @@ namespace GenICam
                             var register = await GetRegisterByName(pNode.Attributes["Name"].Value).ConfigureAwait(false);
                             if (register != null)
                             {
-                                pValue = register.PValue;   
+                                pValue = register.PValue;
                             }
+                        }
+                        else if (Enum.GetNames<RegisterType>().Contains(pNode.Name))
+                        {
+                            pValue = await GetRegister(pNode);
                         }
                     }
                 }
@@ -544,11 +544,7 @@ namespace GenICam
                     var pNode = ReadPNode(enumPValue.InnerText);
                     if (pNode != null)
                     {
-                        if (pNode.Attributes["Name"].Value.EndsWith("Reg") || pNode.Attributes["Name"].Value.EndsWith("Val"))
-                        {
-                            pValue = await GetRegister(pNode);
-                        }
-                        else if (pNode.Attributes["Name"].Value.EndsWith("Expr") || pNode.Attributes["Name"].Value.EndsWith("Conv"))
+                        if (pNode.Attributes["Name"].Value.EndsWith("Expr") || pNode.Attributes["Name"].Value.EndsWith("Conv"))
                         {
                             pValue = await GetFormula(pNode);
                         }
@@ -559,6 +555,10 @@ namespace GenICam
                             {
                                 pValue = register.PValue;
                             }
+                        }
+                        else if (Enum.GetNames<RegisterType>().Contains(pNode.Name))
+                        {
+                            pValue = await GetRegister(pNode);
                         }
                     }
                 }
@@ -692,7 +692,7 @@ namespace GenICam
                 throw new GenICamException($"Failed to get Integer Category by the given node {xmlNode.Name}", ex);
             }
         }
-        
+
         private async Task<GenCategory> ReadPMaxAndPmin(XmlNode xmlNode)
         {
             try
@@ -732,11 +732,7 @@ namespace GenICam
             IPValue pValue = null;
             if (pNode != null)
             {
-                if (pNode.Attributes["Name"].Value.EndsWith("Reg") || pNode.Attributes["Name"].Value.EndsWith("Val"))
-                {
-                    pValue = await GetRegister(pNode);
-                }
-                else if (pNode.Attributes["Name"].Value.EndsWith("Expr") || pNode.Attributes["Name"].Value.EndsWith("Conv"))
+                if (pNode.Attributes["Name"].Value.EndsWith("Expr") || pNode.Attributes["Name"].Value.EndsWith("Conv"))
                 {
                     pValue = await GetFormula(pNode);
                 }
@@ -747,6 +743,10 @@ namespace GenICam
                     {
                         pValue = register.PValue;
                     }
+                }
+                else if (Enum.GetNames<RegisterType>().Contains(pNode.Name) || pNode.ParentNode.Name == nameof(RegisterType.StructReg))
+                {
+                    pValue = await GetRegister(pNode);
                 }
             }
 
@@ -773,11 +773,7 @@ namespace GenICam
 
                 if (pNode != null)
                 {
-                    if (pNode.Attributes["Name"].Value.EndsWith("Reg") || pNode.Attributes["Name"].Value.EndsWith("Val"))
-                    {
-                        pValue = await GetRegister(pNode);
-                    }
-                    else if (pNode.Attributes["Name"].Value.EndsWith("Expr") || pNode.Attributes["Name"].Value.EndsWith("Conv"))
+                    if (pNode.Attributes["Name"].Value.EndsWith("Expr") || pNode.Attributes["Name"].Value.EndsWith("Conv"))
                     {
                         pValue = await GetFormula(pNode);
                     }
@@ -786,8 +782,12 @@ namespace GenICam
                         var register = await GetRegisterByName(pNode.Attributes["Name"].Value).ConfigureAwait(false);
                         if (register != null)
                         {
-                            pValue = register.PValue;   
+                            pValue = register.PValue;
                         }
+                    }
+                    else if (Enum.GetNames<RegisterType>().Contains(pNode.Name))
+                    {
+                        pValue = await GetRegister(pNode);
                     }
                 }
 
@@ -833,8 +833,8 @@ namespace GenICam
                         return new GenIntReg(genRegister.address, genRegister.length, genRegister.accessMode, null, genRegister.pAddress, GenPort);
 
                     case nameof(RegisterType.IntConverter):
-                       return await GetConverter(xmlNode);
-                        
+                        return await GetConverter(xmlNode);
+
                     case nameof(RegisterType.StructReg):
                     case nameof(RegisterType.MaskedIntReg):
                         if (xmlNode.Name.Equals(nameof(RegisterType.StructReg)))
@@ -977,11 +977,7 @@ namespace GenICam
                             var pNode = ReadPNode(node.InnerText);
                             if (pNode != null)
                             {
-                                if (pNode.Attributes["Name"].Value.EndsWith("Reg") || pNode.Attributes["Name"].Value.EndsWith("Val"))
-                                {
-                                    pValue = await GetRegister(pNode);
-                                }
-                                else if (pNode.Attributes["Name"].Value.EndsWith("Expr"))
+                                if (pNode.Attributes["Name"].Value.EndsWith("Expr"))
                                 {
                                     pValue = await GetIntSwissKnife(pNode);
                                 }
@@ -994,8 +990,12 @@ namespace GenICam
                                     var register = await GetRegisterByName(pNode.Attributes["Name"].Value).ConfigureAwait(false);
                                     if (register != null)
                                     {
-                                        pValue = register.PValue;   
+                                        pValue = register.PValue;
                                     }
+                                }
+                                else if (Enum.GetNames<RegisterType>().Contains(pNode.Name))
+                                {
+                                    pValue = await GetRegister(pNode);
                                 }
                             }
 
