@@ -43,69 +43,72 @@ namespace GigeVision.Core
             return true;
         }
 
-        /// <summary>
         /// Get all ethernet interfaces for the device
         /// </summary>
         /// <param name="ipVersion4Only"></param>
         /// <param name="skipWireless"></param>
         /// <param name="allowedMask"></param>
         /// <returns></returns>
-        public static List<string> GetAllInterfaces(string allowedMask = "*", bool ipVersion4Only = true, bool skipWireless = false)
+        public static List<string> GetAllInterfaces(string allowedMask = "*",bool ipVersion4Only = true,bool skipWireless = false)
         {
-            List<string> interfaces = new();
-            foreach (var network in NetworkInterface.GetAllNetworkInterfaces())
+            var result = new List<string>();
+
+            foreach (var ni in NetworkInterface.GetAllNetworkInterfaces())
             {
-                if (network.OperationalStatus != OperationalStatus.Up)
-                {
+                // only “Up” interfaces
+                if (ni.OperationalStatus != OperationalStatus.Up)
                     continue;
-                }
 
-                if (network.NetworkInterfaceType == NetworkInterfaceType.Loopback)
-                {
+                // skip the loopback device
+                if (ni.NetworkInterfaceType == NetworkInterfaceType.Loopback)
                     continue;
-                }
 
-                if (skipWireless)
+                // optional: skip Wi-Fi
+                if (skipWireless &&
+                    ni.NetworkInterfaceType == NetworkInterfaceType.Wireless80211)
+                    continue;
+
+                // if they only want IPv4, make sure this NIC actually supports it
+                if (ipVersion4Only &&
+                    !ni.Supports(NetworkInterfaceComponent.IPv4))
+                    continue;
+
+                var props = ni.GetIPProperties();
+
+                // check each assigned address
+                foreach (var uni in props.UnicastAddresses)
                 {
-                    if (network.NetworkInterfaceType == NetworkInterfaceType.Wireless80211)
-                    {
+                    // skip non-IPv4 if asked
+                    if (ipVersion4Only &&
+                        uni.Address.AddressFamily != AddressFamily.InterNetwork)
                         continue;
-                    }
-                }
-                IPInterfaceProperties properties = network.GetIPProperties();
-                var ipProperties = properties.GetIPv4Properties();
-                foreach (UnicastIPAddressInformation address in properties.UnicastAddresses)
-                {
-                    if (IPAddress.IsLoopback(address.Address))
-                    {
+
+                    // skip loopback
+                    if (IPAddress.IsLoopback(uni.Address))
                         continue;
-                    }
-                    var addresses = properties.GatewayAddresses;
-                    if (((addresses == null) || (addresses.Count == 0)) && allowedMask != "*")
+
+                    // optional mask filter
+                    if (allowedMask != "*")
                     {
-                        var isValid = IPAddress.TryParse(allowedMask, out IPAddress validMask);
-                        if (isValid is false)
+                        if (!IPAddress.TryParse(allowedMask, out var wantedMask) ||
+                            !uni.IPv4Mask.Equals(wantedMask))
                         {
                             continue;
                         }
+                    }
 
-                        if (address.IPv4Mask.Equals(validMask) is false)
-                        {
-                            continue;
-                        }
-                    }
-                    if (ipVersion4Only)
+                    // ensure there is at least one gateway (optional)
+                    if ((props.GatewayAddresses?.Count ?? 0) == 0 && allowedMask == "*")
                     {
-                        if (address.Address.AddressFamily == AddressFamily.InterNetwork)
-                            interfaces.Add(address.Address.ToString());
+                        // you can either skip or include—here we include
+                        // continue;
                     }
-                    else
-                    {
-                        interfaces.Add(address.Address.ToString());
-                    }
+
+                    result.Add(uni.Address.ToString());
                 }
             }
-            return interfaces;
+
+            return result;
         }
 
         /// <summary>
