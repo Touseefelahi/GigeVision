@@ -953,13 +953,15 @@ namespace GigeVision.Core.Services
             //loop to get the zip file data in bytes
             Stream xmlFile = new MemoryStream();
             (var fileData, var fileName) = await GetRawXmlFileFromCamera(ip).ConfigureAwait(false);
+            fileData = TrimTrailingZeros(fileData);
+            
             var fileNameParts = fileName.Split('.');
             if (fileData.Length != 0)
             {
                 switch (fileNameParts[fileNameParts.Length - 1])
                 {
                     case "xml":
-                        xmlFile = new MemoryStream(fileData);
+                        xmlFile = new MemoryStream(fileData, 0, fileData.Length, writable: false, publiclyVisible: true);
                         break;
 
                     case "zip":
@@ -975,6 +977,20 @@ namespace GigeVision.Core.Services
             gvcpRequestID++;
             return xmlFile;
         }
+
+        static byte[] TrimTrailingZeros(byte[] buf)
+        {
+            int i = buf.Length - 1;           // start at the last byte
+            while (i >= 0 && buf[i] == 0)     // walk backwards while bytes are 0x00
+                i--;
+
+            // If nothing was trimmed, return the original array to avoid allocating.
+            if (i == buf.Length - 1) return buf;
+
+            // Otherwise, return a new array containing bytes [0..i]
+            return buf.AsSpan(0, i + 1).ToArray();
+        }
+
 
         public async Task SaveXmlFileFromCamera(string path, string ip = null)
         {
