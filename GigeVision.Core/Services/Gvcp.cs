@@ -953,14 +953,14 @@ namespace GigeVision.Core.Services
             //loop to get the zip file data in bytes
             Stream xmlFile = new MemoryStream();
             (var fileData, var fileName) = await GetRawXmlFileFromCamera(ip).ConfigureAwait(false);
-            fileData = TrimTrailingZeros(fileData);
-            
+
             var fileNameParts = fileName.Split('.');
             if (fileData.Length != 0)
             {
                 switch (fileNameParts[fileNameParts.Length - 1])
                 {
                     case "xml":
+                        fileData = TrimTrailingZeros(fileData);
                         xmlFile = new MemoryStream(fileData, 0, fileData.Length, writable: false, publiclyVisible: true);
                         break;
 
