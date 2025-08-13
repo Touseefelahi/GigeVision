@@ -2,6 +2,8 @@
 using GigeVision.Core.Enums;
 using GigeVision.Core.Models;
 using GigeVision.Core.Services;
+using System.Net;
+using System.Net.Sockets;
 
 namespace GigeVision.OpenCV
 {
@@ -16,7 +18,8 @@ namespace GigeVision.OpenCV
         private readonly int packetBufferLength = ChunkPacketCount;
         private readonly SemaphoreSlim waitForPacketChunk = new(0);
         private byte[][] packetBuffersFlat = null!;
-
+        private readonly ManualResetEventSlim _decodeReady = new(false);
+        public int TotalBuffers { get; private set; }
         public StreamReceiverParallelOpencv(int totalBuffers = 3)
         {
             if (totalBuffers < 1)
@@ -26,8 +29,6 @@ namespace GigeVision.OpenCV
             MissingPacketTolerance = 0;
             TotalBuffers = totalBuffers;
         }
-
-        public int TotalBuffers { get; private set; }
 
         protected override async void Receiver()
         {
@@ -57,9 +58,19 @@ namespace GigeVision.OpenCV
                     {
                         image[i] = new Mat(GvspInfo.Height, GvspInfo.Width, Emgu.CV.CvEnum.DepthType.Cv16U, 1);
                     }
+                    else
+                    {
+                        // Packed or non-byte aligned formats (10/12-bit packed, YUV422, etc)
+                        // Allocate raw byte buffer with the exact frame size in BYTES.
+                        // Make columns = width * bytesPerPixel so Mat buffer size matches.
+                        int cols = checked((int)(GvspInfo.Width * GvspInfo.BytesPerPixel));
+                        image[i] = new Mat(GvspInfo.Height, cols, Emgu.CV.CvEnum.DepthType.Cv8U, 1);
+                    }
                 }
                 indexMemoryWriter = 0;
+                _decodeReady.Set();               // <= buffers are safe to use now
                 _ = Task.Run(DecodePackets);
+
                 while (IsReceiving)
                 {
                     Memory<byte> singlePacket;
@@ -94,70 +105,100 @@ namespace GigeVision.OpenCV
 
         private void DecodePackets()
         {
-            int indexMemoryReader, imageBufferIndex = 0, packetRxCount = 0, packetID, bufferStart, bufferLength;
-            imageIndex = 0;
-            lossCount = 0;
-            var imageSpan = image[imageBufferIndex].GetSpan<byte>();
-            Memory<byte>[] span = new Memory<byte>[flatBufferCount];
+            // Don't touch image[] until the receiver finished allocating it
+            _decodeReady.Wait();
 
+            int indexMemoryReader = 0;
+            int imageBufferIndex = 0;
+            int packetRxCount = 0;
+
+            // Flat chunk views (what the Receiver just filled)
+            var chunks = new Memory<byte>[flatBufferCount];
             for (int i = 0; i < flatBufferCount; i++)
-            {
-                span[i] = new Memory<byte>(packetBuffersFlat[i]);
-            }
+                chunks[i] = new Memory<byte>(packetBuffersFlat[i]);
 
-            int finalPacketLength = (image[imageBufferIndex].Width * image[imageBufferIndex].Height) % GvspInfo.PayloadSize;
-            var length = GvspInfo.PacketLength;
-            indexMemoryReader = 0;
+            // Current destination frame (as raw bytes)
+            Mat img = image[imageBufferIndex] ?? throw new InvalidOperationException("Image ring not allocated.");
+            Span<byte> dest = img.GetSpan<byte>();
+
+            // Frame/packet sizes in BYTES
+            int payloadBytes = GvspInfo.PayloadSize;               // payload per GVSP data packet
+            int frameBytes = dest.Length;                        // full frame size in BYTES
+            int lastPacketBytes = frameBytes - payloadBytes * (GvspInfo.FinalPacketID - 1);
+            if (lastPacketBytes <= 0 || lastPacketBytes > payloadBytes)
+                lastPacketBytes = payloadBytes;                    // guard (exact multiple or weird XML)
+
+            int pktLen = GvspInfo.PacketLength;
+
             while (IsReceiving)
             {
+                // Wait until the receiver gives us a filled chunk buffer
                 waitForPacketChunk.Wait();
-                var currentMemoryBuffer = span[indexMemoryReader];
+                if (!IsReceiving) break;
+
+                var current = chunks[indexMemoryReader];
 
                 for (int i = 0; i < ChunkPacketCount; i++)
                 {
-                    Span<byte> packet;
-                    packet = currentMemoryBuffer.Span.Slice(i * length, length);
+                    Span<byte> udp = current.Span.Slice(i * pktLen, pktLen);
+                    byte pt = (byte)(udp[4] & 0x0F);               // packet type (data / data end / etc.)
 
-                    switch (packet[4] & 0x0F)//it unifies extended ID and normal ID
+                    switch (pt)
                     {
-                        case 3: //Data
-                            packetRxCount++;
-                            packetID = (packet[GvspInfo.PacketIDIndex] << 8) | packet[GvspInfo.PacketIDIndex + 1];
-                            bufferStart = (packetID - 1) * GvspInfo.PayloadSize;
-                            bufferLength = GvspInfo.PayloadSize;
-                            if (packetID == GvspInfo.FinalPacketID)
+                        case 3: // Data
                             {
-                                bufferLength = finalPacketLength;
-                            }
-                            packet.Slice(GvspInfo.PayloadOffset, bufferLength).TryCopyTo(imageSpan.Slice(bufferStart, bufferLength));
-                            break;
+                                packetRxCount++;
 
-                        case 2: //Data End
-                            imageIndex++;
-                            //Checking if we receive all packets
-                            if (Math.Abs(packetRxCount - GvspInfo.FinalPacketID) > MissingPacketTolerance)
-                            {
-                                lossCount++;
-                                packetRxCount = 0;
+                                // 1..FinalPacketID
+                                int id = (udp[GvspInfo.PacketIDIndex] << 8) | udp[GvspInfo.PacketIDIndex + 1];
+                                if (id < 1 || id > GvspInfo.FinalPacketID) break;     // sanity
+
+                                int start = (id - 1) * payloadBytes;                // dest start in BYTES
+                                int intended = (id == GvspInfo.FinalPacketID) ? lastPacketBytes : payloadBytes;
+
+                                // Clamp by what really arrived and what still fits
+                                int available = Math.Max(0, udp.Length - GvspInfo.PayloadOffset);
+                                int remaining = Math.Max(0, frameBytes - start);
+                                int toCopy = Math.Min(intended, Math.Min(available, remaining));
+
+                                if (toCopy > 0)
+                                    udp.Slice(GvspInfo.PayloadOffset, toCopy)
+                                       .CopyTo(dest.Slice(start, toCopy));
                                 break;
                             }
-                            packetRxCount = 0;
-                            frameInCounter++;
-                            waitHandleFrame.Release();
-                            imageBufferIndex++;
-                            if (imageBufferIndex == TotalBuffers)
+
+                        case 2: // Data End (frame complete)
                             {
-                                imageBufferIndex = 0;
+                                // Optional: loss check (vendor packetization tolerant)
+                                if (Math.Abs(packetRxCount - GvspInfo.FinalPacketID) > MissingPacketTolerance)
+                                    lossCount++;
+                                packetRxCount = 0;
+
+                                frameInCounter++;
+                                waitHandleFrame.Release();
+
+                                // Advance to next ring buffer
+                                imageBufferIndex = (imageBufferIndex + 1) % TotalBuffers;
+                                img = image[imageBufferIndex];
+                                if (img == null) continue;             // defensive (should not happen)
+
+                                dest = img.GetSpan<byte>();
+                                frameBytes = dest.Length;
+                                lastPacketBytes = frameBytes - payloadBytes * (GvspInfo.FinalPacketID - 1);
+                                if (lastPacketBytes <= 0 || lastPacketBytes > payloadBytes)
+                                    lastPacketBytes = payloadBytes;
+
+                                break;
                             }
-                            imageSpan = image[imageBufferIndex].GetSpan<byte>(); //Next Frame
+
+                        default:
+                            // Ignore leader/trailer/unknown types
                             break;
                     }
                 }
 
-                if (++indexMemoryReader > flatBufferCount - 1)
-                {
-                    indexMemoryReader = 0;
-                }
+                // Next filled chunk buffer
+                indexMemoryReader = (indexMemoryReader + 1) % flatBufferCount;
             }
         }
     }

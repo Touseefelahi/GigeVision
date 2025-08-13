@@ -219,7 +219,6 @@ namespace GigeVision.Core.Services
                 }
             }
         }
-
         /// <summary>
         /// Payload size, if not provided it will be automatically set to one row, depending on resolution
         /// </summary>
@@ -539,14 +538,11 @@ namespace GigeVision.Core.Services
                 // Packet size (payload) (GevSCPSPacketSize)
                 await TrySetRegAsync(GvcpRegister.GevSCPSPacketSize, Payload).ConfigureAwait(false);
 
-                // Bring up receiver before starting acquisition so you don’t miss the first frames.
-                SetupReceiver();
-                SetupRxThread();
-
                 // Start acquisition
                 var acquisitionReply = await acquisitionStartPValue.SetValueAsync(1).ConfigureAwait(false) as GvcpReply;
                 if (acquisitionReply != null && acquisitionReply.Status == GvcpStatus.GEV_STATUS_SUCCESS)
                 {
+                    SetupRxThread();
                     IsStreaming = true;
                 }
                 else
@@ -572,7 +568,7 @@ namespace GigeVision.Core.Services
         }
 
         // Local helper (tuple-safe, fall back to raw GVCP when pValue is null)
-        private async Task<bool> TrySetRegAsync(GvcpRegister reg, uint value)
+        public async Task<bool> TrySetRegAsync(GvcpRegister reg, uint value)
         {
             var (pValue, register) = await Gvcp.GetRegister(reg.ToString()).ConfigureAwait(false);
             if (pValue != null)
@@ -588,7 +584,7 @@ namespace GigeVision.Core.Services
         }
 
         // Local helper (tuple-safe, fall back to raw GVCP when pValue is null)
-        private async Task<uint?> TryGetRegAsync(GvcpRegister reg)
+        public async Task<uint?> TryGetRegAsync(GvcpRegister reg)
         {
             var (pValue, register) = await Gvcp.GetRegister(reg.ToString()).ConfigureAwait(false);
 
@@ -614,12 +610,14 @@ namespace GigeVision.Core.Services
         /// <returns>Is streaming status</returns>
         public async Task<bool> StopStream()
         {
-            await Gvcp.WriteRegisterAsync(GvcpRegister.GevSCDA, 0).ConfigureAwait(false);
-            StreamReceiver?.StopReception();
-            if (await Gvcp.LeaveControl().ConfigureAwait(false))
-            {
-                IsStreaming = false;
-            }
+            try { await Gvcp.WriteRegisterAsync(GvcpRegister.GevSCDA, 0).ConfigureAwait(false); } catch { }
+            try { StreamReceiver?.StopReception(); } catch { }
+            try {
+                if (await Gvcp.LeaveControl().ConfigureAwait(false))
+                {
+                    IsStreaming = false;
+                }
+            } catch { }
             return IsStreaming;
         }
 
@@ -630,7 +628,7 @@ namespace GigeVision.Core.Services
                 cameraParametersCache = new Dictionary<string, ICategory>();
             }
             ICategory parameter = await GetParameter(parameterName).ConfigureAwait(false);
-            if (parameter == null)
+            if (parameter == null || parameter.PValue == null)
             {
                 return null;
             }
@@ -861,6 +859,7 @@ namespace GigeVision.Core.Services
 
         private void SetupRxThread()
         {
+            SetupReceiver();     
             StreamReceiver.StartRxThread();
         }
     }

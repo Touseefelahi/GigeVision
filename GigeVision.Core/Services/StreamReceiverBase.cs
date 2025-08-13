@@ -98,15 +98,10 @@ namespace GigeVision.Core.Services
         /// </summary>
         public void StartRxThread()
         {
-            Thread threadDecode = new(Receiver)
-            {
-                Priority = ThreadPriority.Highest,
-                Name = "Decode Packets Thread",
-                IsBackground = true
-            };
+            if (IsReceiving) return;
             SetupSocketRxRaw();
-            IsReceiving = true;
-            threadDecode.Start();
+            IsReceiving = true;          // set first so UI pipeline doesn’t see False
+            _ = Task.Run(Receiver);
         }
 
         /// <summary>
@@ -115,8 +110,10 @@ namespace GigeVision.Core.Services
         public void StopReception()
         {
             IsReceiving = false;
-            socketRxRaw?.Close();
-            socketRxRaw.Dispose();
+            // it’s OK if socketRxRaw was never created
+            try { if (socketRxRaw != null)
+                  { socketRxRaw?.Close(); socketRxRaw.Dispose(); }  } catch { }
+
         }
 
         /// <summary>

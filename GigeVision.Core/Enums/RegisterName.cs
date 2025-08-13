@@ -38,6 +38,8 @@
         /// <summary>
         /// Pixel format
         /// </summary>
-        PixelFormat
+        PixelFormat,
+
+        GainValue
     }
 }
