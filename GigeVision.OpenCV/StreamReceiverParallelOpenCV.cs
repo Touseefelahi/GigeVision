@@ -108,6 +108,9 @@ namespace GigeVision.OpenCV
             // Don't touch image[] until the receiver finished allocating it
             _decodeReady.Wait();
 
+            imageIndex = 0;
+            lossCount = 0;
+
             int indexMemoryReader = 0;
             int imageBufferIndex = 0;
             int packetRxCount = 0;
@@ -169,6 +172,8 @@ namespace GigeVision.OpenCV
 
                         case 2: // Data End (frame complete)
                             {
+                                imageIndex++;
+
                                 // Optional: loss check (vendor packetization tolerant)
                                 if (Math.Abs(packetRxCount - GvspInfo.FinalPacketID) > MissingPacketTolerance)
                                     lossCount++;
