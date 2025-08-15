@@ -257,9 +257,15 @@ Public Class Form1
 
     Private xmlLoaded As Boolean
 
-    Private Async Sub Button2_Click(sender As Object, e As EventArgs) Handles Button1.Click
+    Private Async Sub GetExposureGainModes_Click(sender As Object, e As EventArgs) Handles GetExposureGainModes.Click
+        Dim r As (GainDB As Double, ExposureUs As Double)
         Try
+            r = Await ReadGainExposureDirectAsync(cameraService)
+        Catch ex As Exception
 
+        End Try
+
+        Try
             ' 2) The two parameters we care about:
             Dim paramNames = New List(Of String) From {
                 "ExposureMode",
@@ -319,29 +325,18 @@ Public Class Form1
                     display(pname) = "<unsupported type>"
                 End If
             Next
-
+            Dim values = If(Not IsNothing(r), $"Gain: {r.GainDb:0.00} dB{vbCrLf}Exposure: {r.ExposureUs:0.##} µs", "")
             ' 4) Show them both
             MessageBox.Show(
+                values &
                 $"Exposure Mode : {display("ExposureMode")}{vbCrLf}" &
                 $"Exposure Auto : {display("ExposureAuto")}{vbCrLf}" &
                 $"GainAuto : {display("GainAuto")}{vbCrLf}",
                 "Camera Features"
-            )
+              )
         Catch ex As Exception
 
         End Try
-
-    End Sub
-
-    Private Async Sub Button2_Click_1(sender As Object, e As EventArgs) Handles Button2.Click
-        Try
-            Dim r = Await ReadGainExposureDirectAsync(cameraService)
-            MessageBox.Show($"Gain: {r.GainDb:0.00} dB{vbCrLf}Exposure: {r.ExposureUs:0.##} µs")
-
-        Catch ex As Exception
-
-        End Try
-
 
     End Sub
 

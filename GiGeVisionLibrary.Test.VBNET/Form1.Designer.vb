@@ -28,8 +28,7 @@ Partial Class Form1
         lblFps = New Label()
         lblTotalFrames = New Label()
         SaveXML = New Button()
-        Button1 = New Button()
-        Button2 = New Button()
+        GetExposureGainModes = New Button()
         ComboBoxIP = New ComboBox()
         CType(nudPacketSize, ComponentModel.ISupportInitialize).BeginInit()
         CType(pbImage, ComponentModel.ISupportInitialize).BeginInit()
@@ -90,23 +89,14 @@ Partial Class Form1
         SaveXML.Text = "Save XML"
         SaveXML.UseVisualStyleBackColor = True
         ' 
-        ' Button1
+        ' GetExposureGainModes
         ' 
-        Button1.Location = New Point(453, 10)
-        Button1.Name = "Button1"
-        Button1.Size = New Size(75, 23)
-        Button1.TabIndex = 9
-        Button1.Text = "Button1"
-        Button1.UseVisualStyleBackColor = True
-        ' 
-        ' Button2
-        ' 
-        Button2.Location = New Point(534, 10)
-        Button2.Name = "Button2"
-        Button2.Size = New Size(75, 23)
-        Button2.TabIndex = 10
-        Button2.Text = "Button2"
-        Button2.UseVisualStyleBackColor = True
+        GetExposureGainModes.Location = New Point(453, 10)
+        GetExposureGainModes.Name = "GetExposureGainModes"
+        GetExposureGainModes.Size = New Size(118, 23)
+        GetExposureGainModes.TabIndex = 9
+        GetExposureGainModes.Text = "Exposure/Gain "
+        GetExposureGainModes.UseVisualStyleBackColor = True
         ' 
         ' ComboBoxIP
         ' 
@@ -122,8 +112,7 @@ Partial Class Form1
         AutoScaleMode = AutoScaleMode.Font
         ClientSize = New Size(664, 550)
         Controls.Add(ComboBoxIP)
-        Controls.Add(Button2)
-        Controls.Add(Button1)
+        Controls.Add(GetExposureGainModes)
         Controls.Add(SaveXML)
         Controls.Add(lblTotalFrames)
         Controls.Add(lblFps)
@@ -143,7 +132,6 @@ Partial Class Form1
     Friend WithEvents lblFps As Label
     Friend WithEvents lblTotalFrames As Label
     Friend WithEvents SaveXML As Button
-    Friend WithEvents Button1 As Button
-    Friend WithEvents Button2 As Button
+    Friend WithEvents GetExposureGainModes As Button
     Friend WithEvents ComboBoxIP As ComboBox
 End Class
