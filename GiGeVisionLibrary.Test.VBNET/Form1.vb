@@ -7,6 +7,7 @@ Imports Emgu.CV.CvEnum
 Imports GigeVision.Core.Services
 Imports GigeVision.OpenCV
 Imports GigeVision.Core.Models
+Imports GigeVision.Core.Enums
 Public Class Form1
 
     ' ——————————————————————————————
@@ -199,16 +200,36 @@ Public Class Form1
                 ' Pick the pattern that matches your camera (Rg/Gb/Gr/Bg).
                 ' If it’s Mono8: use Gray2Bgr. If 16-bit: scale to 8-bit first.
                 If src.NumberOfChannels = 1 Then
-                    If cameraService.PixelFormat.ToString().Contains("Bayer") Then
-                        CvInvoke.CvtColor(src, colorMat, ColorConversion.BayerRg2Bgr) ' change if your pattern differs
+                    ' Pick the right Bayer conversion from the pixel format
+                    Dim conv As ColorConversion =
+                    If(cameraService.PixelFormat.ToString().Contains("BayerRG"), ColorConversion.BayerRg2Bgr,
+                    If(cameraService.PixelFormat.ToString().Contains("BayerBG"), ColorConversion.BayerBg2Bgr,
+                    If(cameraService.PixelFormat.ToString().Contains("BayerGB"), ColorConversion.BayerGb2Bgr, ColorConversion.BayerGr2Bgr)))
+
+                    If src.Depth = DepthType.Cv8U Then
+                        ' 8-bit Bayer → BGR directly
+                        CvInvoke.CvtColor(src, colorMat, conv)
                     Else
-                        ' Mono → color for display
-                        CvInvoke.CvtColor(src, colorMat, ColorConversion.Gray2Bgr)
+                        ' 10/12/16-bit packed in 16-bit container → scale to 8-bit first
+                        Dim bits As Integer = 16
+                        Dim px = cameraService.PixelFormat.ToString()
+                        If px.Contains("10") Then bits = 10
+                        If px.Contains("12") Then bits = 12
+                        If px.Contains("16") Then bits = 16
+
+                        Dim scale As Double = 255.0 / ((1 << bits) - 1)  ' e.g. 0.06226 for 12-bit, 1/256 for 16-bit
+
+                        Using tmp8 As New Mat(src.Rows, src.Cols, DepthType.Cv8U, 1)
+                            ' NOTE: fourth argument is `shift` (use 0)
+                            CvInvoke.ConvertScaleAbs(src, tmp8, scale, 0)
+                            CvInvoke.CvtColor(tmp8, colorMat, conv)
+                        End Using
                     End If
                 Else
                     ' Already 3-channel; just copy
                     src.CopyTo(colorMat)
                 End If
+
 
                 pbImage.BeginInvoke(Sub()
                                         If pbImage.Image IsNot Nothing Then pbImage.Image.Dispose()
@@ -220,6 +241,19 @@ Public Class Form1
             End While
         Loop
     End Sub
+
+    Private Function GetBayerConv(fmt As PixelFormat, ByRef is16 As Boolean) As Emgu.CV.CvEnum.ColorConversion?
+
+        Dim s = fmt.ToString() ' e.g. "BayerRG8", "BayerRG12Packed", "Mono8", "RGB8Packed"
+        is16 = s.Contains("10") OrElse s.Contains("12") OrElse s.Contains("16")
+
+        If s.Contains("BayerRG") Then Return Emgu.CV.CvEnum.ColorConversion.BayerRg2Bgr
+        If s.Contains("BayerBG") Then Return Emgu.CV.CvEnum.ColorConversion.BayerBg2Bgr
+        If s.Contains("BayerGB") Then Return Emgu.CV.CvEnum.ColorConversion.BayerGb2Bgr
+        If s.Contains("BayerGR") Then Return Emgu.CV.CvEnum.ColorConversion.BayerGr2Bgr
+
+        Return Nothing ' not a Bayer format
+    End Function
 
     Private Sub SaveXML_Click(sender As Object, e As EventArgs) Handles SaveXML.Click
         cameraService.Gvcp.SaveXmlFileFromCamera(Application.StartupPath)
