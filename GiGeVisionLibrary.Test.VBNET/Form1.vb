@@ -96,10 +96,6 @@ Public Class Form1
     ' ——————————————————————————————
     Private Async Sub btnStart_Click(sender As Object, e As EventArgs) Handles btnStart.Click
 
-        If (cameraService.Gvcp.IsXmlFileLoaded) Then
-            Await cameraService.Gvcp.ReadXmlFileAsync()
-        End If
-
         If (cameraService.Width <= 0 OrElse cameraService.Height <= 0) Then
             'MessageBox.Show("Test")
             Exit Sub
