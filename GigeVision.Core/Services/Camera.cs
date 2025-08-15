@@ -4,6 +4,7 @@ using GigeVision.Core.Interfaces;
 using GigeVision.Core.Models;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -539,7 +540,10 @@ namespace GigeVision.Core.Services
                 await TrySetRegAsync(GvcpRegister.GevSCPSPacketSize, Payload).ConfigureAwait(false);
 
                 // Start acquisition
+                await WaitForTransportReadyAsync(800).ConfigureAwait(false);
+
                 var acquisitionReply = await acquisitionStartPValue.SetValueAsync(1).ConfigureAwait(false) as GvcpReply;
+  
                 if (acquisitionReply != null && acquisitionReply.Status == GvcpStatus.GEV_STATUS_SUCCESS)
                 {
                     SetupRxThread();
@@ -566,7 +570,40 @@ namespace GigeVision.Core.Services
 
             return IsStreaming;
         }
+        /// <summary>
+        /// For few DALSA/Teledyne models, after you program the SC* transport registers
+        /// the device needs a short “settle” time before it will accept AcquisitionStart
+        /// </summary>
+        /// <param name="timeoutMs"></param>
+        /// <returns></returns>
+        private async Task<bool> WaitForTransportReadyAsync(int timeoutMs = 800)
+        {
+            var deadline = Stopwatch.StartNew();
+            // tiny grace delay
+            await Task.Delay(10).ConfigureAwait(false);
 
+            uint wantIp = Converter.IpToNumber(IsMulticast ? MulticastIP : RxIP);
+            uint wantPort = (uint)PortRx;
+            uint wantPkt = Payload;
+
+            while (deadline.ElapsedMilliseconds < timeoutMs)
+            {
+                var gotPort = await TryGetRegAsync(GvcpRegister.GevSCPHostPort).ConfigureAwait(false);
+                var gotIp = await TryGetRegAsync(GvcpRegister.GevSCDA).ConfigureAwait(false);
+                var gotPkt = await TryGetRegAsync(GvcpRegister.GevSCPSPacketSize).ConfigureAwait(false);
+
+                // allow small tolerance on packet size (some cameras round)
+                bool ok =
+                    gotPort.HasValue && gotPort.Value == wantPort &&
+                    gotIp.HasValue && gotIp.Value == wantIp &&
+                    gotPkt.HasValue && Math.Abs((int)gotPkt.Value - (int)wantPkt) <= 16;
+
+                if (ok) return true;
+
+                await Task.Delay(20).ConfigureAwait(false);
+            }
+            return false;
+        }
         // Local helper (tuple-safe, fall back to raw GVCP when pValue is null)
         public async Task<bool> TrySetRegAsync(GvcpRegister reg, uint value)
         {
