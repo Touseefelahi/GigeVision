@@ -103,7 +103,6 @@ Public Class Form1
         btnStart.Enabled = False
 
         Try
-            'Await StartStream()
             Dim running = Await StartLiveFeed()
             btnStart.Text = If(running, "Stop", "Start")
             ComboBoxIP.Enabled = Not running
@@ -117,32 +116,6 @@ Public Class Form1
     End Sub
 
 
-    Public Async Function StartStream() As Task
-        ' Toggle OFF if already running
-        If cameraService.IsStreaming Then
-            Await cameraService.StopStream().ConfigureAwait(False)
-            Return
-        End If
-
-        ' Ensure XML and parameters are loaded
-        If Not cameraService.Gvcp.IsXmlFileLoaded Then
-            Await cameraService.Gvcp.ReadXmlFileAsync(cameraService.IP).ConfigureAwait(False)
-        End If
-
-        'Await cameraService.SyncParameters().ConfigureAwait(False)
-
-        ' Configure packet size and start
-        cameraService.Payload = 1200
-        Dim ok = Await cameraService.StartStreamAsync().ConfigureAwait(False)
-        If Not ok Then Return
-
-        ' Launch processing thread
-        processingThread = New Thread(AddressOf ProcessingPipelineV2) With {
-            .IsBackground = True,
-            .Priority = ThreadPriority.Highest
-        }
-        processingThread.Start()
-    End Function
     Private Async Function StartLiveFeed() As Task(Of Boolean)
         If Not CameraListLoaded Then Return False
 
@@ -186,54 +159,6 @@ Public Class Form1
 
         Return True
     End Function
-
-    Private Sub OnFrameReady(bmp As Bitmap)
-        ' marshal to UI thread
-        If InvokeRequired Then
-            BeginInvoke(CType(Sub() OnFrameReady(bmp), MethodInvoker))
-            Return
-        End If
-
-        If pbImage.Image IsNot Nothing Then pbImage.Image.Dispose()
-        pbImage.Image = bmp   ' you own/dispose bmp next time
-    End Sub
-
-    Private Sub ProcessingPipelineV2()
-        Dim local As Integer = 0
-        Dim w As Integer = CInt(streamReceiver.GvspInfo.Width)
-        Dim h As Integer = CInt(streamReceiver.GvspInfo.Height)
-
-        Using color As New Mat(h, w, Emgu.CV.CvEnum.DepthType.Cv8U, 3)
-            While streamReceiver.IsReceiving
-                ' wait for a new frame
-                streamReceiver.waitHandleFrame.Wait()
-
-                ' drain all frames produced so far
-                While local < streamReceiver.frameInCounter
-                    Dim src = streamReceiver.image(local Mod streamReceiver.TotalBuffers)
-                    If src Is Nothing OrElse src.IsEmpty OrElse src.Width = 0 Then
-                        local += 1
-                        Continue While
-                    End If
-
-                    ' If the camera is Bayer8, convert to BGR (adjust pattern if needed)
-                    If src.NumberOfChannels = 1 Then
-                        CvInvoke.CvtColor(src, color, Emgu.CV.CvEnum.ColorConversion.BayerRg2Bgr)
-                    Else
-                        src.CopyTo(color)
-                    End If
-
-                    ' Simple path: create a Bitmap for UI and raise event
-                    Dim bmp As Bitmap = color.ToBitmap()
-                    RaiseEvent FrameReady(bmp)
-
-                    local += 1
-                End While
-            End While
-        End Using
-    End Sub
-
-
 
     Private Sub ProcessingPipeline(cancel As CancellationToken)
         Dim localBufferIndex As Integer = 0
