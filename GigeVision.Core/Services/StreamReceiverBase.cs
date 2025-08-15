@@ -1,11 +1,12 @@
 ﻿using GigeVision.Core.Enums;
+using GigeVision.Core.Interfaces;
+using GigeVision.Core.Models;
 using System;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using GigeVision.Core.Models;
-using GigeVision.Core.Interfaces;
 
 namespace GigeVision.Core.Services
 {
@@ -98,15 +99,10 @@ namespace GigeVision.Core.Services
         /// </summary>
         public void StartRxThread()
         {
-            Thread threadDecode = new(Receiver)
-            {
-                Priority = ThreadPriority.Highest,
-                Name = "Decode Packets Thread",
-                IsBackground = true
-            };
+            if (IsReceiving) return;
             SetupSocketRxRaw();
-            IsReceiving = true;
-            threadDecode.Start();
+            IsReceiving = true;          // set first so UI pipeline doesn’t see False
+            _ = Task.Run(Receiver);
         }
 
         /// <summary>
@@ -115,20 +111,76 @@ namespace GigeVision.Core.Services
         public void StopReception()
         {
             IsReceiving = false;
-            socketRxRaw?.Close();
-            socketRxRaw.Dispose();
+            // it’s OK if socketRxRaw was never created
+            try { if (socketRxRaw != null)
+                  { socketRxRaw?.Close(); socketRxRaw.Dispose(); }  } catch { }
+
         }
 
         /// <summary>
-        /// GVSP leader parser- required only one time
+        /// Quick, safe “sniff” of the incoming GVSP stream to figure out how to decode packets.
         /// </summary>
         protected void DetectGvspType()
         {
-            Span<byte> singlePacket = new byte[9000];
-            socketRxRaw.Receive(singlePacket);
-            GvspInfo.IsDecodingAsVersion2 = ((singlePacket[4] & 0xF0) >> 4) == 8;
+            // Best-effort sniff of the first packet, but never fail the receiver.
+            // DALSA may send ICMP Port Unreachable until the stream is actually active.
+            var singlePacket = new byte[9000];
+            EndPoint remote = new IPEndPoint(IPAddress.Any, 0);
+
+            var start = Stopwatch.StartNew();
+            const int probeMs = 1000;          // short window to sniff a packet
+            const int sleepStepMs = 5;
+
+            bool gotAny = false;
+
+            while (IsReceiving && start.ElapsedMilliseconds < probeMs)
+            {
+                try
+                {
+                    // avoid blocking if there is clearly nothing to read yet
+                    if (socketRxRaw.Available == 0)
+                    {
+                        Thread.Sleep(sleepStepMs);
+                        continue;
+                    }
+
+                    int n = socketRxRaw.ReceiveFrom(singlePacket, 0, singlePacket.Length,
+                                                    SocketFlags.None, ref remote);
+                    if (n > 0)
+                    {
+                        // Minimal parse: packet type is in low nibble of byte[4] (GVSP standard)
+                        int pktType = singlePacket[4] & 0x0F; // 3=Data, 2=Data End, etc.
+                        GvspInfo.IsImageData = (pktType == 3 || pktType == 2);
+
+                        // If you track “version 2” (extended IDs), you can try to infer it here.
+                        // If unsure, leave the existing default; SetDecodingTypeParameter() handles it.
+                        // Example (conservative): keep whatever default you already have.
+
+                        gotAny = true;
+                    }
+                    break; // we probed once; that's enough
+                }
+                catch (SocketException ex) when (
+                     ex.SocketErrorCode == SocketError.ConnectionReset   // 10054, ICMP Port Unreachable
+                  || ex.SocketErrorCode == SocketError.MessageSize        // 10040, truncated probe ok
+                  || ex.SocketErrorCode == SocketError.TimedOut
+                  || ex.SocketErrorCode == SocketError.WouldBlock)
+                {
+                    // Camera not ready yet — keep waiting until timeout
+                    Thread.Sleep(sleepStepMs);
+                }
+                catch
+                {
+                    // Any other unexpected error: don't kill the receiver
+                    break;
+                }
+            }
+
+            // Whether we sniffed a packet or not, finalize decode parameters.
+            // This should NOT do any network I/O.
             GvspInfo.SetDecodingTypeParameter();
 
+            // From here, your normal receive loop runs and will keep handling data.
             var packetID = (singlePacket[GvspInfo.PacketIDIndex] << 8) | singlePacket[GvspInfo.PacketIDIndex + 1];
             if (packetID == 0)
             {
