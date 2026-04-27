@@ -87,7 +87,6 @@ namespace GigeVision.Core.Interfaces
         /// Camera offset Y
         /// </summary>
         uint OffsetY { get; set; }
-
         /// <summary>
         /// Camera Pixel Format
         /// </summary>

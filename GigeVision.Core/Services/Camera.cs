@@ -1,13 +1,17 @@
-﻿using GigeVision.Core.Enums;
+﻿using GenICam;
+using GigeVision.Core.Enums;
 using GigeVision.Core.Interfaces;
+using GigeVision.Core.Models;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
+using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading.Channels;
 using System.Threading.Tasks;
-using GenICam;
-using GigeVision.Core.Models;
 using Converter = GigeVision.Core.Models.Converter;
 
 namespace GigeVision.Core.Services
@@ -216,7 +220,6 @@ namespace GigeVision.Core.Services
                 }
             }
         }
-
         /// <summary>
         /// Payload size, if not provided it will be automatically set to one row, depending on resolution
         /// </summary>
@@ -453,120 +456,205 @@ namespace GigeVision.Core.Services
         /// <returns></returns>
         public async Task<bool> StartStreamAsync(string rxIP = null, int rxPort = 0)
         {
-            string ip2Send;
-            // If the custom stream receiver is not set then it will set the default one
-
-            if (string.IsNullOrEmpty(rxIP))
+            // Resolve Rx IP
+            if (string.IsNullOrWhiteSpace(rxIP))
             {
-                if (string.IsNullOrEmpty(RxIP) && !SetRxIP())
-                {
+                if (string.IsNullOrWhiteSpace(RxIP) && !SetRxIP())
                     return false;
-                }
             }
             else
             {
                 RxIP = rxIP;
             }
-            ip2Send = RxIP;
+            string ip2Send = IsMulticast ? MulticastIP : RxIP;
 
-            if (IsMulticast)
-            {
-                ip2Send = MulticastIP;
-            }
+            // Ensure parameters are synced (loads XML etc.)
             try
             {
                 var status = await SyncParameters().ConfigureAwait(false);
-                if (!status)
-                    return status;
+                if (!status) return false;
             }
             catch
             {
                 return false;
             }
+
+            // Decide receive port
             if (rxPort == 0)
             {
                 if (PortRx == 0)
                 {
-                    UdpClient udpClient = new(0);
-                    PortRx = ((IPEndPoint)(udpClient.Client.LocalEndPoint)).Port;
-                    udpClient.Dispose();
+                    using var udp = new UdpClient(0);
+                    PortRx = ((IPEndPoint)udp.Client.LocalEndPoint).Port;
                 }
             }
             else
             {
                 PortRx = rxPort;
             }
-            if (Payload == 0)
-            {
-                CalculateSingleRowPayload();
-            }
 
-            if (!IsUsingExternalBuffer)
-            {
-                SetRxBuffer();
-            }
+            // Payload + buffer
+            if (Payload == 0) CalculateSingleRowPayload();
+            if (!IsUsingExternalBuffer) SetRxBuffer();
 
-            
+            // AcquisitionStart node (command/int). If missing, we won’t start acquisition.
+            var (acquisitionStartPValue, _) = await Gvcp.GetRegister(nameof(RegisterName.AcquisitionStart)).ConfigureAwait(false);
+            if (acquisitionStartPValue == null)
+                return false;
 
-            var acquisitionStart = (await Gvcp.GetRegister(nameof(RegisterName.AcquisitionStart))).pValue;
-            if (acquisitionStart != null)
+            if (await Gvcp.TakeControl(true).ConfigureAwait(false))
             {
-                if (await Gvcp.TakeControl(true).ConfigureAwait(false))
+                // Defaults GevStreamChannelSelector to Stream0 In case the vendor does not
+                // map the stream channels (SC0, SC1, …) registers directly to channel 0
+                if (await LoadParameter("GevStreamChannelSelector").ConfigureAwait(false))
                 {
-                    var gevSCPHostPort = (await Gvcp.GetRegister(nameof(GvcpRegister.GevSCPHostPort))).pValue;
-                    if ((await gevSCPHostPort.SetValueAsync((uint)PortRx).ConfigureAwait(false) as GvcpReply).Status == GvcpStatus.GEV_STATUS_SUCCESS)
+                    //The test avoids a null ref or invalid cast and lets you gracefully skip channel selection if it isn’t there
+                    if (await GetParameter("GevStreamChannelSelector").ConfigureAwait(false) is GenICam.GenEnumeration streamChannelSelector && streamChannelSelector.PValue != null)
                     {
-                        var gevSCDA = (await Gvcp.GetRegister(nameof(GvcpRegister.GevSCDA))).pValue;
-                        if ((await gevSCDA.SetValueAsync(Converter.IpToNumber(ip2Send)).ConfigureAwait(false) as GvcpReply).Status == GvcpStatus.GEV_STATUS_SUCCESS)
-                        {
-                            var gevSCSP = (await Gvcp.GetRegister(nameof(GvcpRegister.GevSCSP))).pValue;
-                            var getSCSPPortValue = await gevSCSP.GetValueAsync().ConfigureAwait((false));
-                            if (getSCSPPortValue.HasValue)
-                            {
-                                SCSPPort = (int)getSCSPPortValue.Value;
-                            }
-
-                            var gevSCPSPacketSize = (await Gvcp.GetRegister(nameof(GvcpRegister.GevSCPSPacketSize))).pValue;
-                            var reply = await gevSCPSPacketSize.SetValueAsync(Payload).ConfigureAwait(false);
-                            
-                            SetupReceiver();
-                            SetupRxThread();
-                            
-                            if (((await acquisitionStart.SetValueAsync(1).ConfigureAwait(false)) as GvcpReply).Status == GvcpStatus.GEV_STATUS_SUCCESS)
-                            {
-                                IsStreaming = true;
-                            }
-                            else
-                            {
-                                await StopStream().ConfigureAwait(false);
-                            }   
-                        }
+                        if (streamChannelSelector.Entries.ContainsKey("Stream0"))
+                            await streamChannelSelector.PValue.SetValueAsync(streamChannelSelector.Entries["Stream0"].Value).ConfigureAwait(false);
+                        else if (streamChannelSelector.Entries.Count > 0)
+                            await streamChannelSelector.PValue.SetValueAsync(streamChannelSelector.Entries.Values.First().Value).ConfigureAwait(false);
                     }
+                }
+
+                // Host port for stream (GevSCPHostPort)
+                if (!await TrySetRegAsync(GvcpRegister.GevSCPHostPort, (uint)PortRx).ConfigureAwait(false))
+                {
+                    await Gvcp.LeaveControl().ConfigureAwait(false);
+                    return false;
+                }
+
+                // Destination address (host IP or multicast IP) (GevSCDA)
+                if (!await TrySetRegAsync(GvcpRegister.GevSCDA, Converter.IpToNumber(ip2Send)).ConfigureAwait(false))
+                {
+                    await Gvcp.LeaveControl().ConfigureAwait(false);
+                    return false;
+                }
+
+                // Optional: read camera source port (GevSCSP) for info
+                var scsp = await TryGetRegAsync(GvcpRegister.GevSCSP).ConfigureAwait(false);
+                if (scsp.HasValue) SCSPPort = (int)scsp.Value;
+
+                // Packet size (payload) (GevSCPSPacketSize)
+                await TrySetRegAsync(GvcpRegister.GevSCPSPacketSize, Payload).ConfigureAwait(false);
+
+                // Start acquisition
+                await WaitForTransportReadyAsync(800).ConfigureAwait(false);
+
+                var acquisitionReply = await acquisitionStartPValue.SetValueAsync(1).ConfigureAwait(false) as GvcpReply;
+  
+                if (acquisitionReply != null && acquisitionReply.Status == GvcpStatus.GEV_STATUS_SUCCESS)
+                {
+                    SetupRxThread();
+                    IsStreaming = true;
                 }
                 else
                 {
-                    if (IsMulticast)
-                    {
-                        SetupRxThread();
-                        IsStreaming = true;
-                    }
+                    await StopStream().ConfigureAwait(false);
+                }
+
+                // (Optionally keep control; StopStream() will LeaveControl)
+            }
+            else
+            {
+                // Could not take control; allow multicast passive receive if requested
+                // With multicast, the camera may already be broadcasting to a multicast group.
+                // You don’t need control to receive; you can simply join the group and listen
+                if (IsMulticast)
+                {
+                    SetupRxThread();
+                    IsStreaming = true;
                 }
             }
+
             return IsStreaming;
         }
+        /// <summary>
+        /// For few DALSA/Teledyne models, after you program the SC* transport registers
+        /// the device needs a short “settle” time before it will accept AcquisitionStart
+        /// </summary>
+        /// <param name="timeoutMs"></param>
+        /// <returns></returns>
+        private async Task<bool> WaitForTransportReadyAsync(int timeoutMs = 800)
+        {
+            var deadline = Stopwatch.StartNew();
+            // tiny grace delay
+            await Task.Delay(10).ConfigureAwait(false);
 
+            uint wantIp = Converter.IpToNumber(IsMulticast ? MulticastIP : RxIP);
+            uint wantPort = (uint)PortRx;
+            uint wantPkt = Payload;
+
+            while (deadline.ElapsedMilliseconds < timeoutMs)
+            {
+                var gotPort = await TryGetRegAsync(GvcpRegister.GevSCPHostPort).ConfigureAwait(false);
+                var gotIp = await TryGetRegAsync(GvcpRegister.GevSCDA).ConfigureAwait(false);
+                var gotPkt = await TryGetRegAsync(GvcpRegister.GevSCPSPacketSize).ConfigureAwait(false);
+
+                // allow small tolerance on packet size (some cameras round)
+                bool ok =
+                    gotPort.HasValue && gotPort.Value == wantPort &&
+                    gotIp.HasValue && gotIp.Value == wantIp &&
+                    gotPkt.HasValue && Math.Abs((int)gotPkt.Value - (int)wantPkt) <= 16;
+
+                if (ok) return true;
+
+                await Task.Delay(20).ConfigureAwait(false);
+            }
+            return false;
+        }
+        // Local helper (tuple-safe, fall back to raw GVCP when pValue is null)
+        public async Task<bool> TrySetRegAsync(GvcpRegister reg, uint value)
+        {
+            var (pValue, register) = await Gvcp.GetRegister(reg.ToString()).ConfigureAwait(false);
+            if (pValue != null)
+            {
+                var r = await pValue.SetValueAsync(value).ConfigureAwait(false) as GvcpReply;
+                return r != null && r.Status == GvcpStatus.GEV_STATUS_SUCCESS;
+            }
+            else
+            {
+                var r = await Gvcp.WriteRegisterAsync(reg, value).ConfigureAwait(false);
+                return r != null && r.Status == GvcpStatus.GEV_STATUS_SUCCESS;
+            }
+        }
+
+        // Local helper (tuple-safe, fall back to raw GVCP when pValue is null)
+        public async Task<uint?> TryGetRegAsync(GvcpRegister reg)
+        {
+            var (pValue, register) = await Gvcp.GetRegister(reg.ToString()).ConfigureAwait(false);
+
+            if (pValue != null)
+            {
+                var v = await pValue.GetValueAsync().ConfigureAwait(false);
+                return v.HasValue ? (uint)v.Value : (uint?)null;
+            }
+            else
+            {
+                var r = await Gvcp.ReadRegisterAsync(reg).ConfigureAwait(false);
+                return (r != null
+                        && r.Status == GvcpStatus.GEV_STATUS_SUCCESS
+                        && r.RegisterValues != null
+                        && r.RegisterValues.Count > 0)
+                    ? r.RegisterValues[0]
+                    : (uint?)null;
+            }
+        }
         /// <summary>
         /// Stops the camera stream and leave camera control
         /// </summary>
         /// <returns>Is streaming status</returns>
         public async Task<bool> StopStream()
         {
-            await Gvcp.WriteRegisterAsync(GvcpRegister.GevSCDA, 0).ConfigureAwait(false);
-            StreamReceiver?.StopReception();
-            if (await Gvcp.LeaveControl().ConfigureAwait(false))
-            {
-                IsStreaming = false;
-            }
+            try { await Gvcp.WriteRegisterAsync(GvcpRegister.GevSCDA, 0).ConfigureAwait(false); } catch { }
+            try { StreamReceiver?.StopReception(); } catch { }
+            try {
+                if (await Gvcp.LeaveControl().ConfigureAwait(false))
+                {
+                    IsStreaming = false;
+                }
+            } catch { }
             return IsStreaming;
         }
 
@@ -577,7 +665,7 @@ namespace GigeVision.Core.Services
                 cameraParametersCache = new Dictionary<string, ICategory>();
             }
             ICategory parameter = await GetParameter(parameterName).ConfigureAwait(false);
-            if (parameter == null)
+            if (parameter == null || parameter.PValue == null)
             {
                 return null;
             }
@@ -725,8 +813,16 @@ namespace GigeVision.Core.Services
 
         private void CalculateSingleRowPayload()
         {
-            Payload = 8 + 28 + (Width * bytesPerPixel);
+            const uint GvspHeader = 8;
+            const uint UdpIpHeader = 28;
+            uint oneRow = Width * bytesPerPixel;
+            uint desired = GvspHeader + UdpIpHeader + oneRow;
+
+            // Clamp to typical MTU if you don't have jumbo frames enabled.
+            uint maxOnWire = 1500; // or read camera’s allowed max for GevSCPSPacketSize
+            Payload = Math.Min(desired, maxOnWire);
         }
+
 
         private async void CameraIpChanged(object sender, EventArgs e)
         {
@@ -800,6 +896,7 @@ namespace GigeVision.Core.Services
 
         private void SetupRxThread()
         {
+            SetupReceiver();     
             StreamReceiver.StartRxThread();
         }
     }
