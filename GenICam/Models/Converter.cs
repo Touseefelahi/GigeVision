@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -8,7 +9,7 @@ namespace GenICam
     /// <summary>
     /// Converter class.
     /// </summary>
-    public class Converter : IMathematical
+    public class Converter : IMathematical, IDoubleValue
     {
         private double value;
 
@@ -72,7 +73,8 @@ namespace GenICam
         /// <returns>The value as a long.</returns>
         public async Task<long?> GetValueAsync()
         {
-            return (long)(await ExecuteFormulaFrom());
+            var result = await GetDoubleValueAsync().ConfigureAwait(false);
+            return result is null ? null : (long?)Math.Round(result.Value, MidpointRounding.AwayFromZero);
         }
 
         /// <summary>
@@ -82,45 +84,61 @@ namespace GenICam
         /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation..</returns>
         public async Task<IReplyPacket> SetValueAsync(long value)
         {
-            var toValue = await ExecuteFormulaTo(value);
-            return await PValue.SetValueAsync(toValue);
+            return await SetDoubleValueAsync(value).ConfigureAwait(false);
+        }
+
+        /// <inheritdoc/>
+        public async Task<double?> GetDoubleValueAsync()
+        {
+            var result = await ExecuteFormulaFrom().ConfigureAwait(false);
+            Value = result;
+            return result;
+        }
+
+        /// <inheritdoc/>
+        public async Task<IReplyPacket> SetDoubleValueAsync(double value)
+        {
+            var toValue = await ExecuteFormulaTo(value).ConfigureAwait(false);
+            Value = value;
+            return await PValue.SetValueAsync(toValue).ConfigureAwait(false);
         }
 
         private async Task<double> ExecuteFormulaFrom()
         {
             try
             {
-                foreach (var word in FormulaFrom.Split())
+                var formula = FormulaFrom;
+                foreach (var word in formula.Split())
                 {
                     if (word.Equals("TO"))
                     {
-                        long? value = await PValue.GetValueAsync();
+                        long? value = await PValue.GetValueAsync().ConfigureAwait(false);
 
                         if (value is null)
                         {
                             throw new GenICamException("Failed to read formula register value", new NullReferenceException());
                         }
 
-                        FormulaFrom = FormulaFrom.Replace(word, string.Format("0x{0:X8}", value));
+                        formula = formula.Replace(word, value.Value.ToString(CultureInfo.InvariantCulture));
                     }
 
-                    if (PVariables.ContainsKey(word))
+                    if (PVariables != null && PVariables.ContainsKey(word))
                     {
                         long? value = null;
 
-                        value = await PVariables[word].GetValueAsync();
+                        value = await PVariables[word].GetValueAsync().ConfigureAwait(false);
 
                         if (value is null)
                         {
                             throw new GenICamException("Failed to read formula register value", new NullReferenceException());
                         }
 
-                        FormulaFrom = FormulaFrom.Replace(word, string.Format("0x{0:X8}", value));
+                        formula = formula.Replace(word, value.Value.ToString(CultureInfo.InvariantCulture));
                     }
                 }
 
-                FormulaFrom = MathParserHelper.FormatExpression(FormulaFrom);
-                return MathParserHelper.CalculateExpression(FormulaFrom);
+                formula = MathParserHelper.FormatExpression(formula);
+                return MathParserHelper.CalculateExpression(formula);
             }
             catch (Exception ex)
             {
@@ -128,33 +146,34 @@ namespace GenICam
             }
         }
 
-        private async Task<long> ExecuteFormulaTo(long value)
+        private async Task<long> ExecuteFormulaTo(double value)
         {
             try
             {
-                foreach (var word in FormulaTo.Split())
+                var formula = FormulaTo;
+                foreach (var word in formula.Split())
                 {
                     if (word.Equals("FROM"))
                     {
-                        FormulaTo = FormulaTo.Replace(word, string.Format("0x{0:X8}", value));
+                        formula = formula.Replace(word, value.ToString(CultureInfo.InvariantCulture));
                     }
 
-                    if (PVariables.ContainsKey(word))
+                    if (PVariables != null && PVariables.ContainsKey(word))
                     {
                         long? variableValue = null;
-                        variableValue = await PVariables[word].GetValueAsync();
+                        variableValue = await PVariables[word].GetValueAsync().ConfigureAwait(false);
 
                         if (variableValue is null)
                         {
                             throw new GenICamException("Failed to read formula register value", new NullReferenceException());
                         }
 
-                        FormulaTo = FormulaTo.Replace(word, string.Format("0x{0:X8}", variableValue));
+                        formula = formula.Replace(word, variableValue.Value.ToString(CultureInfo.InvariantCulture));
                     }
                 }
 
-                FormulaTo = MathParserHelper.FormatExpression(FormulaTo);
-                return (long)MathParserHelper.CalculateExpression(FormulaTo);
+                formula = MathParserHelper.FormatExpression(formula);
+                return (long)Math.Round(MathParserHelper.CalculateExpression(formula), MidpointRounding.AwayFromZero);
             }
             catch (Exception ex)
             {

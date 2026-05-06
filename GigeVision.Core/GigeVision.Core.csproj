@@ -11,12 +11,14 @@
     <PackageTags>GigeVision, GeniCam, GVSP, GVCP</PackageTags>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>2.7.3</Version>
+    <Version>2.7.6-local</Version>
     <PackageLicenseFile>License.txt</PackageLicenseFile>
     <PackageIcon>gige.png</PackageIcon>
     <PackageIconUrl />
     <Platforms>x64</Platforms>
     <PackageReleaseNotes>
+      2.7.6: Local build
+      2.7.5: Local build
       2.7.3: .net10.0 support added
       2.7.1: Add Firewall bypass routine and with improved XML parsing for GenICam
       2.6: Stream Receiver Parallel
@@ -25,7 +27,8 @@
       2.5: Add firewall exception and Custom Stream Receiver option enabled
       2.4: Fix Get all registers, Force IP command, Documentation Added and .net5.0 support added
       2.1.1: Upgraded to Netcore 6.0 with Multicast reception fix
-      1.8.0: Pushes the block id (frame number) in the frame event and Gives notification on frameloss
+      1.8.0: Pushes the block id (frame number) in the frame event and Gives notification on
+      frameloss
       Fix Receiver IP Detection
       Fix Discovery for all cameras in network
     </PackageReleaseNotes>
@@ -46,12 +49,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="GenICam" Version="2.3.1" />
+    <!-- <PackageReference Include="GenICam" Version="2.3.4-local.1" /> -->
     <PackageReference Include="System.IO.Pipelines" Version="10.0.7" />
   </ItemGroup>
 
-  <!--<ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\GenICam\GenICam.csproj" />
-  </ItemGroup>-->
+  </ItemGroup>
 
 </Project>

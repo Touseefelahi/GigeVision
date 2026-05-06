@@ -3,7 +3,7 @@
     /// <summary>
     /// Pixel format of GVSP stream
     /// </summary>
-    public enum PixelFormat
+    public enum PixelFormat : uint
     {
         /// <summary>
         /// GVSP_PIX_MONO8

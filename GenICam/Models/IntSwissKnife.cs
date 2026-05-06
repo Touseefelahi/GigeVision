@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -10,7 +11,7 @@ namespace GenICam
     /// <summary>
     /// this is a mathematical class for register parameter computations.
     /// </summary>
-    public class IntSwissKnife : IMathematical
+    public class IntSwissKnife : IMathematical, IDoubleValue
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="IntSwissKnife"/> class.
@@ -64,7 +65,8 @@ namespace GenICam
         /// <returns>The result as a long.</returns>
         public async Task<long?> GetValueAsync()
         {
-            return (long)await ExecuteFormula();
+            var result = await GetDoubleValueAsync().ConfigureAwait(false);
+            return result is null ? null : (long?)Math.Round(result.Value, MidpointRounding.AwayFromZero);
         }
 
         /// <summary>
@@ -77,6 +79,20 @@ namespace GenICam
             throw new NotImplementedException();
         }
 
+        /// <inheritdoc/>
+        public async Task<double?> GetDoubleValueAsync()
+        {
+            var result = await ExecuteFormula().ConfigureAwait(false);
+            Value = result;
+            return result;
+        }
+
+        /// <inheritdoc/>
+        public Task<IReplyPacket> SetDoubleValueAsync(double value)
+        {
+            throw new NotImplementedException();
+        }
+
         /// <summary>
         /// Calculates the formula and returns the result.
         /// </summary>
@@ -85,46 +101,57 @@ namespace GenICam
         {
             try
             {
+                var formula = Formula;
+                var resolvedExpressions = Expressions is null ? null : new Dictionary<string, string>(Expressions);
+
                 foreach (var pVariable in PVariables)
                 {
-                    var value = await pVariable.Value.GetValueAsync();
-                    if (Expressions?.Count > 0)
+                    var value = await pVariable.Value.GetValueAsync().ConfigureAwait(false);
+                    if (value is null)
                     {
-                        foreach (var expression in Expressions)
+                        throw new GenICamException("Failed to read expression register", new NullReferenceException());
+                    }
+
+                    var formattedValue = value.Value.ToString(CultureInfo.InvariantCulture);
+
+                    if (resolvedExpressions?.Count > 0)
+                    {
+                        foreach (var expressionKey in resolvedExpressions.Keys.ToList())
                         {
-                            expression.Value.Replace(pVariable.Key, value.ToString());
+                            resolvedExpressions[expressionKey] = resolvedExpressions[expressionKey].Replace(pVariable.Key, formattedValue);
                         }
                     }
 
-                    Formula = Formula.Replace(pVariable.Key, value.ToString());
+                    formula = formula.Replace(pVariable.Key, formattedValue);
                 }
 
                 if (Constants?.Count > 0)
                 {
                     foreach (var constant in Constants)
                     {
-                        if (Expressions?.Count > 0)
+                        var formattedConstant = constant.Value.ToString(CultureInfo.InvariantCulture);
+                        if (resolvedExpressions?.Count > 0)
                         {
-                            foreach (var expression in Expressions)
+                            foreach (var expressionKey in resolvedExpressions.Keys.ToList())
                             {
-                                expression.Value.Replace(constant.Key, constant.Value.ToString());
+                                resolvedExpressions[expressionKey] = resolvedExpressions[expressionKey].Replace(constant.Key, formattedConstant);
                             }
                         }
 
-                        Formula = Formula.Replace(constant.Key, constant.Value.ToString());
+                        formula = formula.Replace(constant.Key, formattedConstant);
                     }
                 }
 
-                if (Expressions?.Count > 0)
+                if (resolvedExpressions?.Count > 0)
                 {
-                    foreach (var expression in Expressions)
+                    foreach (var expression in resolvedExpressions)
                     {
-                        Formula = Formula.Replace(expression.Key, $"({MathParserHelper.CalculateExpression(expression.Value)})");
+                        formula = formula.Replace(expression.Key, $"({MathParserHelper.CalculateExpression(expression.Value)})");
                     }
                 }
 
-                Formula = MathParserHelper.FormatExpression(Formula);
-                return (double)MathParserHelper.CalculateExpression(Formula);
+                formula = MathParserHelper.FormatExpression(formula);
+                return MathParserHelper.CalculateExpression(formula);
             }
             catch (Exception ex)
             {

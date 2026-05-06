@@ -4,14 +4,13 @@
     <TargetFrameworks>net5.0;net6.0;net7.0;net8.0;net10.0</TargetFrameworks>
     <Platforms>x64</Platforms>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>2.3.4-local.1</Version>
+    <Version>2.3.1</Version>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageReleaseNotes>
-      2.3.4: Local build
-      2.3.1: Added support for .net10.0
+	  <PackageReleaseNotes>
+      2.3.1: 	Added support for .net10.0
       2.3: Improved XML parsing
-      2.2: Version Update
-      2.1.5.1: Updated Docs
+      2.2: 	Version Update
+      2.1.5.1: 	Updated Docs
     </PackageReleaseNotes>
   </PropertyGroup>
 

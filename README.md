@@ -1,78 +1,122 @@
 # GigeVision
-Simple GigeVision implementation, GVSP, GVCP protocol implemented
 
-## How to use:
+Simple GigE Vision implementation with GVSP and GVCP support.
 
-### Get all cameras in the network
+## Basic Usage
 
-    var camera = new Camera();
-    var listOfDevices = await camera.Gvcp.GetAllGigeDevicesInNetworkAsnyc().ConfigureAwait();    
+### Discover Cameras
 
-### Read Register   
-        
-    var gvcp = new Gvcp();
-    gvcp.CameraIP = "192.168.10.99";
-    var reply = await gvcp.ReadRegisterAsync("0x0D04");
-    
+```csharp
+var camera = new Camera();
+var listOfDevices = await camera.Gvcp.GetAllGigeDevicesInNetworkAsnyc().ConfigureAwait(false);
+```
+
+### Read Register
+
+```csharp
+var gvcp = new Gvcp
+{
+    CameraIp = "192.168.10.99"
+};
+
+var reply = await gvcp.ReadRegisterAsync("0x0D04").ConfigureAwait(false);
+```
+
 ### Write Register
-To write register you must take the control by Writing 0x02 to CCP register, you can write it manually or use the TakeControl Method from library.
-If succeeded it will give you control for the time that is set in Heartbeat Register, send True as a parameter to keep the control status alive
 
-    var gvcp = new Gvcp
-    {
-        CameraIp = "192.168.10.99"
-    };
-    if (await gvcp.TakeControl()) //Send True as a parameter to keep alive
-    {
-        var reply = await gvcp.WriteRegisterAsync("0x0D04", 1000);
-    }
-    else
-    {
-        throw new Exception("Camera is already in control");
-    }
-                       
+To write a register you must take control by writing `0x02` to the CCP register. You can do that manually or use `TakeControl()` from the library.
+
+```csharp
+var gvcp = new Gvcp
+{
+    CameraIp = "192.168.10.99"
+};
+
+if (await gvcp.TakeControl().ConfigureAwait(false))
+{
+    var reply = await gvcp.WriteRegisterAsync("0x0D04", 1000).ConfigureAwait(false);
+}
+else
+{
+    throw new Exception("Camera is already in control");
+}
+```
+
 ### Read Memory
 
-    var gvcp = new Gvcp();
-    gvcp.CameraIP = "192.168.10.99";
-    var reply = await gvcp.ReadMemoryAsync("0x0D04", 500); //To read 500 bytes from memory address 0x0D04
+```csharp
+var gvcp = new Gvcp
+{
+    CameraIp = "192.168.10.99"
+};
 
-Above mentioned samples are very basic, and in the Gvcp class there are too many method overloads for each function. Link here: https://github.com/Touseefelahi/GigeVision/blob/master/GigeVision.Core/Services/Gvcp.cs
+var reply = await gvcp.ReadMemoryAsync("0x0D04", 500).ConfigureAwait(false);
+```
 
+The `Gvcp` class has many overloads for register and memory operations. The implementation is in `GigeVision.Core/Services/Gvcp.cs`.
 
+## Streaming
 
+The current camera setup flow is property-based.
 
-## Direct Use for Streaming, For a camera of ip  192.168.10.224 we need to initialize the camera objects as below:
+```csharp
+var camera = new Camera();
+camera.IP = "192.168.10.224";
+camera.RxIP = "192.168.10.221"; // Optional, but recommended on multi-NIC systems
 
-    var camera = new Camera("192.168.10.224");
-    
-To Receive the stream raw bytes we need to subscribe to the frame ready event, Make sure to have the same interface as the camera, if you have multiple interfaces you need to define it explicitly when starting the stream 
+bool synced = await camera.SyncParameters().ConfigureAwait(false);
+if (!synced)
+{
+    throw new InvalidOperationException("Failed to load camera parameters.");
+}
+```
 
-    camera.FrameReady += FrameReady;
+Subscribe to the frame callback before starting the stream:
 
-To start the stream we need to call the method StartStream as:
+```csharp
+camera.FrameReady += (sender, frame) =>
+{
+    // frame contains the raw image bytes
+};
+```
 
-    //For multiple interfaces you can define the Rx IP as: (In this example 192.168.10.221 is the PC IP)    
-    bool isStarted = await camera.StartStreamAsync("192.168.10.221").ConfigureAwait(false);
+Start the stream:
 
-Once the frame is fully received the FrameReady event will be invoked
+```csharp
+bool isStarted = await camera.StartStreamAsync(camera.RxIP).ConfigureAwait(false);
+```
 
-    private void FrameReady(object sender, byte[] e)
-    {
-      // e contains the raw data in bytes
-    }
-    
+## Unified Parameter API
 
- ### Force IP - In this example we are setting the IP for first detected camera to fix IP to 192.168.10.243
+The preferred public API is now:
 
-    var camera = new Camera();
-    var listOfDevices = await camera.Gvcp.GetAllGigeDevicesInNetworkAsnyc().ConfigureAwait(true);
-    if (listOfDevices.Count > 0)
-    {
-        camera.Gvcp.ForceIPAsync(listOfDevices[0].MacAddress, "192.168.10.243");
-    }
+```csharp
+long? width = await camera.GetParameterValue<long>(nameof(RegisterName.Width)).ConfigureAwait(false);
+bool? reverseX = await camera.GetParameterValue<bool>("ReverseX").ConfigureAwait(false);
+double? exposure = await camera.GetParameterValue<double>("ExposureTime").ConfigureAwait(false);
 
+await camera.SetCameraParameter(nameof(RegisterName.Width), 1280L).ConfigureAwait(false);
+await camera.SetCameraParameter("ReverseX", true).ConfigureAwait(false);
+await camera.SetCameraParameter("ExposureTime", 5000.0).ConfigureAwait(false);
+```
 
-Simple WPF app example is here https://github.com/Touseefelahi/GigeVision/blob/master/GigeVisionLibrary.Test.Wpf/MainWindow.xaml.cs
+The older typed helpers like `GetFloatParameterValue`, `SetFloatParameter`, `GetBooleanParameterValue`, and `SetBooleanParameter` are still present for compatibility, but new code should prefer the generic getter and the overloaded `SetCameraParameter` methods.
 
-There are some issues with the namespaces it is conflicting Services and Models, it will be fixed someday
+## Force IP
+
+This example sets the IP of the first detected camera to `192.168.10.243`.
+
+```csharp
+var camera = new Camera();
+var listOfDevices = await camera.Gvcp.GetAllGigeDevicesInNetworkAsnyc().ConfigureAwait(false);
+
+if (listOfDevices.Count > 0)
+{
+    await camera.Gvcp.ForceIPAsync(listOfDevices[0].MacAddress, "192.168.10.243").ConfigureAwait(false);
+}
+```
+
+## Examples
+
+- Minimal working samples are in `examples.md`.
+- A WPF sample app is in `GigeVisionLibrary.Test.Wpf/MainWindow.xaml.cs`.

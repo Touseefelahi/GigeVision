@@ -53,7 +53,7 @@ namespace GigeVision.Core.Services
                 image = new byte[TotalBuffers][];
                 for (int i = 0; i < TotalBuffers; i++)
                 {
-                    image[i] = new byte[GvspInfo.Height * GvspInfo.Width * GvspInfo.BytesPerPixel];
+                    image[i] = new byte[GvspInfo.RawImageSize];
                 }
                 indexMemoryWriter = 0;
                 _ = Task.Run(DecodePackets);
@@ -92,6 +92,7 @@ namespace GigeVision.Core.Services
         private void DecodePackets()
         {
             int indexMemoryReader, imageBufferIndex = 0, packetRxCount = 0, packetID, bufferStart, bufferLength;
+            bool skipUntilNextFrameBoundary = true;
             imageIndex = 0;
             lossCount = 0;
             var imageSpan = new Span<byte>(image[imageBufferIndex]);
@@ -103,6 +104,10 @@ namespace GigeVision.Core.Services
             }
 
             int finalPacketLength = image[imageBufferIndex].Length % GvspInfo.PayloadSize;
+            if (finalPacketLength == 0)
+            {
+                finalPacketLength = GvspInfo.PayloadSize;
+            }
             var length = GvspInfo.PacketLength;
             indexMemoryReader = 0;
             while (IsReceiving)
@@ -118,6 +123,11 @@ namespace GigeVision.Core.Services
                     switch (packet[4] & 0x0F)//it unifies extended ID and normal ID
                     {
                         case 3: //Data
+                            if (skipUntilNextFrameBoundary)
+                            {
+                                break;
+                            }
+
                             packetRxCount++;
                             packetID = (packet[GvspInfo.PacketIDIndex] << 8) | packet[GvspInfo.PacketIDIndex + 1];
                             bufferStart = (packetID - 1) * GvspInfo.PayloadSize;
@@ -131,13 +141,27 @@ namespace GigeVision.Core.Services
 
                         case 2: //Data End
                             imageIndex++;
+                            if (skipUntilNextFrameBoundary)
+                            {
+                                packetRxCount = 0;
+                                skipUntilNextFrameBoundary = false;
+                                break;
+                            }
+
                             //Checking if we receive all packets
-                            if (Math.Abs(packetRxCount - GvspInfo.FinalPacketID) > MissingPacketTolerance)
+                            int packetCountDelta = packetRxCount - GvspInfo.FinalPacketID;
+                            if (Math.Abs(packetCountDelta) > MissingPacketTolerance)
                             {
                                 lossCount++;
+                                string frameLossMessage = packetCountDelta < 0
+                                    ? $"Frame skipped because {Math.Abs(packetCountDelta)} packets were missing."
+                                    : $"Frame skipped because {packetCountDelta} unexpected extra packets were received.";
+                                Updates?.Invoke(UpdateType.FrameLoss, frameLossMessage);
                                 packetRxCount = 0;
                                 break;
                             }
+
+                            int completedBufferIndex = imageBufferIndex;
                             packetRxCount = 0;
                             frameInCounter++;
                             waitHandleFrame.Release();
@@ -147,6 +171,7 @@ namespace GigeVision.Core.Services
                                 imageBufferIndex = 0;
                             }
                             imageSpan = new Span<byte>(image[imageBufferIndex]); //Next Frame
+                            FrameReady?.Invoke(imageIndex, image[completedBufferIndex]);
                             break;
                     }
                 }

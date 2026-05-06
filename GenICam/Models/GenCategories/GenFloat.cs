@@ -176,9 +176,16 @@ namespace GenICam
         /// <exception cref="NotImplementedException">Not yet implemented.</exception>
         public async Task<double> GetMaxAsync()
         {
+            if (PMax is IDoubleValue doubleMax)
+            {
+                var result = await doubleMax.GetDoubleValueAsync().ConfigureAwait(false);
+                return result ?? Max;
+            }
+
             if (PMax is not null)
             {
-                return (long)(await PMax.GetValueAsync());
+                var result = await PMax.GetValueAsync().ConfigureAwait(false);
+                return result ?? Max;
             }
 
             return Max;
@@ -188,9 +195,16 @@ namespace GenICam
         /// <exception cref="NotImplementedException">Not yet implemented.</exception>
         public async Task<double> GetMinAsync()
         {
+            if (PMin is IDoubleValue doubleMin)
+            {
+                var result = await doubleMin.GetDoubleValueAsync().ConfigureAwait(false);
+                return result ?? Min;
+            }
+
             if (PMin is not null)
             {
-                return (long)(await PMin.GetValueAsync());
+                var result = await PMin.GetValueAsync().ConfigureAwait(false);
+                return result ?? Min;
             }
 
             return Min;
@@ -206,16 +220,30 @@ namespace GenICam
         /// <exception cref="NotImplementedException">Not yet implemented.</exception>
         public string GetUnit()
         {
-            throw new NotImplementedException();
+            return Unit;
         }
 
         /// <inheritdoc/>
         public async Task<long?> GetValueAsync()
         {
+            if (PValue is IDoubleValue doubleValue)
+            {
+                var result = await doubleValue.GetDoubleValueAsync().ConfigureAwait(false);
+                if (result is not null)
+                {
+                    Value = result.Value;
+                    return (long)Math.Round(result.Value, MidpointRounding.AwayFromZero);
+                }
+            }
+
             if (PValue is not null)
             {
-                    Value = (long)(await PValue.GetValueAsync());
-                    return (long)Value;
+                var result = await PValue.GetValueAsync().ConfigureAwait(false);
+                if (result is not null)
+                {
+                    Value = result.Value;
+                    return result.Value;
+                }
             }
 
             throw new GenICamException(message: $"Unable to set the value, missing register reference", new MissingFieldException());
@@ -224,9 +252,16 @@ namespace GenICam
         /// <inheritdoc/>
         public async Task<IReplyPacket> SetValueAsync(long value)
         {
+            if (PValue is IDoubleValue doubleValue)
+            {
+                Value = value;
+                return await doubleValue.SetDoubleValueAsync(value).ConfigureAwait(false);
+            }
+
             if (PValue is IPValue pValue)
             {
-                return await pValue.SetValueAsync(value);
+                Value = value;
+                return await pValue.SetValueAsync(value).ConfigureAwait(false);
             }
 
             throw new GenICamException(message: $"Unable to set the value, missing register reference", new MissingFieldException());
@@ -254,35 +289,52 @@ namespace GenICam
         /// <exception cref="NotImplementedException">Not yet implemented.</exception>
         Task<double?> IFloat.GetValueAsync()
         {
-            throw new NotImplementedException();
+            if (PValue is IDoubleValue doubleValue)
+            {
+                return doubleValue.GetDoubleValueAsync();
+            }
+
+            return GetValueAsDoubleAsync();
         }
 
         /// <inheritdoc/>
-        /// <exception cref="NotImplementedException">Not yet implemented.</exception>
-        public Task SetValueAsync(double value)
+        public async Task SetValueAsync(double value)
         {
-            throw new NotImplementedException();
+            if (PValue is IDoubleValue doubleValue)
+            {
+                await doubleValue.SetDoubleValueAsync(value).ConfigureAwait(false);
+                Value = value;
+                return;
+            }
+
+            if (PValue is IPValue pValue)
+            {
+                await pValue.SetValueAsync((long)Math.Round(value, MidpointRounding.AwayFromZero)).ConfigureAwait(false);
+                Value = value;
+                return;
+            }
+
+            throw new GenICamException(message: $"Unable to set the value, missing register reference", new MissingFieldException());
         }
 
         /// <inheritdoc/>
-        /// <exception cref="NotImplementedException">Not yet implemented.</exception>
         long IFloat.GetDisplayPrecision()
         {
-            throw new NotImplementedException();
+            return DisplayPrecision;
         }
 
         /// <inheritdoc/>
-        /// <exception cref="NotImplementedException">Not yet implemented.</exception>
         public Task ImposeMinAsync(long min)
         {
-            throw new NotImplementedException();
+            Min = min;
+            return Task.CompletedTask;
         }
 
         /// <inheritdoc/>
-        /// <exception cref="NotImplementedException">Not yet implemented.</exception>
         public Task ImposeMaxAsync(long max)
         {
-            throw new NotImplementedException();
+            Max = max;
+            return Task.CompletedTask;
         }
 
         private async void ExecuteSetValueCommand(object value)
@@ -302,13 +354,29 @@ namespace GenICam
         {
             try
             {
-                Value = (long)await GetValueAsync();
+                Value = await GetValueAsDoubleAsync().ConfigureAwait(false) ?? Value;
                 RaisePropertyChanged(nameof(Value));
             }
             catch (Exception ex)
             {
                 //ToDo: display exception.
             }
+        }
+
+        private async Task<double?> GetValueAsDoubleAsync()
+        {
+            if (PValue is IDoubleValue doubleValue)
+            {
+                return await doubleValue.GetDoubleValueAsync().ConfigureAwait(false);
+            }
+
+            if (PValue is not null)
+            {
+                var result = await PValue.GetValueAsync().ConfigureAwait(false);
+                return result;
+            }
+
+            throw new GenICamException(message: $"Unable to get the value, missing register reference", new MissingFieldException());
         }
     }
 }

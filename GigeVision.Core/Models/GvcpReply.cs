@@ -118,8 +118,7 @@ namespace GigeVision.Core.Models
             if (buffer?.Length > 7)
             {
                 Status = (GvcpStatus)((buffer[0] << 8) | (buffer[1]));
-                if (Status != GvcpStatus.GEV_STATUS_SUCCESS)
-                    return;
+                AcknowledgementID = (ushort)((buffer[6] << 8) | (buffer[7]));
                 IsSentAndReplyReceived = true;
                 GvcpCommandType commandType = (GvcpCommandType)((buffer[2] << 8) | (buffer[3]));
                 if (Enum.IsDefined(typeof(GvcpCommandType), commandType))
@@ -134,6 +133,11 @@ namespace GigeVision.Core.Models
                     return;
                 }
 
+                if (Status != GvcpStatus.GEV_STATUS_SUCCESS)
+                {
+                    return;
+                }
+
                 switch (Type)
                 {
                     case GvcpCommandType.Discovery:
@@ -143,11 +147,11 @@ namespace GigeVision.Core.Models
                         break;
 
                     case GvcpCommandType.ReadRegAck:
-                        if (buffer?.Length < 13)//Single Register reply
+                        if (buffer.Length == 12)//Single Register reply
                         {
                             RegisterValue = (uint)((buffer[8] << 24) | (buffer[9] << 16) | (buffer[10] << 8) | (buffer[11]));
                         }
-                        else //Multiple register reply
+                        else if (buffer.Length > 12 && (buffer.Length - 8) % 4 == 0) //Multiple register reply
                         {
                             int totalRegisters = (buffer.Length - 8) / 4;
                             RegisterValues = new List<uint>();
@@ -159,6 +163,10 @@ namespace GigeVision.Core.Models
                                     (buffer[10 + (4 * i)] << 8) |
                                     (buffer[11 + (4 * i)])));
                             }
+                        }
+                        else
+                        {
+                            IsValid = false;
                         }
                         break;
 
@@ -177,7 +185,6 @@ namespace GigeVision.Core.Models
                     case GvcpCommandType.Invalid:
                         break;
                 }
-                AcknowledgementID = (ushort)((buffer[6] << 8) | (buffer[7]));
             }
         }
     }

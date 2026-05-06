@@ -10,6 +10,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 using GigeVision.Core.Models;
@@ -25,9 +26,11 @@ namespace GigeVision.Core.Services
         private List<CameraInformation> cameraInfoList;
         private string cameraIP = "";
 
-        private ushort gvcpRequestID = 1;
+        private int gvcpRequestID;
 
         private bool isHeartBeatThreadRunning;
+
+        private readonly SemaphoreSlim controlSocketLock = new(1, 1);
 
         private XmlHelper xmlHelper;
 
@@ -39,7 +42,7 @@ namespace GigeVision.Core.Services
         {
             CameraIp = ip;
         }
-        
+
         /// <summary>
         /// Gvcp constructor, initializes camera IP and socket timeout, and try to get register values
         /// </summary>
@@ -58,7 +61,7 @@ namespace GigeVision.Core.Services
         {
             ReceiveTimeoutInMilliseconds = 1000;
         }
-        
+
         /// <summary>
         /// The socket read timeout in milliseconds. Set -1 for infinite timeout
         /// </summary>
@@ -251,19 +254,27 @@ namespace GigeVision.Core.Services
                 return tuple;
             }
 
-            if (category.PValue is IPValue pValue)
+            if (category is IPValue categoryValue)
+            {
+                tuple.pValue = categoryValue;
+            }
+            else if (category.PValue is IPValue pValue)
             {
                 tuple.pValue = pValue;
             }
-            
-            if (category.PValue is IRegister register)
+
+            if (category is IRegister categoryRegister)
+            {
+                tuple.register = categoryRegister;
+            }
+            else if (category.PValue is IRegister register)
             {
                 tuple.register = register;
             }
 
             return tuple;
         }
-        
+
         public async Task<ICategory> GetRegisterCategory(string name)
         {
             return await xmlHelper.GetRegisterByName(name);
@@ -321,11 +332,12 @@ namespace GigeVision.Core.Services
                         RegistersDictionary = new Dictionary<string, (IPValue, IRegister)>();
                         await ReadAllRegisters(CategoryDictionary);
                     }
-                };
+                }
+                ;
             }
             catch (Exception ex)
             {
-                throw ex;
+                throw;
             }
             finally
             {
@@ -351,10 +363,8 @@ namespace GigeVision.Core.Services
         {
             if (ValidateIp(ip))
             {
-                GvcpCommand command = new(memoryAddress, GvcpCommandType.ReadMem, requestID: gvcpRequestID++, count: count);
-                using UdpClient socket = new();
-                socket.Client.ReceiveTimeout = ReceiveTimeoutInMilliseconds;
-                socket.Connect(ip, 3956);
+                GvcpCommand command = new(memoryAddress, GvcpCommandType.ReadMem, requestID: GetNextRequestId(), count: count);
+                using UdpClient socket = CreateConnectedSocket(ip);
                 return await SendGvcpCommand(socket, command).ConfigureAwait(false);
             }
             else
@@ -378,11 +388,8 @@ namespace GigeVision.Core.Services
         {
             if (ValidateIp(ip))
             {
-                GvcpCommand command = new(registerAddress, GvcpCommandType.ReadReg, requestID: gvcpRequestID++);
-                using UdpClient socket = new();
-                socket.Client.ReceiveTimeout = 1000;
-                socket.Connect(ip, 3956);
-                return await SendGvcpCommand(socket, command).ConfigureAwait(false);
+                using UdpClient socket = CreateConnectedSocket(ip);
+                return await ReadRegisterAsync(socket, registerAddress).ConfigureAwait(false);
             }
             else
             {
@@ -526,7 +533,7 @@ namespace GigeVision.Core.Services
         /// <returns>Command Status</returns>
         public async Task<GvcpReply> WriteMemoryAsync(string memoryAddress, uint valueToWrite)
         {
-            GvcpCommand gvcpCommand = new GvcpCommand(Converter.RegisterStringToByteArray(memoryAddress), GvcpCommandType.WriteMem, valueToWrite, gvcpRequestID++);
+            GvcpCommand gvcpCommand = new GvcpCommand(Converter.RegisterStringToByteArray(memoryAddress), GvcpCommandType.WriteMem, valueToWrite, GetNextRequestId());
             return await WriteMemory(ControlSocket, gvcpCommand).ConfigureAwait(false);
         }
 
@@ -536,7 +543,7 @@ namespace GigeVision.Core.Services
         /// <returns>Command Status</returns>
         public async Task<GvcpReply> WriteRegisterAsync(UdpClient socket, byte[] registerAddress, uint valueToWrite)
         {
-            GvcpCommand gvcpCommand = new GvcpCommand(registerAddress, GvcpCommandType.WriteReg, valueToWrite, gvcpRequestID++);
+            GvcpCommand gvcpCommand = new GvcpCommand(registerAddress, GvcpCommandType.WriteReg, valueToWrite, GetNextRequestId());
             return await WriteRegister(socket, gvcpCommand).ConfigureAwait(false);
         }
 
@@ -546,7 +553,7 @@ namespace GigeVision.Core.Services
         /// <returns>Command Status</returns>
         public async Task<GvcpReply> WriteRegisterAsync(UdpClient socket, string registerAddress, uint valueToWrite)
         {
-            GvcpCommand gvcpCommand = new GvcpCommand(Converter.RegisterStringToByteArray(registerAddress), GvcpCommandType.WriteReg, valueToWrite, gvcpRequestID++);
+            GvcpCommand gvcpCommand = new GvcpCommand(Converter.RegisterStringToByteArray(registerAddress), GvcpCommandType.WriteReg, valueToWrite, GetNextRequestId());
             return await WriteRegister(socket, gvcpCommand).ConfigureAwait(false);
         }
 
@@ -556,7 +563,7 @@ namespace GigeVision.Core.Services
         /// <returns>Command Status</returns>
         public async Task<GvcpReply> WriteRegisterAsync(UdpClient socket, string[] registerAddress, uint[] valuesToWrite)
         {
-            GvcpCommand gvcpCommand = new GvcpCommand(registerAddress, valuesToWrite, gvcpRequestID++);
+            GvcpCommand gvcpCommand = new GvcpCommand(registerAddress, valuesToWrite, GetNextRequestId());
             return await WriteRegister(socket, gvcpCommand).ConfigureAwait(false);
         }
 
@@ -566,7 +573,7 @@ namespace GigeVision.Core.Services
         /// <returns>Command Status</returns>
         public async Task<GvcpReply> WriteRegisterAsync(UdpClient socket, GvcpRegister register, uint valueToWrite)
         {
-            GvcpCommand gvcpCommand = new GvcpCommand(Converter.RegisterStringToByteArray(register.ToString("X")), GvcpCommandType.WriteReg, valueToWrite, gvcpRequestID++);
+            GvcpCommand gvcpCommand = new GvcpCommand(Converter.RegisterStringToByteArray(register.ToString("X")), GvcpCommandType.WriteReg, valueToWrite, GetNextRequestId());
             return await WriteRegister(socket, gvcpCommand).ConfigureAwait(false);
         }
 
@@ -576,17 +583,14 @@ namespace GigeVision.Core.Services
         /// <returns>Command Status</returns>
         public async Task<GvcpReply> WriteRegisterAsync(string Ip, byte[] registerAddress, uint valueToWrite)
         {
-            UdpClient socket = new UdpClient(Ip, PortGvcp);
-            socket.Client.ReceiveTimeout = 1000;
+            using UdpClient socket = CreateConnectedSocket(Ip);
             if (await GetControlAsync(socket).ConfigureAwait(false))
             {
-                GvcpCommand gvcpCommand = new GvcpCommand(registerAddress, GvcpCommandType.WriteReg, valueToWrite, gvcpRequestID++);
+                GvcpCommand gvcpCommand = new GvcpCommand(registerAddress, GvcpCommandType.WriteReg, valueToWrite, GetNextRequestId());
                 return await WriteRegister(socket, gvcpCommand).ConfigureAwait(false);
             }
-            else
-            {
-                return new GvcpReply() { Status = GvcpStatus.GEV_STATUS_ACCESS_DENIED };
-            }
+
+            return new GvcpReply() { Status = GvcpStatus.GEV_STATUS_ACCESS_DENIED };
         }
 
         /// <summary>
@@ -595,17 +599,14 @@ namespace GigeVision.Core.Services
         /// <returns>Command Status</returns>
         public async Task<GvcpReply> WriteRegisterAsync(string Ip, string registerAddress, uint valueToWrite)
         {
-            UdpClient socket = new UdpClient(Ip, PortGvcp);
-            socket.Client.ReceiveTimeout = 1000;
+            using UdpClient socket = CreateConnectedSocket(Ip);
             if (await GetControlAsync(socket).ConfigureAwait(false))
             {
-                GvcpCommand gvcpCommand = new GvcpCommand(Converter.RegisterStringToByteArray(registerAddress), GvcpCommandType.WriteReg, valueToWrite, gvcpRequestID++);
+                GvcpCommand gvcpCommand = new GvcpCommand(Converter.RegisterStringToByteArray(registerAddress), GvcpCommandType.WriteReg, valueToWrite, GetNextRequestId());
                 return await WriteRegister(socket, gvcpCommand).ConfigureAwait(false);
             }
-            else
-            {
-                return new GvcpReply() { Status = GvcpStatus.GEV_STATUS_ACCESS_DENIED };
-            }
+
+            return new GvcpReply() { Status = GvcpStatus.GEV_STATUS_ACCESS_DENIED };
         }
 
         /// <summary>
@@ -614,18 +615,14 @@ namespace GigeVision.Core.Services
         /// <returns>Command Status</returns>
         public async Task<GvcpReply> WriteRegisterAsync(string Ip, string[] registerAddress, uint[] valuesToWrite)
         {
-            // await Task.Delay(100).ConfigureAwait(false);
-            UdpClient socket = new UdpClient(Ip, PortGvcp);
-            socket.Client.ReceiveTimeout = 1000;
+            using UdpClient socket = CreateConnectedSocket(Ip);
             if (await GetControlAsync(socket).ConfigureAwait(false))
             {
-                GvcpCommand gvcpCommand = new GvcpCommand(registerAddress, valuesToWrite, gvcpRequestID++);
+                GvcpCommand gvcpCommand = new GvcpCommand(registerAddress, valuesToWrite, GetNextRequestId());
                 return await WriteRegister(socket, gvcpCommand).ConfigureAwait(false);
             }
-            else
-            {
-                return new GvcpReply() { Status = GvcpStatus.GEV_STATUS_ACCESS_DENIED };
-            }
+
+            return new GvcpReply() { Status = GvcpStatus.GEV_STATUS_ACCESS_DENIED };
         }
 
         /// <summary>
@@ -634,17 +631,14 @@ namespace GigeVision.Core.Services
         /// <returns>Command Status</returns>
         public async Task<GvcpReply> WriteRegisterAsync(string Ip, GvcpRegister register, uint valueToWrite)
         {
-            UdpClient socket = new UdpClient(Ip, PortGvcp);
-            socket.Client.ReceiveTimeout = 1000;
+            using UdpClient socket = CreateConnectedSocket(Ip);
             if (await GetControlAsync(socket).ConfigureAwait(false))
             {
-                GvcpCommand gvcpCommand = new GvcpCommand(Converter.RegisterStringToByteArray(register.ToString("X")), GvcpCommandType.WriteReg, valueToWrite, gvcpRequestID++);
+                GvcpCommand gvcpCommand = new GvcpCommand(Converter.RegisterStringToByteArray(register.ToString("X")), GvcpCommandType.WriteReg, valueToWrite, GetNextRequestId());
                 return await WriteRegister(socket, gvcpCommand).ConfigureAwait(false);
             }
-            else
-            {
-                return new GvcpReply() { Status = GvcpStatus.GEV_STATUS_ACCESS_DENIED };
-            }
+
+            return new GvcpReply() { Status = GvcpStatus.GEV_STATUS_ACCESS_DENIED };
         }
 
         /// <summary>
@@ -653,7 +647,7 @@ namespace GigeVision.Core.Services
         /// <returns>Command Status</returns>
         public async Task<GvcpReply> WriteRegisterAsync(byte[] registerAddressOrKey, uint valueToWrite)
         {
-            GvcpCommand gvcpCommand = new GvcpCommand(registerAddressOrKey, GvcpCommandType.WriteReg, valueToWrite, gvcpRequestID++);
+            GvcpCommand gvcpCommand = new GvcpCommand(registerAddressOrKey, GvcpCommandType.WriteReg, valueToWrite, GetNextRequestId());
             return await WriteRegister(ControlSocket, gvcpCommand).ConfigureAwait(false);
         }
 
@@ -663,7 +657,7 @@ namespace GigeVision.Core.Services
         /// <returns>Command Status</returns>
         public async Task<GvcpReply> WriteRegisterAsync(string registerAddress, uint valueToWrite)
         {
-            GvcpCommand gvcpCommand = new GvcpCommand(Converter.RegisterStringToByteArray(registerAddress), GvcpCommandType.WriteReg, valueToWrite, gvcpRequestID++);
+            GvcpCommand gvcpCommand = new GvcpCommand(Converter.RegisterStringToByteArray(registerAddress), GvcpCommandType.WriteReg, valueToWrite, GetNextRequestId());
             return await WriteRegister(ControlSocket, gvcpCommand).ConfigureAwait(false);
         }
 
@@ -673,7 +667,7 @@ namespace GigeVision.Core.Services
         /// <returns>Command Status</returns>
         public async Task<GvcpReply> WriteRegisterAsync(string[] registerAddress, uint[] valueToWrite)
         {
-            GvcpCommand gvcpCommand = new GvcpCommand(registerAddress, valueToWrite, gvcpRequestID++);
+            GvcpCommand gvcpCommand = new GvcpCommand(registerAddress, valueToWrite, GetNextRequestId());
             return await WriteRegister(ControlSocket, gvcpCommand).ConfigureAwait(false);
         }
 
@@ -683,23 +677,68 @@ namespace GigeVision.Core.Services
         /// <returns>Command Status</returns>
         public async Task<GvcpReply> WriteRegisterAsync(GvcpRegister register, uint valueToWrite)
         {
-            GvcpCommand gvcpCommand = new GvcpCommand(Converter.RegisterStringToByteArray(register.ToString("X")), GvcpCommandType.WriteReg, valueToWrite, gvcpRequestID++);
+            GvcpCommand gvcpCommand = new GvcpCommand(Converter.RegisterStringToByteArray(register.ToString("X")), GvcpCommandType.WriteReg, valueToWrite, GetNextRequestId());
             return await WriteRegister(ControlSocket, gvcpCommand).ConfigureAwait(false);
         }
 
-        private static async Task<GvcpReply> SendGvcpCommand(UdpClient socketTx, GvcpCommand command)
+        private async Task<GvcpReply> SendGvcpCommand(UdpClient socketTx, GvcpCommand command)
         {
             GvcpReply gvcpReply = new();
-            await socketTx.SendAsync(command.CommandBytes, command.Length).ConfigureAwait(false);
-            gvcpReply.IsSent = true;
-            Task<UdpReceiveResult> reply = socketTx.ReceiveAsync();
-            if (await Task.WhenAny(reply, Task.Delay(socketTx.Client.ReceiveTimeout)).ConfigureAwait(false) == reply)
+            SemaphoreSlim commandLock = ReferenceEquals(socketTx, ControlSocket) ? controlSocketLock : null;
+            if (commandLock != null)
             {
-                gvcpReply.DetectCommand(reply.Result.Buffer);
-                gvcpReply.IPSender = reply.Result.RemoteEndPoint.Address.ToString();
-                gvcpReply.PortSender = reply.Result.RemoteEndPoint.Port;
+                await commandLock.WaitAsync().ConfigureAwait(false);
             }
-            return gvcpReply;
+
+            try
+            {
+                await socketTx.SendAsync(command.CommandBytes, command.Length).ConfigureAwait(false);
+                gvcpReply.IsSent = true;
+                var receiveTimeout = GetSocketReceiveTimeout(socketTx);
+                var deadline = receiveTimeout == Timeout.Infinite ? DateTime.MaxValue : DateTime.UtcNow.AddMilliseconds(receiveTimeout);
+
+                while (true)
+                {
+                    Task<UdpReceiveResult> replyTask = socketTx.ReceiveAsync();
+                    if (receiveTimeout != Timeout.Infinite)
+                    {
+                        TimeSpan remaining = deadline - DateTime.UtcNow;
+                        if (remaining <= TimeSpan.Zero)
+                        {
+                            ObserveFault(replyTask);
+                            gvcpReply.Error = $"Timed out waiting for {command.Type} acknowledgement.";
+                            ResetSharedControlSocket(socketTx);
+                            return gvcpReply;
+                        }
+
+                        if (await Task.WhenAny(replyTask, Task.Delay(remaining)).ConfigureAwait(false) != replyTask)
+                        {
+                            ObserveFault(replyTask);
+                            gvcpReply.Error = $"Timed out waiting for {command.Type} acknowledgement.";
+                            ResetSharedControlSocket(socketTx);
+                            return gvcpReply;
+                        }
+                    }
+
+                    UdpReceiveResult reply = await replyTask.ConfigureAwait(false);
+                    gvcpReply = new GvcpReply();
+                    gvcpReply.IsSent = true;
+                    gvcpReply.DetectCommand(reply.Buffer);
+                    gvcpReply.IPSender = reply.RemoteEndPoint.Address.ToString();
+                    gvcpReply.PortSender = reply.RemoteEndPoint.Port;
+
+                    if (gvcpReply.AcknowledgementID != command.RequestId)
+                    {
+                        continue;
+                    }
+
+                    return gvcpReply;
+                }
+            }
+            finally
+            {
+                commandLock?.Release();
+            }
         }
 
         /// <summary>
@@ -759,6 +798,11 @@ namespace GigeVision.Core.Services
 
         private CameraInformation DecodeDiscoveryPacket(byte[] discoveryPacket)
         {
+            if (discoveryPacket == null || discoveryPacket.Length < 256)
+            {
+                return null;
+            }
+
             var cameraInfo = new CameraInformation()
             {
                 IP = discoveryPacket[44].ToString() + "." + discoveryPacket[45].ToString() + "." + discoveryPacket[46].ToString() + "." + discoveryPacket[47].ToString()
@@ -815,21 +859,32 @@ namespace GigeVision.Core.Services
         private void DiscoveryReception(IPEndPoint localEndpoint, byte[] data)
         {
             var camera = DecodeDiscoveryPacket(data);
+            if (camera == null)
+            {
+                return;
+            }
+
             camera.NetworkIP = localEndpoint.Address.ToString();
             cameraInfoList.Add(camera);
         }
 
         #region Read All Registers Address XML
 
+        private async Task<GvcpReply> ReadRegisterAsync(UdpClient socket, byte[] registerAddress)
+        {
+            GvcpCommand command = new(registerAddress, GvcpCommandType.ReadReg, requestID: GetNextRequestId());
+            return await SendGvcpCommand(socket, command).ConfigureAwait(false);
+        }
+
         private async Task<bool> GetControlAsync(UdpClient socket)
         {
-            var currentStatus = await ReadRegisterAsync(Converter.RegisterStringToByteArray(GvcpRegister.GevCCP.ToString("X"))).ConfigureAwait(false);
+            var currentStatus = await ReadRegisterAsync(socket, Converter.RegisterStringToByteArray(GvcpRegister.GevCCP.ToString("X"))).ConfigureAwait(false);
             if (currentStatus.IsValid)
             {
                 if (currentStatus.RegisterValue == 0)//Its free and can be controlled
                 {
                     GvcpCommand controlCommand = new(Converter.RegisterStringToByteArray(GvcpRegister.GevCCP.ToString("X")),
-                        GvcpCommandType.WriteReg, 2, gvcpRequestID++);
+                        GvcpCommandType.WriteReg, 2, GetNextRequestId());
                     var reply = await SendGvcpCommand(socket, controlCommand).ConfigureAwait(false);
                     return reply.Status == GvcpStatus.GEV_STATUS_SUCCESS;
                 }
@@ -851,23 +906,12 @@ namespace GigeVision.Core.Services
         {
             return await Task.Run(() =>
             {
-                UdpClient client = new UdpClient();
-                client.Client.ReceiveTimeout = 1000;
-                //connecting to the server
-                client.Connect(IP, PortGvcp);
+                using UdpClient client = CreateConnectedSocket(IP);
+                Thread.Sleep(100);
+                ushort headerRequestId = GetNextRequestId();
+                byte[] gvcpHeader = GetReadMessageHeader(0x0200, headerRequestId);
 
-                byte[] commandCCP = new byte[] { 0x42, 0x00, 0x00, 0x82, 0x00, 0x08, 0x10, 0x01, 0x00, 0x00, 0x0a, 0x00, 0x00, 0x00, 0x00, 0x02 };
-
-                //sending the packet
-                //  client.Send(commandCCP, commandCCP.Length);
-                Task.Delay(100);
-                //preparing the header for sending
-
-                byte[] gvcpHeader = GetReadMessageHeader(0x0200); //GevFirstURL = 0x0200
-
-                //sending the packet
                 client.Send(gvcpHeader, gvcpHeader.Length);
-                gvcpRequestID++;
 
                 int packetSize = 512 + 24; //512 for the original payload size and 24  for  the header
                 byte[] count = { 0x02, 0x18 }; //Number of bytes to read from device memory it must be multiple of 4 bytes
@@ -897,7 +941,7 @@ namespace GigeVision.Core.Services
                     {
                         count = i == (fileLength - lastPacket) ? BitConverter.GetBytes(lastPacket) : BitConverter.GetBytes(packetSize);
 
-                        byte[] requestID = BitConverter.GetBytes(gvcpRequestID);
+                        byte[] requestID = BitConverter.GetBytes(GetNextRequestId());
                         byte[] tempFileAddress = BitConverter.GetBytes(fileAddress + i);
 
                         if (BitConverter.IsLittleEndian)
@@ -918,7 +962,6 @@ namespace GigeVision.Core.Services
                         if (recivedData[0] == (byte)0x00)
                         {
                             Array.Copy(recivedData, 12, encodedZipFile, i, recivedData.Length - 12);
-                            gvcpRequestID++;
                         }
                         else
                             break;
@@ -928,11 +971,11 @@ namespace GigeVision.Core.Services
             }).ConfigureAwait(false);
         }
 
-        private byte[] GetReadMessageHeader(int register)
+        private byte[] GetReadMessageHeader(int register, ushort requestId)
         {
             //converting register and requestID into bytes
             byte[] tempRegister = BitConverter.GetBytes(register);
-            byte[] requestID = BitConverter.GetBytes((short)gvcpRequestID);
+            byte[] requestID = BitConverter.GetBytes(requestId);
 
             if (BitConverter.IsLittleEndian)
             {
@@ -941,7 +984,7 @@ namespace GigeVision.Core.Services
             }
 
             //preparing the header for sending
-            byte[] gvcpHeader = { 0x42, 0x01, 0x00, 0x84, 0x00, 0x08, requestID[0], requestID[1], 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x02, 0x00 };
+            byte[] gvcpHeader = { 0x42, 0x01, 0x00, 0x84, 0x00, 0x08, requestID[0], requestID[1], tempRegister[0], tempRegister[1], tempRegister[2], tempRegister[3], 0x00, 0x00, 0x02, 0x00 };
 
             return gvcpHeader;
         }
@@ -971,8 +1014,6 @@ namespace GigeVision.Core.Services
                         break;
                 }
             }
-
-            gvcpRequestID++;
             return xmlFile;
         }
 
@@ -1050,7 +1091,7 @@ namespace GigeVision.Core.Services
                 try
                 {
                     ControlSocket = new UdpClient(cameraIP, PortGvcp);
-                    ControlSocket.Client.ReceiveTimeout = 1000;
+                    ControlSocket.Client.ReceiveTimeout = ReceiveTimeoutInMilliseconds > 0 ? ReceiveTimeoutInMilliseconds : 0;
                     ControlSocket.Client.SendTimeout = 500;
                 }
                 catch (Exception)
@@ -1068,12 +1109,12 @@ namespace GigeVision.Core.Services
             Task.Run(async () =>
             {
                 isHeartBeatThreadRunning = true;
-                GvcpCommand command = new(Converter.RegisterStringToByteArray(GvcpRegister.GevCCP.ToString("X")), GvcpCommandType.ReadReg);
                 while (IsKeepingAlive)
                 {
                     try
                     {
-                        _ = SendGvcpCommand(ControlSocket, command);
+                        GvcpCommand command = new(Converter.RegisterStringToByteArray(GvcpRegister.GevCCP.ToString("X")), GvcpCommandType.ReadReg, requestID: GetNextRequestId());
+                        await SendGvcpCommand(ControlSocket, command).ConfigureAwait(false);
                         if (!IsKeepingAlive) break;
                         await Task.Delay(500).ConfigureAwait(false);
                         if (!IsKeepingAlive) break;
@@ -1121,7 +1162,7 @@ namespace GigeVision.Core.Services
             }
             foreach (var ipNetwork in ips)
             {
-                var broadcastClientLocal = new UdpClient()
+                using var broadcastClientLocal = new UdpClient()
                 {
                     EnableBroadcast = true,
                 };
@@ -1172,16 +1213,7 @@ namespace GigeVision.Core.Services
         /// <returns></returns>
         private async Task<GvcpReply> WriteMemory(UdpClient socket, GvcpCommand gvcpCommand)
         {
-            await socket.SendAsync(gvcpCommand.CommandBytes, gvcpCommand.Length).ConfigureAwait(false);
-            var reply = await socket.ReceiveAsync().ConfigureAwait(false);
-            if (reply.Buffer?.Length > 0)
-            {
-                return new GvcpReply(reply.Buffer);
-            }
-            else
-            {
-                return new GvcpReply() { Error = "Couldn't Get Reply" };
-            }
+            return await SendGvcpCommand(socket, gvcpCommand).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -1191,6 +1223,44 @@ namespace GigeVision.Core.Services
         private async Task<GvcpReply> WriteRegister(UdpClient socket, GvcpCommand gvcpCommand)
         {
             return await SendGvcpCommand(socket, gvcpCommand).ConfigureAwait(false);
+        }
+
+        private UdpClient CreateConnectedSocket(string ip)
+        {
+            UdpClient socket = new();
+            socket.Client.ReceiveTimeout = ReceiveTimeoutInMilliseconds > 0 ? ReceiveTimeoutInMilliseconds : 0;
+            socket.Client.SendTimeout = 500;
+            socket.Connect(ip, PortGvcp);
+            return socket;
+        }
+
+        private ushort GetNextRequestId()
+        {
+            return unchecked((ushort)Interlocked.Increment(ref gvcpRequestID));
+        }
+
+        private int GetSocketReceiveTimeout(UdpClient socket)
+        {
+            int receiveTimeout = socket.Client.ReceiveTimeout;
+            if (receiveTimeout > 0)
+            {
+                return receiveTimeout;
+            }
+
+            return ReceiveTimeoutInMilliseconds > 0 ? ReceiveTimeoutInMilliseconds : Timeout.Infinite;
+        }
+
+        private void ResetSharedControlSocket(UdpClient socket)
+        {
+            if (ReferenceEquals(socket, ControlSocket) && ValidateIp(cameraIP))
+            {
+                Reconnect();
+            }
+        }
+
+        private static void ObserveFault(Task task)
+        {
+            _ = task.ContinueWith(t => _ = t.Exception, TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously);
         }
 
         #endregion Write Register

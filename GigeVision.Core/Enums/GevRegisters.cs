@@ -20,7 +20,7 @@
         CurrentIPAddress = 0x0024,
         CurrentSubnetMask = 0x0034,
         CurrentDefaultGateway = 0x0044,
-        GevSCSP  = 0x01C,
+        GevSCSP = 0x0D1C,
         FirstURL = 0x0200,
         SecondURL = 0x0400,
         NumberOfInterfaces = 0x0600,

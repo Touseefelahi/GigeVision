@@ -100,25 +100,30 @@ namespace GenICam.Models
         {
             try
             {
-                    var length = GetLength();
-                    byte[] pBuffer = new byte[length];
+                var length = GetLength();
+                byte[] pBuffer = new byte[length];
 
-                    switch (length)
-                    {
-                        case 2:
-                            pBuffer = BitConverter.GetBytes((ushort)value);
-                            break;
+                switch (length)
+                {
+                    case 2:
+                        pBuffer = BitConverter.GetBytes((ushort)value);
+                        break;
 
-                        case 4:
-                            pBuffer = BitConverter.GetBytes((int)value);
-                            break;
+                    case 4:
+                        pBuffer = BitConverter.GetBytes((int)value);
+                        break;
 
-                        case 8:
-                            pBuffer = BitConverter.GetBytes(value);
-                            break;
-                    }
+                    case 8:
+                        pBuffer = BitConverter.GetBytes(value);
+                        break;
+                }
 
-                    return await SetAsync(pBuffer, length);
+                if (BitConverter.IsLittleEndian && pBuffer.Length > 1)
+                {
+                    Array.Reverse(pBuffer);
+                }
+
+                return await SetAsync(pBuffer, length);
             }
             catch (Exception ex)
             {
